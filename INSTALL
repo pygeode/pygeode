@@ -1,0 +1,37 @@
+For licensing information, please refer to the LICENSE file.
+
+Prerequisites:
+--------------
+
+  Python packages:
+    numpy
+    matplotlib (required for the 'plot' module)
+    basemap (matplotlib toolkit, for overlaying maps and doing projections)
+    python-progressbar (if you want to see a progress indicator)
+
+  Libraries:
+    GSL development package (libgsl0-dev?) - for the interpolation module
+    netcdf shared library - to read/write netcdf files
+    lapack shared library (version 3), for the EOF module
+
+
+
+To install:
+-----------
+
+  make 
+  sudo make install
+
+If the build process fails, check if you have all the prerequisites.
+
+
+
+If you want to run the package without installing first:
+--------------------------------------------------------
+
+1) Go into the pygeode subdirectory
+2) Run 'make'
+3) Go back to this directory
+4) Add this directory to your Python path:
+  export PYTHONPATH=${PYTHONPATH}:$PWD
+

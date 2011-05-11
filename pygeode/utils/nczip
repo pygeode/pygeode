@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+def usage (progname):
+  from sys import exit
+  print "\nUsage: %s <infile> <outfile>\n"%progname
+  print "Purpose: compresses a netcdf file.\nRequires the netcdf-4 library, with compression compiled in.\n"
+  print "Optional parameters:"
+  print "  -o\tAllow the output file to be overridden"
+  print "  -h\tDisplay this help screen"
+  print "  -d\tDebug messages\n"
+  exit(1)
+
+from pygeode.formats import netcdf
+from sys import argv
+from os.path import exists
+
+progname, params = argv[0], argv[1:]
+
+files = [p for p in params if not p.startswith('-')]
+flags = [p[1:] for p in params if p.startswith('-')]
+
+if 'h' in flags or len(files) != 2: usage (progname)
+
+infile, outfile = files
+
+if infile == outfile:
+  print "Error: input and output files can't be the same!"
+  exit(1)
+
+if not exists(infile):
+  print "%s does not exist!"%infile
+  exit(1)
+
+if exists(outfile):
+  if 'f' not in flags:
+    print "%s already exists.  Overwrite (y/n)? "%outfile,
+    yn = raw_input()
+    if yn.lower() not in ('y','yes'):
+      print "Aborted"
+      exit(1)
+
+try:
+  f = netcdf.open(infile)
+except Exception:
+  if 'd' in flags: raise
+  print "Error: Can't recognize the format of %s"%infile
+  exit(1)
+
+try:
+  netcdf.save(outfile, f, compress=True)
+except Exception:
+  if 'd' in flags: raise
+  print "Error: Can't create the compressed file"
+  exit(1)
+
