@@ -10,7 +10,7 @@ def load_lib (name, Global=False):
   from os.path import exists
   import os
 
-  print "debug: requested library is '%s'"%name
+#  print "debug: requested library is '%s'"%name
 
   # First try resolving it to a pygeode-specific library
   # Local (uninstalled) library
@@ -43,7 +43,7 @@ def load_lib (name, Global=False):
   if exists(name) and '/' not in name: name = './' + name
 
 
-  print "debug: loading shared library %s"%name
+#  print "debug: loading shared library %s"%name
 
   mode = RTLD_GLOBAL if Global==True else RTLD_LOCAL
   return CDLL(name, mode=mode)
