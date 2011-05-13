@@ -6,5 +6,5 @@ this is just a test of mercurial
 @author: Andre R. Erler
 '''
 
-if __name__ == '__main__':
-    pass
+# this is just a test
+pass
