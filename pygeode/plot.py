@@ -189,11 +189,8 @@ def plotvar (var, **kwargs):
       
       m = Basemap(ax=ax, **proj)
       m.drawcoastlines(ax=ax)
-      #m.drawmeridians(arange(-180,361,45),ax=ax)
-      #m.drawmeridians([-180,-90,0,90,180,270,360],labels=[0,0,0,1],ax=ax)
-      #m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
-      m.drawmeridians([-180,-90,0,90,180,270,360],ax=ax)
-      m.drawparallels([-90,-60,-30,0,30,60,90],ax=ax)
+      m.drawmeridians([-180,-90,0,90,180,270,360],labels=[0,0,0,1],ax=ax)
+      m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
       m.drawmapboundary()
 
       # Transform mesh
