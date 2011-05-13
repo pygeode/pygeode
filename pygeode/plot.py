@@ -426,8 +426,10 @@ def plotquiver (vu, vv, **kwargs):
       if len(a) == 1:
         title += ', ' + a.formatvalue(a.values[0])
 
-  valu = vu.get().squeeze()
-  valv = vv.get().squeeze()
+  every = kwargs.pop('every', 1)
+  valu = vu.squeeze()[::every, ::every]
+  valv = vv.squeeze()[::every, ::every]
+
   # Mask out missing values (NaN)
   valu = ma.masked_where(isnan(valu), valu)
   valv = ma.masked_where(isnan(valv), valv)
@@ -460,8 +462,13 @@ def plotquiver (vu, vv, **kwargs):
     valv = valv.transpose()
     xaxis, yaxis = yaxis, xaxis
 
-  meshx, meshy = meshgrid (xaxis.values, yaxis.values)
-  ax.quiver(meshx, meshy, valu, valv, units='x', angles='xy', pivot='middle', **kwargs)
+  meshx, meshy = meshgrid (xaxis.values[::every], yaxis.values[::every])
+  angles = kwargs.pop('angles', 'xy')
+
+  lblx = kwargs.pop('lblx', True)
+  lbly = kwargs.pop('lbly', True)
+
+  ax.quiver(meshx, meshy, valu, valv, units='x', angles=angles, pivot='middle', **kwargs)
 
   #
   # Map?
@@ -480,8 +487,8 @@ def plotquiver (vu, vv, **kwargs):
     m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
 
   else:
-    ax.set_xlabel(xaxis.plottitle)      
-    ax.set_ylabel(yaxis.plottitle)
+    if lblx: ax.set_xlabel(xaxis.plottitle)      
+    if lbly: ax.set_ylabel(yaxis.plottitle)
 
     # Disable autoscale.  Otherwise, if we set a log scale below, then
     # the range of our axes will get screwed up.
