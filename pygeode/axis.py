@@ -31,12 +31,22 @@ class Axis(Var):
     :doc:`var`
 
   """
-
+  
+  #TODO: move units and formatstr into dictionary 'atts' and 'auxatts' respectively 
+  #TODO: move plotting attributes into dictionary 'plotatts' 
+  #TODO: move 'atts' and 'plotatts' definitions into Var (var.py)
+  #TODO: fix all dependencies on attributes after migration!
+  
+  units = '' # actual unit of the axis values
+  formatstr = '%g'  # default format string for display 
   # Attributes for plots
-  formatstr = '%g'  # default format string
   plotscale = 'linear'  # default scale for plotting
   plotorder = 1  # By default, plot with axis values increasing away from origin
   plottitle = None
+  # Formatting attributes for plots (see formatter method for application)
+  plotunits = '' # displayed units (after offset and scalefactor have been applied)
+  scalefactor = 1 # a multiplicative factor applied before display
+  offset = 0 # an additive offset applied before display
 
   # Auxiliary arrays (provides some more context than just the regular value array)
   auxarrays = {}
@@ -60,6 +70,10 @@ class Axis(Var):
 
     if self.name == '': self.name = self.__class__.__name__.lower()
     if self.plottitle is None: self.plottitle = self.name
+    
+    # Set attributes to 'item', if corresponding 'key' is found in atts dictionary
+    for key in self.atts.keys():
+      if hasattr(self,key): setattr(self,key,self.atts[key])
 
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
@@ -495,10 +509,16 @@ class Axis(Var):
   def formatvalue(self, val, units=True):
   # {{{
     ''' formatvalue(val)
-        Returns an appropriately formatted string representation of val in the axis space. '''
-    if units and hasattr(self, 'units'): su = ' ' + self.units
-    else: su = ''
-    return self.formatstr % val + su
+        Returns an appropriately formatted string representation of val in the axis space. '''    
+    val = val*self.scalefactor + self.offset # apply scalefactor and offset 
+    strval = self.formatstr % val # convert to string
+#    if units and hasattr(self, 'units'): su = ' ' + self.units
+#    else: su = ''
+    if units:
+      if self.plotunits: strval += self.plotunits # properly formatted units
+      elif self.scalefactor==1 and self.offset==0: strval += self.units # fallback option
+      else: pass # warn('no unit specified') # should I have a warning here?
+    return strval
   # }}}
 
   # Returns a matplotlib axis Formatter object
