@@ -96,32 +96,44 @@ def plotvar (var, **kwargs):
   if nd == 1:
     from axis import ZAxis, Pres, Hybrid
     xaxis = [a for a in axes if len(a)>1][0]
-    lblx = kwargs.pop('lblx', True)
-
-    lbly = kwargs.pop('lbly', True)
     # Vertical?
     if isinstance(xaxis,ZAxis):
+      lblx = kwargs.pop('lblx', False) # preserve previous behaviour
+      lbly = kwargs.pop('lbly', True)
+      
       ax.plot(values, xaxis.values, **kwargs)
 
       ax.set_yscale(xaxis.plotscale)
       ylims = min(xaxis.values),max(xaxis.values)
       ax.set_ylim(ylims[::xaxis.plotorder])
-
+      
+      # coordinate axis
+      ax.yaxis.set_major_formatter(xaxis.formatter())
       if lbly:
-        ax.yaxis.set_major_formatter(xaxis.formatter())
         xaxis.set_locator(ax.yaxis)
-        ax.set_ylabel(xaxis.plottitle)      
+        ax.set_ylabel(xaxis.plottitle+' ['+xaxis.plotunits+']')
+      # value axis
+      if lblx:
+        if var.atts.has_key('standard_name'): varname = var.atts['standard_name']
+        else: varname = var.name
+        if var.atts.has_key('units'): varname += ' ['+xaxis.plotunits+']' 
+        ax.set_xlabel(varname)
+            
     else:
+      lblx = kwargs.pop('lblx', True)
+      lbly = kwargs.pop('lbly', False) # preserve previous behaviour
+      
       ax.plot(xaxis.values, values, **kwargs)
 
       ax.set_xscale(xaxis.plotscale)
       xlims = min(xaxis.values),max(xaxis.values)
       ax.set_xlim(xlims[::xaxis.plotorder])
 
+      ax.xaxis.set_major_formatter(xaxis.formatter())
       if lblx:
-        ax.xaxis.set_major_formatter(xaxis.formatter())
         xaxis.set_locator(ax.xaxis)
-        ax.set_xlabel(xaxis.plottitle)      
+        ax.set_xlabel(xaxis.plottitle+' ['+xaxis.plotunits+']')      
+                      
   # 2D case:
   elif nd == 2:
     from numpy import meshgrid, concatenate
@@ -189,8 +201,11 @@ def plotvar (var, **kwargs):
       
       m = Basemap(ax=ax, **proj)
       m.drawcoastlines(ax=ax)
-      m.drawmeridians([-180,-90,0,90,180,270,360],labels=[0,0,0,1],ax=ax)
-      m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
+      #m.drawmeridians(arange(-180,361,45),ax=ax)
+      #m.drawmeridians([-180,-90,0,90,180,270,360],labels=[0,0,0,1],ax=ax)
+      #m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
+      m.drawmeridians([-180,-90,0,90,180,270,360],ax=ax)
+      m.drawparallels([-90,-60,-30,0,30,60,90],ax=ax)
       m.drawmapboundary()
 
       # Transform mesh
@@ -423,10 +438,8 @@ def plotquiver (vu, vv, **kwargs):
       if len(a) == 1:
         title += ', ' + a.formatvalue(a.values[0])
 
-  every = kwargs.pop('every', 1)
-  valu = vu.squeeze()[::every, ::every]
-  valv = vv.squeeze()[::every, ::every]
-
+  valu = vu.get().squeeze()
+  valv = vv.get().squeeze()
   # Mask out missing values (NaN)
   valu = ma.masked_where(isnan(valu), valu)
   valv = ma.masked_where(isnan(valv), valv)
@@ -459,13 +472,8 @@ def plotquiver (vu, vv, **kwargs):
     valv = valv.transpose()
     xaxis, yaxis = yaxis, xaxis
 
-  meshx, meshy = meshgrid (xaxis.values[::every], yaxis.values[::every])
-  angles = kwargs.pop('angles', 'xy')
-
-  lblx = kwargs.pop('lblx', True)
-  lbly = kwargs.pop('lbly', True)
-
-  ax.quiver(meshx, meshy, valu, valv, units='x', angles=angles, pivot='middle', **kwargs)
+  meshx, meshy = meshgrid (xaxis.values, yaxis.values)
+  ax.quiver(meshx, meshy, valu, valv, units='x', angles='xy', pivot='middle', **kwargs)
 
   #
   # Map?
@@ -484,8 +492,8 @@ def plotquiver (vu, vv, **kwargs):
     m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
 
   else:
-    if lblx: ax.set_xlabel(xaxis.plottitle)      
-    if lbly: ax.set_ylabel(yaxis.plottitle)
+    ax.set_xlabel(xaxis.plottitle)      
+    ax.set_ylabel(yaxis.plottitle)
 
     # Disable autoscale.  Otherwise, if we set a log scale below, then
     # the range of our axes will get screwed up.
