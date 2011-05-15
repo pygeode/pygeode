@@ -189,20 +189,37 @@ def plotvar (var, **kwargs):
 
     if isinstance(xaxis,Lon) and isinstance(yaxis,Lat) and Basemap is not None:
       from numpy import arange
+      
+      # pop some arguments related to projection grid labelling 
+      projargs = kwargs.pop('projection', {})
+      # meridians setup (latitude / y)
+      meridians = projargs.pop('meridians',[-180,-90,0,90,180,270,360])
+      # parallels setup (longitude / x)
+      parallels = projargs.pop('parallels',[-90,-60,-30,0,30,60,90])
+      # show labels for meridians and parallels in given location
+      # labels[0]: left, labels[1]: right, labels[2]: top, labels[3]: bottom    
+      labels = projargs.pop('labels',[1,0,0,1]) 
+      
+      # default axes boundaries 
       bnds = {'llcrnrlat':yvals.min(),
               'urcrnrlat':yvals.max(),
               'llcrnrlon':xvals.min(),
               'urcrnrlon':xvals.max()}
+      # default projection      
       proj = {'projection':'cyl', 'resolution':'l'}
-      proj.update(kwargs.pop('projection', {}))
+      
+      # read projection arguments
+      proj.update(projargs)
       if proj['projection'] in ['cyl', 'merc', 'mill', 'gall']:
         bnds.update(proj)
         proj.update(bnds)
-      
+            
+      # construct projection axis
       m = Basemap(ax=ax, **proj)
-      m.drawcoastlines(ax=ax)
-      m.drawmeridians([-180,-90,0,90,180,270,360],labels=[0,0,0,1],ax=ax)
-      m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
+      m.drawcoastlines(ax=ax)      
+      # draw meridians and parallels (using arguments from above) 
+      m.drawmeridians(meridians,labels=labels,ax=ax)
+      m.drawparallels(parallels,labels=labels,ax=ax)
       m.drawmapboundary()
 
       # Transform mesh
@@ -265,14 +282,13 @@ def plotvar (var, **kwargs):
       ylims = min(yaxis.values),max(yaxis.values)
       ax.set_ylim(ylims[::yaxis.plotorder])
 
-      # Set x and y labels and formatters
+      # Set x and y labels and formatters     
       if kwargs.pop('lblx', True):
         ax.set_xlabel(xaxis.plottitle)      
         ax.xaxis.set_major_formatter(xaxis.formatter())
         xaxis.set_locator(ax.xaxis)
       else:
-        ax.set_xticklabels('')
-
+        ax.set_xticklabels('')      
       if kwargs.pop('lbly', True):
         ax.set_ylabel(yaxis.plottitle)      
         ax.yaxis.set_major_formatter(yaxis.formatter())
