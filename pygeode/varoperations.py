@@ -54,7 +54,6 @@ def squeeze (self, *iaxes, **kwargs):
   """
   var = self
   return SqueezedVar(var, *iaxes, **kwargs)
-###Var.squeeze = squeeze
 
 # Extend the var with more axes
 class ExtendedVar(Var):
@@ -122,7 +121,6 @@ def extend (self, pos, *newaxes):
   var = self
   if isinstance(newaxes[0], (tuple,list)): newaxes = newaxes[0]
   return ExtendedVar(var, pos, *newaxes)
-###Var.extend = extend
 
 # Transpose a variable
 class TransposedVar(Var):
@@ -174,14 +172,12 @@ def transpose (self, *axes):
   assert len(axes) > 0, "no axes specified"
   alist = [var.whichaxis(a) for a in axes]
   for a in alist: assert 0 <= a < var.naxes, "axis not found"
-#  assert len(set(alist)) == var.naxes, "not enough axes to do full transpose"
   # Append any other axes not mentioned
   alist = alist + [a for a in range(var.naxes) if a not in alist]
   #TODO: allow an argument of -1/None to indicate where to put the "other" axes?
   # No transpose necessary?
   if alist == range(var.naxes): return var
   return TransposedVar (var, alist)
-###Var.transpose = transpose
 
 # Sort the axis values of a variable
 class SortedVar(Var):
@@ -386,7 +382,6 @@ def replace_axes (self, axisdict={}, ignore_mismatch=False, newaxes=None, keep_o
   """
   var = self
   return Replace_axes (var, axisdict, ignore_mismatch, newaxes, keep_old_name, **kwargs)
-###Var.replace_axes = replace_axes
 
 
 # Rename a variable
@@ -428,7 +423,6 @@ def rename (self, newname):
   """
   var = self
   return RenamedVar(var, newname)
-###Var.rename = rename
 
 # Rename the axes of a variable
 def rename_axes (self, ignore_mismatch=False, **namemap):
@@ -479,7 +473,6 @@ def rename_axes (self, ignore_mismatch=False, **namemap):
     assert var.hasaxis(n1), "'%s' not an axis of %s"%(n1,var)
   axisdict = dict([n1,var.getaxis(n1).rename(n2)] for n1,n2 in namemap.iteritems() if var.hasaxis(n1))
   return var.replace_axes(keep_old_name=False, **axisdict)
-###Var.rename_axes = rename_axes
 
 
 
