@@ -78,7 +78,8 @@ class Time (TAxis):
   name = 'time'
   plotfmt = '$v'
   plotofsfmt = ''
-  plottitle = ''
+  plotatts = {}
+  plotatts['plottitle'] = ''
 
   # List of valid *possible* field names for this class.
   # Override in subclasses.

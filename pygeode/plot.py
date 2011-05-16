@@ -103,20 +103,20 @@ def plotvar (var, **kwargs):
       
       ax.plot(values, xaxis.values, **kwargs)
 
-      ax.set_yscale(xaxis.plotscale)
+      ax.set_yscale(xaxis.plotatts['plotscale'])
       ylims = min(xaxis.values),max(xaxis.values)
-      ax.set_ylim(ylims[::xaxis.plotorder])
+      ax.set_ylim(ylims[::xaxis.plotatts['plotorder']])
       
       # coordinate axis
       ax.yaxis.set_major_formatter(xaxis.formatter())
       if lbly:
         xaxis.set_locator(ax.yaxis)
-        ax.set_ylabel(xaxis.plottitle+' ['+xaxis.plotunits+']')
+        ax.set_ylabel(xaxis.plotatts['plottitle']+' ['+xaxis.plotatts['plotunits']+']')
       # value axis
       if lblx:
         if var.atts.has_key('standard_name'): varname = var.atts['standard_name']
         else: varname = var.name
-        if var.atts.has_key('units'): varname += ' ['+xaxis.plotunits+']' 
+        if var.atts.has_key('units'): varname += ' ['+xaxis.plotatts['plotunits']+']' 
         ax.set_xlabel(varname)
             
     else:
@@ -125,14 +125,14 @@ def plotvar (var, **kwargs):
       
       ax.plot(xaxis.values, values, **kwargs)
 
-      ax.set_xscale(xaxis.plotscale)
+      ax.set_xscale(xaxis.plotatts['plotscale'])
       xlims = min(xaxis.values),max(xaxis.values)
-      ax.set_xlim(xlims[::xaxis.plotorder])
+      ax.set_xlim(xlims[::xaxis.plotatts['plotorder']])
 
       ax.xaxis.set_major_formatter(xaxis.formatter())
       if lblx:
         xaxis.set_locator(ax.xaxis)
-        ax.set_xlabel(xaxis.plottitle+' ['+xaxis.plotunits+']')      
+        ax.set_xlabel(xaxis.plotatts['plottitle']+' ['+xaxis.plotatts['plotunits']+']')      
                       
   # 2D case:
   elif nd == 2:
@@ -274,23 +274,23 @@ def plotvar (var, **kwargs):
       gca().set_autoscale_on(False)
 
       # Set the axis limits
-      ax.set_xscale(xaxis.plotscale)
+      ax.set_xscale(xaxis.plotatts['plotscale'])
       xlims = min(xvals),max(xvals)
-      ax.set_xlim(xlims[::xaxis.plotorder])
+      ax.set_xlim(xlims[::xaxis.plotatts['plotorder']])
 
-      ax.set_yscale(yaxis.plotscale)
+      ax.set_yscale(yaxis.plotatts['plotscale'])
       ylims = min(yaxis.values),max(yaxis.values)
-      ax.set_ylim(ylims[::yaxis.plotorder])
+      ax.set_ylim(ylims[::yaxis.plotatts['plotorder']])
 
       # Set x and y labels and formatters     
       if kwargs.pop('lblx', True):
-        ax.set_xlabel(xaxis.plottitle)      
+        ax.set_xlabel(xaxis.plotatts['plottitle'])      
         ax.xaxis.set_major_formatter(xaxis.formatter())
         xaxis.set_locator(ax.xaxis)
       else:
         ax.set_xticklabels('')      
       if kwargs.pop('lbly', True):
-        ax.set_ylabel(yaxis.plottitle)      
+        ax.set_ylabel(yaxis.plotatts['plottitle'])      
         ax.yaxis.set_major_formatter(yaxis.formatter())
         yaxis.set_locator(ax.yaxis)
       else:
@@ -353,8 +353,8 @@ def plotsigmask (var, ax, **kwargs):
   # Set the axis limits
   # Pressure / eta -> log scale, reversed
   # NOTE: scaling is now specified inside the axes
-  ax.set_xscale(xaxis.plotscale)
-  ax.set_yscale(yaxis.plotscale)
+  ax.set_xscale(xaxis.plotatts['plotscale'])
+  ax.set_yscale(yaxis.plotatts['plotscale'])
   if isinstance(xaxis, Pres) or isinstance(xaxis, Hybrid):
     ax.set_xlim(max(xaxis.values),min(xaxis.values))
   else:
@@ -367,14 +367,14 @@ def plotsigmask (var, ax, **kwargs):
 
   # Set x and y labels and formatters
   if kwargs.pop('lblx', True):
-    ax.set_xlabel(xaxis.plottitle)      
+    ax.set_xlabel(xaxis.plotatts['plottitle'])      
     ax.xaxis.set_major_formatter(xaxis.formatter())
     xaxis.set_locator(ax.xaxis)
   else:
     ax.set_xticklabels('')
 
   if kwargs.pop('lbly', True):
-    ax.set_ylabel(yaxis.plottitle)      
+    ax.set_ylabel(yaxis.plotatts['plottitle'])      
     ax.yaxis.set_major_formatter(yaxis.formatter())
     yaxis.set_locator(ax.yaxis)
   else:
@@ -512,8 +512,8 @@ def plotquiver (vu, vv, **kwargs):
     m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
 
   else:
-    if lblx: ax.set_xlabel(xaxis.plottitle)      
-    if lbly: ax.set_ylabel(yaxis.plottitle)
+    if lblx: ax.set_xlabel(xaxis.plotatts['plottitle'])      
+    if lbly: ax.set_ylabel(yaxis.plotatts['plottitle'])
 
     # Disable autoscale.  Otherwise, if we set a log scale below, then
     # the range of our axes will get screwed up.
@@ -524,8 +524,8 @@ def plotquiver (vu, vv, **kwargs):
     # Set the axis limits
     # Pressure / eta -> log scale, reversed
     # NOTE: scaling is now specified inside the axes
-    ax.set_xscale(xaxis.plotscale)
-    ax.set_yscale(yaxis.plotscale)
+    ax.set_xscale(xaxis.plotatts['plotscale'])
+    ax.set_yscale(yaxis.plotatts['plotscale'])
     if isinstance(xaxis, Pres) or isinstance(xaxis, Hybrid):
       ax.set_xlim(max(xaxis.values),min(xaxis.values))
     else:
