@@ -23,4 +23,4 @@ plot (t1.slice[:,:,::2,:], pcolor=True, wait=True)
 plot (t1.slice[:,:,::3,:], pcolor=True, wait=True)
 plot (t1.slice[:,:,::4,:], pcolor=True, wait=False)
 
-print t1.getallvalues().shape
+print t1.get().shape

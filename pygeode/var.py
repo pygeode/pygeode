@@ -134,10 +134,6 @@ class Var(object):
       def __getitem__ (fakeself, slices):  return self._getitem_asvar(slices)
     self.slice = SL()
 
-    # If this is a Var (and not a subclass), then it is safe to lock
-    # the attributes now, and prevent furthur changes.
-    if type(self) == Var: self._finalize()
-
   # }}}
 
   # Subset by integer indices - wrapped as Var object
@@ -149,17 +145,12 @@ class Var(object):
     # Degenerate case: no slicing done?
     if all(a1 is a2 for a1,a2 in zip(newvar.axes, self.axes)): return self
 
-#    # Was the source var preloaded?
-#    # If so, preload this slice as well
-#    if hasattr(self,'values'): newvar = newvar.load(pbar=None)
-
     return newvar
 # }}}
 
   # Subset by integer indices
   def __getitem__ (self, slices):
 # {{{
-#    raise Exception, "ambiguous use of [].  Try using .slice[] or .get[]"
     # Default is to return the raw numpy array
     return self._getitem_asvar(slices).get()
 # }}}
@@ -289,29 +280,6 @@ class Var(object):
 
     raise AttributeError (name)
 
-
-  # Modifies __setattr__ and __delattr__ to avoid further modifications to the Var
-  # (should be called by any Var subclasses at the end of their __init__)
-  def _finalize (self):
-    if self.__setattr__ == self._dont_setattr:
-      from warnings import warn
-      warn ("already finalized the var", stacklevel=2)
-      return
-    self.__delattr__ = self._dont_delattr
-    self.__setattr__ = self._dont_setattr
-  # Send all attribute requests through here, to enforce immutability
-  def _dont_setattr(self,name,value):
-    # Can only modify the var name
-    if name != 'name':
-#      raise TypeError ("can't modify an immutable Var")
-      from warnings import warn
-      warn ("shouldn't be modifying an immutable Var", stacklevel=2)
-    object.__setattr__(self,name,value)
-  def _dont_delattr(self,name):
-#    raise TypeError ("can't modify an immutable Var")
-    from warnings import warn
-    warn ("shouldn't be modifying an immutable Var", stacklevel=2)
-    object.__delattr__(self,name)
 
   # Get an axis based on its class
   # ie, somevar.getaxis(ZAxis)
@@ -521,12 +489,6 @@ class Var(object):
     var = self.__call__(**kwargs)
     return View(var.axes).get(var,pbar=pbar)
   # }}}
-
-  # Get all values (deprecated - use 'get')
-  def getallvalues (self, pbar=False):
-    from warnings import warn
-    warn ("getallvalues() is deprecated.  Please use get()", stacklevel=2)
-    return self.get(pbar=pbar)
 
   # Get weights variable corresponding to given axes
   # Axes without explicit weights are skipped, so this probably won't

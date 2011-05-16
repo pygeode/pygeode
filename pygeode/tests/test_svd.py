@@ -66,15 +66,15 @@ print
 #print
 #
 #for o in range(3):
-#  test = (x * eof1(order=o).squeeze() * w1).sum('lat','lon').getallvalues()
-#  pc = pc1(order=o).squeeze().getallvalues()
+#  test = (x * eof1(order=o).squeeze() * w1).sum('lat','lon').get()
+#  pc = pc1(order=o).squeeze().get()
 #  print pc - test
 #
 #print
 #
 #for o in range(3):
-#  test = (y * eof2(order=o).squeeze() * w2).sum('lat','plev').getallvalues()
-#  pc = pc2(order=o).squeeze().getallvalues()
+#  test = (y * eof2(order=o).squeeze() * w2).sum('lat','plev').get()
+#  pc = pc2(order=o).squeeze().get()
 #  print pc - test
 #
 #print

@@ -42,8 +42,7 @@ def save (filename, var, iaxis=None, fps=15, palette='bw', minmax=None):
     fpbar = pbar.part(i,len(var.axes[iaxis]))
     sl[iaxis] = i
     # Get data, flip y axis, add an 'RGB' axis
-    #TODO: update with appropriate direct slicing call
-    data = var._getitem_asvar(sl).getallvalues().squeeze()[::-1,:,np.newaxis]
+    data = var[sl].squeeze()[::-1,:,np.newaxis]
     data =  (data-min)/(max-min) * 255
     if palette == 'bw':
       # Same data for R, G, and B channels

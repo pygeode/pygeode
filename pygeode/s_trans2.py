@@ -31,7 +31,7 @@ class Strans(Var):
       from pygeode.progress import PBar
       print 'Calculating mean'
       # constant s-transform value for n = 0
-      self.const = x.mean(Time).getallvalues(pbar=PBar())
+      self.const = x.mean(Time).get(pbar=Trueg)
     
     f = F / (T * dt)
     self.faxis = faxis = Freq(f, units)

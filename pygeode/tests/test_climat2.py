@@ -89,7 +89,7 @@ quit()
 
 # compute EOFs?
 var = anom_detrended.load()
-data = var.getallvalues().reshape(var.shape[0],-1)
+data = var.get().reshape(var.shape[0],-1)
 cov = np.dot (data.transpose(), data)
 
 print 'start solver'

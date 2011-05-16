@@ -23,11 +23,11 @@ ax2 = fig.add_subplot(212)
 plotvar(H, figure=fig, ax=ax1)
 S = abs(Strans(H,maxfreq=0.5))
 print H
-print H.getallvalues().shape
+print H.get().shape
 print H.time.values
 print H.time.delta('days')
 print S.shape
-print S.getallvalues().shape
+print S.get().shape
 #quit()
 
 #plotvar(S, pcolor=False, figure=fig, ax=ax2, colorbar=True)

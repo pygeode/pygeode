@@ -7,6 +7,5 @@ infiles=`find pygeode/ -name "*.so"`
 for infile in $infiles; do
   outfile=${DESTDIR}/usr/local/lib/$infile
   mkdir -p ${outfile%/*}
-#  echo "$infile -> $outfile"
   cp -i $infile $outfile
 done

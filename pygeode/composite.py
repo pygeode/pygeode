@@ -329,6 +329,6 @@ def test():
 
   from plot import plot
 
-  x1 = gt[1:4,25:30,:,:].getallvalues()
+  x1 = gt[1:4,25:30,:,:]
 
 #test()
