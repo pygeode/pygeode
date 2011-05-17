@@ -121,8 +121,9 @@ class HDF4_Var (Var):
     self.name = sd.name
     #  attributes
     atts = get_attributes (sd.sds_id, sd.natts)
-    if len(atts) > 0: self.atts = atts
-    Var.__init__(self, axes, numpy_type[sd.type])
+#    if len(atts) > 0: self.atts = atts
+#    else: atts = None
+    Var.__init__(self, axes, numpy_type[sd.type], atts=atts)
 
   def getvalues (self, start, count):
     import numpy as np
@@ -136,7 +137,6 @@ class HDF4_Var (Var):
       e.args = tuple(args)
       raise
     return out
-
 
 
 def open (filename):
@@ -186,10 +186,10 @@ def open (filename):
   from pygeode.axis import NamedAxis
   axes = [None] * len(dimsds)
   for i,s in enumerate(dimsds):
-    atts = get_attributes (s.sds_id, s.natts)
-    axes[i] = NamedAxis (s.values, s.name)
     # Append attributes for the axis
-    if len(atts) > 0: axes[i].atts = atts
+    atts = get_attributes (s.sds_id, s.natts)
+#    if len(atts) > 0: axes[i].atts = atts
+    axes[i] = NamedAxis (s.values, s.name, atts=atts)
 
   # Reference axes by dimension ids
   axis_lookup = {}

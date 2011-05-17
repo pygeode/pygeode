@@ -123,7 +123,7 @@ class GribVar(Var):
     }
     self.name = name
 
-    Var.__init__(self, axes, 'd')
+    Var.__init__(self, axes, 'd', atts=self.atts, plotatts=self.plotatts)
 
 
   def getview (self, view, pbar):
