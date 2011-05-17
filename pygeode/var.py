@@ -31,7 +31,7 @@ class Var(object):
 
   # Default attributes
   name = '' # default name (blank)
-  units = '' # actual unit (default blank)
+  plotatts = {} # global defaults for plot attributes
 
   # This method should be called by all subclasses
   def __init__ (self, axes, dtype=None, name=None, values=None, atts=None):

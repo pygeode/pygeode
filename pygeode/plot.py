@@ -45,17 +45,19 @@ def plotvar (var, **kwargs):
 
   axes = var.axes
   ret = None
-
+        
   # Create title if none has been specified
   title = kwargs.pop('title', None)
   if title is None:
-    if var.name != '':
+    if var.plotatts.haskey('plottitle'):
+      title = var.plotatts['plottitle']
+    elif var.name != '':
       title = var.name
     else: title = 'Unnamed Var'
 
-    if hasattr(var,'units'):    # units as an optional attribute for which a string can be provided?
-      title += ' (%s)' % var.units
-
+    if var.plotatts.haskey('plotunits'): # units as an optional attribute for which a string can be provided?
+      title += ' (%s)' % var.plotatts['plotunits']
+      
     # Add information on degenerate axes to the title
     for a in axes:
       if len(a) == 1:
@@ -114,9 +116,9 @@ def plotvar (var, **kwargs):
         ax.set_ylabel(xaxis.plotatts['plottitle']+' ['+xaxis.plotatts['plotunits']+']')
       # value axis
       if lblx:
-        if var.atts.has_key('standard_name'): varname = var.atts['standard_name']
+        if var.plotatts.has_key('plottitle'): varname = var.plotatts['plottitle']
         else: varname = var.name
-        if var.atts.has_key('units'): varname += ' ['+xaxis.plotatts['plotunits']+']' 
+        if var.plotatts.has_key('plotunits'): varname += ' ['+var.plotatts['plotunits']+']' 
         ax.set_xlabel(varname)
             
     else:
@@ -440,13 +442,15 @@ def plotquiver (vu, vv, **kwargs):
   # Create title if none has been specified
   title = kwargs.pop('title', None)
   if title is None:
-    if vu.name != '':
+    if vu.plotatts.haskey('plottitle'):
+      title = vu.plotatts['plottitle']
+    elif vu.name != '':
       title = vu.name
     else: title = 'Unnamed Var'
 
-    if hasattr(vu,'units'):    # units as an optional attribute for which a string can be provided?
-      title += ' (%s)' % vu.units
-
+    if vu.plotatts.haskey('plotunits'): # units as an optional attribute for which a string can be provided?
+      title += ' (%s)' % vu.plotatts['plotunits']
+    
     for a in axes:
       if len(a) == 1:
         title += ', ' + a.formatvalue(a.values[0])

@@ -36,30 +36,24 @@ class Axis(Var):
   #TODO: move 'atts' and 'plotatts' definitions into Var (var.py)
   #TODO: fix all dependencies on attributes after migration!
   
+  # Default dictionaries: these are class defaults and are overwritten by child class defaults    
   # Auxiliary arrays (provides some more context than just the regular value array)
   auxarrays = {}
   # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
   auxatts = {}
   # attributes for plotting
-  plotatts = {}
+  plotatts = {'formatstr': '%g',  # default format string for display
+              'plotscale': 'linear',  # default scale for plotting
+              'plotorder': 1,  # By default, plot with axis values increasing away from origin
+              # Formatting attributes for axis labels and ticks (see formatter method for application)
+              'plottitle': None, # name displayed in plots (axis label)
+              'plotunits': '', # displayed units (after offset and scalefactor have been applied)
+              'scalefactor': 1, # a multiplicative factor applied before display
+              'offset': 0} # an additive offset applied before display
     
-  def __init__(self, values, name=None, atts={}, auxatts={}, auxarrays={}, plotatts={}, **kwargs):
+  def __init__(self, values, name=None, atts={}, plotatts=None, **kwargs):
 # {{{ 
     import numpy as np
-    
-    # Default dictionaries: these are global defaults and are overwritten by class defaults (here empty)
-    # Auxiliary arrays (provides some more context than just the regular value array)
-    defarrays = {}
-    # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
-    auxdef = {'formatstr': '%g'}  # default format string for display
-    # attributes for plotting
-    plotdef = {'plotscale': 'linear',  # default scale for plotting
-                'plotorder': 1,  # By default, plot with axis values increasing away from origin
-                # Formatting attributes for axis labels and ticks (see formatter method for application)
-                'plottitle': None, # name displayed in plots (axis label)
-                'plotunits': '', # displayed units (after offset and scalefactor have been applied)
-                'scalefactor': 1, # a multiplicative factor applied before display
-                'offset': 0} # an additive offset applied before display
 
     # If a single integer given, expand to an integer range
     #TODO: get rid of this?  if you want to use integer indices, then make an appropriate 'Index' axis subclass?
@@ -78,6 +72,7 @@ class Axis(Var):
 
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
+    auxarrays = {}; auxatts = {}
     for key, val in kwargs.iteritems():
       if isinstance(val,(list,tuple,np.ndarray)):
         val = np.asarray(val)
@@ -85,21 +80,19 @@ class Axis(Var):
         auxarrays[key] = val
       else:
         auxatts[key] = val
-    # update attribute dictionaries (three steps each)    
-    # i.e. init arguments overwrite class defaults, and class defaults overwrite global defaults
-    tmp = defarrays.copy(); tmp.update(self.auxarrays.copy()); tmp.update(auxarrays) 
-    self.auxarrays = tmp # not sure if copy is necessary... 
-    tmp = auxdef.copy(); tmp.update(self.auxatts.copy()); tmp.update(auxatts) 
-    self.auxatts = tmp # not sure if copy is necessary...
-    tmp = plotdef.copy(); tmp.update(self.plotatts.copy()); tmp.update(plotatts) 
-    self.plotatts = tmp # not sure if copy is necessary...
-    
-    if self.name == '': self.name = self.__class__.__name__.lower()
-    if self.plotatts['plottitle'] is None: self.plotatts['plottitle'] = self.name 
         
-    # temporary fix for units
-    if not self.atts.has_key('units'): self.atts['units'] = self.units
-    else: self.units = self.atts['units']
+    # update auxiliary attribute (make copy to not change class defaults)        
+    self.auxarrays = self.__class__.auxarrays.copy()
+    self.auxarrays.update(auxarrays)
+    self.auxatts = self.auxatts.copy() 
+    self.auxatts.update(auxatts)    
+    # update plotatts if dictionary was passed as keyword argument
+    self.plotatts = self.plotatts.copy()
+    if plotatts!=None: self.plotatts.update(plotatts) 
+    
+    # name defaults
+    if self.name == '': self.name = self.__class__.__name__.lower()
+    if self.plotatts['plottitle'] is None: self.plotatts['plottitle'] = self.name           
 
     # Make sure the axis values are unique.  Otherwise, using this axis may give unpredictable results.
     if np.unique1d(self.values).shape != self.values.shape:
@@ -517,13 +510,13 @@ class Axis(Var):
   # Plotting functions
 
   # Helper function to format values nicely (should be overridden in child classes)
-  # By default, it uses self.auxatts['formatstr'] to format the value
+  # By default, it uses self.plotatts['formatstr'] to format the value
   def formatvalue(self, val, units=True):
   # {{{
     ''' formatvalue(val)
         Returns an appropriately formatted string representation of val in the axis space. '''    
     val = val*self.plotatts['scalefactor'] + self.plotatts['offset'] # apply scalefactor and offset 
-    strval = self.auxatts['formatstr'] % val # convert to string
+    strval = self.plotatts['formatstr'] % val # convert to string
 #    if units and hasattr(self, 'units'): su = ' ' + self.units
 #    else: su = ''
     if units:
@@ -534,7 +527,7 @@ class Axis(Var):
   # }}}
 
   # Returns a matplotlib axis Formatter object
-  # By default, it uses self.auxatts['formatstr'] to format the value
+  # By default, it uses self.plotatts['formatstr'] to format the value
   def formatter(self):
   # {{{
     '''
@@ -642,16 +635,19 @@ class NamedAxis (Axis):
 # }}}
 
 class XAxis (Axis): pass
-class Lon (XAxis): name = 'lon'; auxatts = {}; auxatts['formatstr'] = '%d E'
+class Lon (XAxis): 
+  name = 'lon'
+  plotatts = XAxis.plotatts.copy()
+  plotatts['formatstr'] = '%d E'
+  plotatts['plottitle'] = ''
 
 class YAxis (Axis): pass
 class Lat (YAxis):
 # {{{
   name = 'lat'
-  plotatts = {}
+  plotatts = YAxis.plotatts.copy() 
+  plotatts['formatstr'] = '%d'
   plotatts['plottitle'] = ''
-  auxatts = {}
-  auxatts['formatstr'] = '%d'
 
   # Make sure we get some weights
   def __init__(self, values, weights=None, **kwargs):
@@ -669,8 +665,8 @@ class Lat (YAxis):
 
   def formatvalue(self, val, units=False):
   # {{{
-    if val > 0: return self.auxatts['formatstr'] % val + ' N'
-    elif val < 0: return self.auxatts['formatstr'] % -val + ' S'
+    if val > 0: return self.plotatts['formatstr'] % val + ' N'
+    elif val < 0: return self.plotatts['formatstr'] % -val + ' S'
     else: return 'EQ' 
   # }}}
 # }}}
@@ -707,8 +703,8 @@ class SpectralN(XAxis): name = 'n'
 # Vertical axes
 class ZAxis (Axis): 
   name = 'lev'
-  auxatts = {}
-  auxatts['formatstr'] = '%3g'
+  plotatts = Axis.plotatts.copy()
+  plotatts['formatstr'] = '%3g'
 
 # Geometric height
 #TODO: weights
@@ -716,8 +712,12 @@ class ZAxis (Axis):
 class Height(ZAxis):
 # {{{  
   name = 'z' # default name
-  auxatts = {}
-  auxatts['formatstr'] = '%d' # just print integers
+  plotatts = ZAxis.plotatts.copy()
+  plotatts['formatstr'] = '%d' # just print integers
+  # Formatting attributes for axis labels and ticks (see formatter method for application)
+  plotatts['plottitle'] = 'Height' # name displayed in plots (axis label)
+  plotatts['plotunits'] = 'km' # displayed units (after offset and scalefactor have been applied)
+  plotatts['scalefactor'] = 1e-3 # conversion factor; assumed units are meters 
 # }}}
 
 # Model hybrid levels
@@ -725,9 +725,8 @@ class Height(ZAxis):
 class Hybrid (ZAxis):
 # {{{
   name = 'eta'  #TODO: rename this to 'hybrid'?  (keep 'eta' for now, for compatibility with existing code)
-  auxatts = {}
-  auxatts['formatstr'] = '%g'
-  plotatts = {}
+  plotatts = ZAxis.plotatts.copy()
+  plotatts['formatstr'] = '%g'
   plotatts['plotorder'] = -1
   plotatts['plotscale'] = 'log'
 
@@ -750,11 +749,12 @@ class Hybrid (ZAxis):
 
 class Pres (ZAxis): 
 # {{{
-  name = 'pres'
-  plottitle = 'Pressure (hPa)'
-  units = 'hPa'
-  plotscale = 'log'
-  plotorder = -1
+  name = 'pres'  
+  plotatts = ZAxis.plotatts.copy() 
+  plotatts['plottitle'] = 'Pressure'
+  plotatts['plotunits'] = 'hPa'
+  plotatts['plotscale'] = 'log'
+  plotatts['plotorder'] = -1
 
   def formatvalue(self, val, units=True):
     if units: su = ' ' + self.units

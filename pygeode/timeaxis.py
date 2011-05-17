@@ -78,7 +78,7 @@ class Time (TAxis):
   name = 'time'
   plotfmt = '$v'
   plotofsfmt = ''
-  plotatts = {}
+  plotatts = TAxis.plotatts.copy()
   plotatts['plottitle'] = ''
 
   # List of valid *possible* field names for this class.
