@@ -212,6 +212,7 @@ class NCVar(Var):
 
     axes = [axes[i] for i in self.dimids] # select only the axes that we need for this var
     Var.__init__(self, axes, atts=self.atts, dtype=dtype)
+    # since plotatts are not retrieved from netcdf files, they don't have to be passed on here
 
 
   #TODO: a more general (non-contiguous) read routine
@@ -252,10 +253,11 @@ def nc_dim (f, dimid, vardict, dimtypes, namemap):
     # A function for getting the values (if we need to)
     valfunc = lambda: load_values(f.fileid, var.varid, var.vtype, [0], [length])
     atts = var.atts    
+    plotatts = var.plotatts # for completeness... although plotatts will be default anyway
   else: 
     # if no corresponding variable exists, assume indices
     valfunc = lambda: np.arange(length)
-    atts = {}    
+    atts = {}; plotatts = {}
   
   # select axis type for this particular axis
   if name in dimtypes:
@@ -265,7 +267,7 @@ def nc_dim (f, dimid, vardict, dimtypes, namemap):
   # change the name according to namemap
   if name in namemap: name = namemap[name]
       
-  return make_axis(name, dt, valfunc, atts, length)
+  return make_axis(name, dt, valfunc, atts, length, plotatts=plotatts)
 
 
 def open(filename, dimtypes = {}, namemap = {},  varlist = []):

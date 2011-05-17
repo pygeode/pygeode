@@ -99,6 +99,8 @@ def encode_cf (dataset):
   # Metadata based on axis classes
   for name,a in axisdict.items():
     atts = a.atts.copy()
+    plotatts = a.plotatts.copy() # passed on to Axis constructor (l.139)
+    
     if isinstance(a,Lat):
       atts['standard_name'] = 'latitude'
       atts['units'] = 'degrees_north'
@@ -134,7 +136,7 @@ def encode_cf (dataset):
     #TODO: check 'units' attribute of the time axis, use that in the 'units' of the netcdf metadata
     if isinstance(a, Time):
       #TODO: cast into an integer array if possible
-      axisdict[name] = NamedAxis(values=a.reltime(), name=name, atts=atts)
+      axisdict[name] = NamedAxis(values=a.reltime(), name=name, atts=atts, plotatts=plotatts)
       continue
 
     # Add associated arrays as new variables
@@ -148,14 +150,14 @@ def encode_cf (dataset):
 
     # Create new, generic axes with the desired attributes
     # (Replaces the existing entry in the dictionary)
-    axisdict[name] = NamedAxis(values=a.values, name=name, atts=atts)
+    axisdict[name] = NamedAxis(values=a.values, name=name, atts=atts, plotatts=plotatts)
 
   # Apply these new axes to the variables
   for i,oldvar in enumerate(list(varlist)):
     name = oldvar.name
     try:
       #TODO: use Var.replace_axes instead?
-      varlist[i] = var_newaxes(oldvar, [axisdict[a.name] for a in oldvar.axes], atts=oldvar.atts)
+      varlist[i] = var_newaxes(oldvar, [axisdict[a.name] for a in oldvar.axes], atts=oldvar.atts, plotatts=oldvar.plotatts)
     except KeyError:
       print '??', a.name, axisdict
       raise
@@ -196,6 +198,7 @@ def decode_cf (dataset):
   for name,a in axisdict.items():
 
     atts = a.atts.copy()
+    plotatts = a.plotatts.copy() # just carry along and pass to new Axis instance (l.282)
 
     # Find any auxiliary arrays
     aux = auxdict[name]
@@ -278,7 +281,7 @@ def decode_cf (dataset):
     if cls in [NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
 
     # create new axis instance if need be
-    if cls != type(a): axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
+    if cls != type(a): axisdict[name] = cls(values=a.values, name=name, atts=atts, plotatts=plotatts, **aux)
 
   # Apply these new axes to the variables
   # Check for fill values, etc.
@@ -288,6 +291,7 @@ def decode_cf (dataset):
 #    name = [n for n,v in dataset.vardict.iteritems() if v is oldvar].pop()
     name = oldvar.name
     atts = oldvar.atts.copy()
+    plotatts = oldvar.atts.copy()
     fillvalue = [atts.pop(f,None) for f in ('FillValue', '_FillValue', 'missing_value')]
     fillvalue = filter(None, fillvalue)
     fillvalue = fillvalue[0] if len(fillvalue) > 0 else None
@@ -295,7 +299,7 @@ def decode_cf (dataset):
     offset = atts.pop('add_offset', None)
 
     varlist[i] = var_newaxes(oldvar, [axisdict[a.name] for a in oldvar.axes],
-                    name=name, fillvalue=fillvalue, scale=scale, offset=offset, atts=atts)
+                    name=name, fillvalue=fillvalue, scale=scale, offset=offset, atts=atts, plotatts=plotatts)
 
   dataset = Dataset(varlist, atts=global_atts)
 

@@ -114,8 +114,9 @@ def common_dict (*dicts):
 #   valfunc - a function that can be called to give the values, if they're needed.  No parameters expected
 #   atts - a dictionary of metadata to attach to the axis
 #   length - expected length of the axis
+#   plotatts - a dictionary of plot attributes (optional)
 
-def make_axis (name, dimtypes, valfunc, atts, length):
+def make_axis (name, dimtypes, valfunc, atts, length, plotatts=None):
 # {{{
   from pygeode.axis import Axis, NamedAxis
 
@@ -156,10 +157,10 @@ def make_axis (name, dimtypes, valfunc, atts, length):
 
     # Create an axis instance
     if dimclass is None:  # Use name to determine the axis
-      axis = NamedAxis(values, name, atts=atts)
+      axis = NamedAxis(values, name, atts=atts, plotatts=plotatts)
 #      axis = make_axis (name, atts, values)
     else:                 # Use provided axis class
-      axis = dimclass(values, name=name, atts=atts, **dimargs)
+      axis = dimclass(values, name=name, atts=atts, plotatts=plotatts, **dimargs)
 
   return axis
 # }}}
