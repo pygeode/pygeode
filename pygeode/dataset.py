@@ -64,7 +64,6 @@ class Dataset(object):
       vars[i] = v.replace_axes(newaxes=axes)
 
 
-#    axes = [eq[0] for eqlist in namedict.itervalues() for eq in eqlist]
     # Gather all axes together into a list (unique axes only, semi-ordered)
     axes = []
     axis_ids = []
@@ -292,34 +291,6 @@ def axis_name_clumping (varlist):
       if not match: eqlist.append([a])
   return namedict
 
-
-"""
-# Split a list of vars into sublists, each one having unique names for the axes
-def split_unique_axes (varlist):
-  if isinstance(varlist,Dataset): varlist = varlist.vars
-  if not hasattr(varlist,'__len__'): varlist = [varlist]
-  namedict = axis_name_clumping(varlist)
-
-  shared_names = [n for n,eqlist in namedict.iteritems() if len(eqlist) > 1]
-  axis_families = [namedict[s] for s in shared_names]
-
-  # Represent the variables as 'coordinates' - indices of which axis it uses of each type
-  # (i.e., if 'time' and 'eta' represent multiple time and eta axes respectively,
-  #  then (1,3) would represent 'time' axis number 1, and 'eta' axis number 3  )
-  coorddict = {}
-  for v in varlist:
-    coords = [[i for i,eq in enumerate(eqlist) if any(a1 is a2 for a1 in v.axes for a2 in eq)] for eqlist in axis_families]
-    coords = tuple(c[0] if len(c) > 0 else -1 for c in coords)
-#    print v.name, coords
-    if coords not in coorddict: coorddict[coords] = []
-    coorddict[coords].append(v)
-
-  return [coorddict[c] for c in sorted(coorddict.iterkeys())]
-
-# Similar to 'as_dataset', but split into sub-datasets that have unique axis names
-def asdataset_split_unique_axes (varlist):
-  return [asdataset(vl) for vl in split_unique_axes(varlist)]
-"""
 
 # Concatenate a bunch of datasets together
 def concat(*datasets):
