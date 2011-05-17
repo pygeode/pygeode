@@ -10,9 +10,10 @@
 # (the axes must be in 1:1 correspondence with the old ones)
 from pygeode.var import Var
 class var_newaxes (Var):
-  def __init__(self, var, newaxes, name=None, fillvalue=None, scale=None, offset=None, atts={}):
+  def __init__(self, var, newaxes, name=None, fillvalue=None, scale=None, offset=None, atts={}, plotatts={}):
     from pygeode.var import Var, copy_meta 
     atts = atts.copy()
+    plotatts = plotatts.copy()
     assert len(newaxes) == len(var.axes)
     for a1, a2 in zip(newaxes, var.axes): assert len(a1) == len(a2)
     self.var = var
@@ -24,6 +25,7 @@ class var_newaxes (Var):
     Var.__init__(self, newaxes, dtype=dtype)
     copy_meta(var, self)
     self.atts = atts
+    self.plotatts = plotatts
     if name is not None: self.name = name
 #    self.name = var.name  # we should have a name at this point??
 #    if len(atts) > 0: self.atts = atts

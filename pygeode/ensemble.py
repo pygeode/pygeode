@@ -22,6 +22,7 @@ class EnsembleVar(Var):
     Var.__init__(self, axes, dtype=var0.dtype)
     copy_meta (var0, self)
     self.atts = common_dict(var.atts for var in varlist)
+    self.plotatts = common_dict(var.plotatts for var in varlist)
   def getview (self, view, pbar):
     import numpy as np
     subview = view.remove(0)

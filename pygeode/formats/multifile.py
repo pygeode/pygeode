@@ -188,7 +188,7 @@ class Multifile_Var (Var):
     elif v1.hasaxis('time'): axes[v1.whichaxis('time')] = taxis
     else: axes = [taxis] + axes
 
-    Var.__init__ (self, axes, dtype=v1.dtype, name=v1.name, atts=v1.atts)
+    Var.__init__ (self, axes, dtype=v1.dtype, name=v1.name, atts=v1.atts, plotatts=v1.plotatts)
 
   def getview (self, view, pbar):
     from pygeode.timeaxis import Time

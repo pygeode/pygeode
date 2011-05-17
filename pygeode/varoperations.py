@@ -521,7 +521,7 @@ class SlicedVar(Var):
     # Slice the output axes
     axes = [a.slice[s] for a,s in zip(var.axes,slices)]
 
-    Var.__init__(self, axes, dtype=var.dtype)
+    Var.__init__(self, axes, dtype=var.dtype, atts=self.atts, plotatts=self.plotatts)        
   # }}}
 
   def getview (self, view, pbar):

@@ -49,13 +49,13 @@ def plotvar (var, **kwargs):
   # Create title if none has been specified
   title = kwargs.pop('title', None)
   if title is None:
-    if var.plotatts.haskey('plottitle'):
+    if var.plotatts.has_key('plottitle') and var.plotatts['plottitle']:
       title = var.plotatts['plottitle']
     elif var.name != '':
       title = var.name
     else: title = 'Unnamed Var'
 
-    if var.plotatts.haskey('plotunits'): # units as an optional attribute for which a string can be provided?
+    if var.plotatts.has_key('plotunits'): # units as an optional attribute for which a string can be provided?
       title += ' (%s)' % var.plotatts['plotunits']
       
     # Add information on degenerate axes to the title
@@ -73,6 +73,9 @@ def plotvar (var, **kwargs):
 
   # Mask out missing values (NaN)
   values = ma.masked_where(isnan(values), values)
+  
+  # Apply linear rescaling for plotting
+  values = var.plotatts.get('scalefactor',1)*values + var.plotatts.get('offset',0)
 
   wasint = isinteractive()
   ioff()
@@ -116,7 +119,8 @@ def plotvar (var, **kwargs):
         ax.set_ylabel(xaxis.plotatts['plottitle']+' ['+xaxis.plotatts['plotunits']+']')
       # value axis
       if lblx:
-        if var.plotatts.has_key('plottitle'): varname = var.plotatts['plottitle']
+        if var.plotatts.has_key('plottitle') and var.plotatts['plottitle']: 
+          varname = var.plotatts['plottitle']
         else: varname = var.name
         if var.plotatts.has_key('plotunits'): varname += ' ['+var.plotatts['plotunits']+']' 
         ax.set_xlabel(varname)
@@ -442,13 +446,13 @@ def plotquiver (vu, vv, **kwargs):
   # Create title if none has been specified
   title = kwargs.pop('title', None)
   if title is None:
-    if vu.plotatts.haskey('plottitle'):
+    if vu.plotatts.has_key('plottitle'):
       title = vu.plotatts['plottitle']
     elif vu.name != '':
       title = vu.name
     else: title = 'Unnamed Var'
 
-    if vu.plotatts.haskey('plotunits'): # units as an optional attribute for which a string can be provided?
+    if vu.plotatts.has_key('plotunits'): # units as an optional attribute for which a string can be provided?
       title += ' (%s)' % vu.plotatts['plotunits']
     
     for a in axes:

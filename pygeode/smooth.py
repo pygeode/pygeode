@@ -30,7 +30,7 @@ class SmoothVar (Var):
     # Normalize kernel
     self.kernel /= np.sum(self.kernel)
 
-    Var.__init__(self, var.axes, var.dtype, name=var.name, atts=var.atts)
+    Var.__init__(self, var.axes, var.dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
   # }}}
 
   def getview (self, view, pbar):

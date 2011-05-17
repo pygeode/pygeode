@@ -67,7 +67,7 @@ class CompositeVar(Var):
     self.mevlen = mevlen
     self.evoffs = evoff
     self.mevoff = mevoff
-    Var.__init__(self, axes, dtype=var.dtype, name=var.name, atts=var.atts)
+    Var.__init__(self, axes, dtype=var.dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
   #}}} 
 
   def getview (self, view, pbar):

@@ -12,7 +12,7 @@ class FFTSmoothVar (Var):
     self.saxis = saxis
     self.var = var
     self.maxharm = maxharm
-    Var.__init__(self, var.axes, var.dtype, name=var.name, atts=var.atts)
+    Var.__init__(self, var.axes, var.dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
   # }}}
 
   def getview (self, view, pbar):

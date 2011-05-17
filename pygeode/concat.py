@@ -47,6 +47,9 @@ class ConcatVar(Var):
     # Combine the attributes (if applicable)
     atts = common_dict([v.atts for v in vars])
     self.atts = atts
+    # Combine the plot attributes (if applicable)
+    plotatts = common_dict([v.plotatts for v in vars])
+    self.plotatts = plotatts
 
     # Other stuff
     self.vars = vars

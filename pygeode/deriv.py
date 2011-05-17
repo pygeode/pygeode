@@ -36,7 +36,7 @@ class DerivativeVar (Var):
     else:
       name = 'd(UnknownVar)'
 
-    Var.__init__(self, var.axes, var.dtype, name=name, atts=var.atts)
+    Var.__init__(self, var.axes, var.dtype, name=name, atts=var.atts, plotatts=var.plotatts)
   # }}}
 
   def getview (self, view, pbar):

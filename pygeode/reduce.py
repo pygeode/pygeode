@@ -59,7 +59,7 @@ class ReducedVar(Var):
     # Remove the reduction axis from the output variable
     axes = [a for i,a in enumerate(axes) if i not in indices]
 
-    Var.__init__(self, axes, dtype=dtype, name=var.name, atts=var.atts)
+    Var.__init__(self, axes, dtype=dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
 
   # }}}
 # }}}

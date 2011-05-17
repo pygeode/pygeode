@@ -31,10 +31,19 @@ class Var(object):
 
   # Default attributes
   name = '' # default name (blank)
-  plotatts = {} # global defaults for plot attributes
+  atts = {'units': ''} # always there
+  # attributes for plotting
+  plotatts = {'formatstr': '%g',  # default format string for display
+              'plotscale': 'linear',  # default scale for plotting
+              'plotorder': 1,  # By default, plot with axis values increasing away from origin
+              # Formatting attributes for axis labels and ticks (see formatter method for application)
+              'plottitle': None, # name displayed in plots (axis label)
+              'plotunits': '', # displayed units (after offset and scalefactor have been applied)
+              'scalefactor': 1, # a multiplicative factor applied before display
+              'offset': 0} # an additive offset applied before display
 
   # This method should be called by all subclasses
-  def __init__ (self, axes, dtype=None, name=None, values=None, atts=None):
+  def __init__ (self, axes, dtype=None, name=None, values=None, atts=None, plotatts=None):
   # {{{
     """
     Create a new Var object with the given axes and values.
@@ -51,8 +60,11 @@ class Var(object):
     values : numpy.ndarray
         The data to be wrapped.
     atts : dict (optional)
-        Any additional metadata to associate with the variable.  The dictionary
+        Any additional metadata to associate with the variable. The dictionary
         keys should be strings.
+    plotatts : dict (optional)
+        Parameters that control plotting behaviour; default values are available. 
+        The dictionary keys should be strings.
 
     Returns
     -------
@@ -101,9 +113,14 @@ class Var(object):
       # Make values read-only (or at least difficult to change accidentally)
       self.values.flags.writeable = False
 
+    # handle meta data (create unique copy of each dictionary for each instance)
     if name is not None: self.name = name
-    if atts is not None: self.atts = atts.copy()
-    elif not hasattr(self,'atts'): self.atts = {}  # *always* provide attributes, even if empty
+    self.atts = self.__class__.atts.copy()
+    if atts is not None: 
+      self.atts.update(atts)
+    self.plotatts = self.__class__.plotatts.copy()
+    if plotatts is not None: 
+      self.plotatts.update(plotatts)
     # Note: the default empty dict {} used to be set as a static thing right
     # after the 'class Var' line, but this meant that all vars which weren't
     # assigned explicit attributes were sharing the same dict, so any post-init
@@ -583,6 +600,7 @@ class Var(object):
 def copy_meta (invar, outvar):
   outvar.name = invar.name
   outvar.atts = invar.atts.copy()
+  outvar.plotatts = invar.plotatts.copy()
 
 
 ##################################################

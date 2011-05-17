@@ -211,7 +211,7 @@ class NCVar(Var):
     dtype = numpy_type[self.vtype]
 
     axes = [axes[i] for i in self.dimids] # select only the axes that we need for this var
-    Var.__init__(self, axes, dtype=dtype)
+    Var.__init__(self, axes, atts=self.atts, dtype=dtype)
 
 
   #TODO: a more general (non-contiguous) read routine

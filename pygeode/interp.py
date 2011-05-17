@@ -36,7 +36,7 @@ class SortedVar (Var):
     oldaxis = axes[iaxis]
     newaxis = oldaxis.sorted(reverse=reverse)
     axes[iaxis] = newaxis
-    Var.__init__(self, axes, dtype=invar.dtype, name=invar.name, atts=invar.atts)
+    Var.__init__(self, axes, dtype=invar.dtype, name=invar.name, atts=invar.atts, plotatts=invar.plotatts)
 
   def getview (self, view):
     return view.get(self.var)
@@ -93,7 +93,7 @@ class Interp (Var):
     self.outx = outx
     self.interp_type = interp_type
 
-    Var.__init__ (self, outaxes, name=invar.name, dtype=invar.dtype, atts=invar.atts)
+    Var.__init__ (self, outaxes, name=invar.name, dtype=invar.dtype, atts=invar.atts, plotatts=invar.plotatts)
 # }}}
 
   def getview (self, view, pbar=None):

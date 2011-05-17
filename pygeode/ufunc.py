@@ -63,6 +63,7 @@ class UfuncVar (Var):
 
     # Copy any common generic metadata
     self.atts = common_dict(v.atts for v in vars)
+    self.plotatts = common_dict(v.plotatts for v in vars)
 
     Var.__init__(self, axes, dtype=dtype)
   # }}}

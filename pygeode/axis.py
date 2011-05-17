@@ -32,24 +32,11 @@ class Axis(Var):
 
   """
   
-  #TODO: move units and formatstr into dictionary 'atts' and 'auxatts' respectively 
-  #TODO: move 'atts' and 'plotatts' definitions into Var (var.py)
-  #TODO: fix all dependencies on attributes after migration!
-  
   # Default dictionaries: these are class defaults and are overwritten by child class defaults    
   # Auxiliary arrays (provides some more context than just the regular value array)
   auxarrays = {}
   # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
-  auxatts = {}
-  # attributes for plotting
-  plotatts = {'formatstr': '%g',  # default format string for display
-              'plotscale': 'linear',  # default scale for plotting
-              'plotorder': 1,  # By default, plot with axis values increasing away from origin
-              # Formatting attributes for axis labels and ticks (see formatter method for application)
-              'plottitle': None, # name displayed in plots (axis label)
-              'plotunits': '', # displayed units (after offset and scalefactor have been applied)
-              'scalefactor': 1, # a multiplicative factor applied before display
-              'offset': 0} # an additive offset applied before display
+  auxatts = {}  
     
   def __init__(self, values, name=None, atts={}, plotatts=None, **kwargs):
 # {{{ 
@@ -64,7 +51,7 @@ class Axis(Var):
 
     # Note: Call init before hasattr (or don't use hasattr at all in here)
     # (__getattr__ is overridden to call getaxis, which assumes axes are defined, otherwise __getattr__ is called to find an 'axes' property, ....)
-    Var.__init__(self, [self], values=values, name=name, atts=atts)
+    Var.__init__(self, [self], values=values, name=name, atts=atts, plotatts=plotatts)
  
     # Set attributes to 'item', if corresponding 'key' is found in atts dictionary
     for key in self.atts.keys():
@@ -83,12 +70,12 @@ class Axis(Var):
         
     # update auxiliary attribute (make copy to not change class defaults)        
     self.auxarrays = self.__class__.auxarrays.copy()
-    self.auxarrays.update(auxarrays)
-    self.auxatts = self.auxatts.copy() 
-    self.auxatts.update(auxatts)    
-    # update plotatts if dictionary was passed as keyword argument
-    self.plotatts = self.plotatts.copy()
-    if plotatts!=None: self.plotatts.update(plotatts) 
+    self.auxarrays.update(auxarrays.copy())
+    self.auxatts = self.__class__.auxatts.copy() 
+    self.auxatts.update(auxatts.copy())    
+#    # update plotatts if dictionary was passed as keyword argument
+#    self.plotatts = self.__class__.plotatts.copy()
+#    if plotatts!=None: self.plotatts.update(plotatts) 
     
     # name defaults
     if self.name == '': self.name = self.__class__.__name__.lower()
