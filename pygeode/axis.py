@@ -256,7 +256,7 @@ class Axis(Var):
     import numpy as np
     S = np.argsort(self.values)
     step = 1
-    if reverse is None: step = self.plotorder
+    if reverse is None: step = self.plotatts.get('plotorder', 1)
     if reverse is True: step = -1
     return S[::step]
 # }}}
@@ -744,8 +744,10 @@ class Pres (ZAxis):
   plotatts['plotorder'] = -1
 
   def formatvalue(self, val, units=True):
-    if units: su = ' ' + self.units
-    else: su = ''
+    su = ''
+    if units: 
+      if self.plotatts.has_key('plotunits'): su = ' ' + self.plotatts['plotunits']
+      elif self.atts.has_key('units'): su = ' ' + self.atts['units']
 
     if val >= 10: return '%d ' % val + su
     #elif val >= 1: return '%.1g ' % val + su

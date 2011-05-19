@@ -4,7 +4,7 @@
 # Global = Use a global name space so inter-library dependencies can be resolved
 def load_lib (name, Global=False):
 # {{{
-  from pygeode import libpath
+  from pygeode import libpath, pluginpath
   from ctypes.util import find_library
   from ctypes import CDLL, RTLD_GLOBAL, RTLD_LOCAL
   from os.path import exists
@@ -16,6 +16,10 @@ def load_lib (name, Global=False):
   # Local (uninstalled) library
   if not exists(name):
     libname = libpath+"/"+name
+    if exists(libname): name = libname
+  # Local (plugin) library
+  if not exists(name):
+    libname = pluginpath+"/"+name
     if exists(libname): name = libname
   # Local (installed) library
   if not exists(name):

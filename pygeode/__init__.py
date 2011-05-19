@@ -1,11 +1,17 @@
 import os
-libpath = os.path.dirname(__file__)
+from os.path import sep
+
+libpath = os.getenv('PYGEODELIBPATH', os.path.dirname(__file__))
+
+pluginpath = os.getenv('PYGEODEPLUGINS', libpath+sep+'plugins')
+__path__.append(pluginpath)
+
+del os
 
 #__tmppath__ = "/tmp/" +  "pygeode-" + os.getlogin()
 #if not os.path.exists(__tmppath__):
 #  os.mkdir(__tmppath__)
 #else: assert os.path.isdir(__tmppath__)
-del os
 
 # Global parameters
 # Maximum size allowed for arrays in memory
@@ -22,7 +28,7 @@ MAX_SWAP_SIZE = 2**30
 
 # Shortcuts
 
-__all__ = ['libpath', 'MAX_ARRAY_SIZE', 'MAX_SWAP_SIZE']  # more will be added below
+__all__ = ['libpath', 'pluginpath', 'MAX_ARRAY_SIZE', 'MAX_SWAP_SIZE']  # more will be added below
 
 # File I/O
 from pygeode.formats import netcdf
@@ -62,18 +68,3 @@ from pygeode.ensemble import ensemble
 __all__.append('ensemble')
 
 #from pygeode.composite import composite
-
-#### Dynamic shortcuts to plugins ####
-
-from glob import glob
-from os.path import sep
-import sys
-_plugins = glob(libpath+sep+"plugins"+sep+"*"+sep)
-for _plugin in _plugins:
-  _plugin = _plugin.split(sep)[-2]
-  # Trigger the __init__ for the plugin
-  exec "from pygeode.plugins import %s as _x"%_plugin
-  del _x, _plugin
-
-del glob, sep, _plugins, sys
-

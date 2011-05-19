@@ -500,7 +500,7 @@ class CalendarTime(Time):
     if dt.has_key('day'):
       d = dt['day']
       subs['d'] = d
-      if dt.has_key('year'): subs['j'] = self._getdoy(dt)
+      if dt.has_key('year') and 'year' in self.allowed_fields: subs['j'] = self._getdoy(dt)
     else:
       subs['d'], subs['j'] = '', ''
 
