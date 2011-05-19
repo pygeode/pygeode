@@ -518,12 +518,12 @@ class TimeFormatter(Formatter):
     self.offset = ''
 
   def __call__(self, x, pos=0):
-    fmt = self.taxis.plotfmt
+    fmt = self.taxis.plotatts['plotfmt']
     return self.taxis.formatvalue(x, fmt=fmt, units=False)
 
   def set_locs(self, locs):
-    if len(locs) > 0 and self.taxis.plotofsfmt is not None:
-      self.offset = self.taxis.formatvalue(locs[0], self.taxis.plotofsfmt, units=False)
+    if len(locs) > 0 and self.taxis.plotatts['plotofsfmt'] is not None:
+      self.offset = self.taxis.formatvalue(locs[0], self.taxis.plotatts['plotofsfmt'], units=False)
     else:
       self.offset = ''
 
@@ -596,10 +596,10 @@ class AutoCalendarLocator(Locator):
    
     self._itkgen = itk
     tcks = [t for t in tk.ticks(vmin, vmax)]
-    if self.fmt is None: self._taxis.plotfmt = tk.fmt
-    else: self._taxis.plotfmt = self.fmt
-    if self.ofmt is None: self._taxis.plotofsfmt = tk.ofmt
-    else: self._taxis.plotofsfmt = self.ofmt
+    if self.fmt is None: self._taxis.plotatts['plotfmt'] = tk.fmt
+    else: self._taxis.plotatts['plotfmt'] = self.fmt
+    if self.ofmt is None: self._taxis.plotatts['plotofsfmt'] = tk.ofmt
+    else: self._taxis.plotatts['plotofsfmt'] = self.ofmt
     return tcks
   # }}}
 # }}}

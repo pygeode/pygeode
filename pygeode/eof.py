@@ -4,9 +4,10 @@
 # EOF order axis
 from pygeode.axis import Axis
 class order(Axis): 
-	name = 'eof'
-	plottitle = 'EOF'
-	formatstr = 'EOF %d'
+  name = 'eof'
+  plotatts = Axis.plotatts.copy()
+  plotatts['plottitle'] = 'EOF'
+  plotatts['formatstr'] = 'EOF %d'
 del Axis
 
 

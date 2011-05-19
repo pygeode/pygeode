@@ -76,10 +76,10 @@ from pygeode.axis import TAxis
 class Time (TAxis):
 # {{{
   name = 'time'
-  plotfmt = '$v'
-  plotofsfmt = ''
   plotatts = TAxis.plotatts.copy()
   plotatts['plottitle'] = ''
+  plotatts['plotfmt'] = '$v'
+  plotatts['plotofsfmt'] = ''
 
   # List of valid *possible* field names for this class.
   # Override in subclasses.
@@ -360,7 +360,8 @@ class CalendarTime(Time):
 # {{{
 
   # Format of time axis used for str/repr functions
-  formatstr = '$b $d, $Y $H:$M:$S'
+  plotatts = Time.plotatts.copy()
+  plotatts['formatstr'] = '$b $d, $Y $H:$M:$S'
 
   # Regular expression used to parse times
   parse_pattern = '((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)'
@@ -529,7 +530,7 @@ class CalendarTime(Time):
     subs['V'] = str(val)
 
     if fmt is None:
-      fmt = self.formatstr
+      fmt = self.plotatts['formatstr']
 
     #print Template(fmt).substitute(subs)
     return Template(fmt).substitute(subs)
@@ -713,7 +714,8 @@ def makeSeasonalAxis(Base):
     cdates = {'dyear':np.array([0, 0, 0, 0]), 
               'month':np.array([1,4,7,10]), 
               'day':np.array([16, 15, 16, 16])}
-    formatstr = '$s $y'
+    plotatts = Base.plotatts.copy()
+    plotatts['formatstr'] = '$s $y'
 
     # Generate year and season array
     # Note: year gets fudged for Decembers, to keep the seasons together
@@ -833,7 +835,7 @@ def makeSeasonalAxis(Base):
       subs['V'] = str(val)
 
       if fmt is None:
-        fmt = self.formatstr
+        fmt = self.plotatts['formatstr']
 
       #print Template(fmt).substitute(subs)
       return Template(fmt).substitute(subs)
@@ -876,8 +878,9 @@ class Yearless(CalendarTime):
 # {{{
 
   # Format of time axis used for str/repr functions
-  formatstr = 'day $d, $H:$M:$S'
-  plotfmt = '$d'
+  plotatts = CalendarTime.plotatts.copy()
+  plotatts['plotfmt'] = '$d'
+  plotatts['formatstr'] = 'day $d, $H:$M:$S' 
 
   allowed_fields = ('day', 'hour', 'minute', 'second')
 

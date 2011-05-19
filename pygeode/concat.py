@@ -79,5 +79,17 @@ def concat (*vars):
   if len(vars) == 1: return vars[0]
   # Make sure we have vars
   assert all(isinstance(v,Var) for v in vars), "can only concatenate Var objects in this routine"
+
+  # Check for presence of varying axis
+  axes = vars[0].axes
+  naxes = len(axes)
+  iaxis = set(i for v in vars for i in range(naxes) if v.axes[i] not in axes)
+  if len(iaxis) == 0: 
+    # If all axes are identical, return an ensemble var
+    from pygeode.ensemble import EnsembleVar
+    return EnsembleVar(vars) 
+    
+  assert len(iaxis) == 1, "more than one varying axis"
+
   return ConcatVar(vars)
 
