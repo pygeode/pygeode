@@ -8,6 +8,11 @@ __path__.append(pluginpath)
 
 del os, sep
 
+# Allow PyGeode stuff from other (local) directory structures in PYTHONPATH
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+del extend_path
+
 
 # Global parameters
 # Maximum size allowed for arrays in memory
