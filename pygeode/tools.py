@@ -4,23 +4,34 @@
 # Global = Use a global name space so inter-library dependencies can be resolved
 def load_lib (name, Global=False):
 # {{{
-  from pygeode import libpath, pluginpath
+#  from pygeode import libpath, pluginpath
   from ctypes.util import find_library
   from ctypes import CDLL, RTLD_GLOBAL, RTLD_LOCAL
-  from os.path import exists
+  from os.path import exists, join, sep
   import os
 
 #  print "debug: requested library is '%s'"%name
 
+  import pygeode, pygeode.plugins
+
   # First try resolving it to a pygeode-specific library
   # Local (uninstalled) library
   if not exists(name):
-    libname = libpath+"/"+name
-    if exists(libname): name = libname
-  # Local (plugin) library
-  if not exists(name):
-    libname = pluginpath+"/"+name
-    if exists(libname): name = libname
+    # Plugin?
+    if name.startswith("plugins/"):
+      for libpath in pygeode.plugins.__path__:
+        libname = libpath + sep + name.strip("plugins/").replace("/",sep)
+        if exists(libname): name = libname
+    # Core library?
+    else:
+      for libpath in pygeode.__path__:
+        libname = libpath + sep + name
+        if exists(libname): name = libname
+
+#  # Local (plugin) library
+#  if not exists(name):
+#    libname = pluginpath+"/"+name
+#    if exists(libname): name = libname
   # Local (installed) library
   if not exists(name):
     libname = "/usr/local/lib/pygeode/" + name
@@ -44,7 +55,7 @@ def load_lib (name, Global=False):
     name = libname
 
   # If we have a library in the current directory, prepend it with './'
-  if exists(name) and '/' not in name: name = './' + name
+  if exists(name) and sep not in name: name = '.' + sep + name
 
 
 #  print "debug: loading shared library %s"%name
