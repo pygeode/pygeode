@@ -1,7 +1,6 @@
 #TODO: remove the 'concat' class method - put the code directly in the static 'concat' method.  There are no longer any cases where Axis subclasses need to overload the merging logic.
 #TODO: change the arguments for 'concat' from axes to *axes
 #TODO: remove NamedAxis class - mostly redundant
-#TODO: unlimited dimensions (in forward direction, and bidirectional)
 #TODO: make map_to a light wrapper for common_map, since the latter is a more powerful version of the method
 
 from pygeode.var import Var
@@ -38,7 +37,7 @@ class Axis(Var):
   # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
   auxatts = {}  
     
-  def __init__(self, values, name=None, atts={}, plotatts=None, **kwargs):
+  def __init__(self, values, name=None, atts=None, plotatts=None, **kwargs):
 # {{{ 
     import numpy as np
 
@@ -53,10 +52,6 @@ class Axis(Var):
     # (__getattr__ is overridden to call getaxis, which assumes axes are defined, otherwise __getattr__ is called to find an 'axes' property, ....)
     Var.__init__(self, [self], values=values, name=name, atts=atts, plotatts=plotatts)
  
-    # Set attributes to 'item', if corresponding 'key' is found in atts dictionary
-    for key in self.atts.keys():
-      if hasattr(self,key): setattr(self,key,self.atts[key])
-
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
     auxarrays = {}; auxatts = {}
