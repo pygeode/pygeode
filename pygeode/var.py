@@ -602,6 +602,7 @@ class Var(object):
 # a function to copy metadata from one variable to another
 def copy_meta (invar, outvar):
   outvar.name = invar.name
+  outvar.units = invar.units
   outvar.atts = invar.atts.copy()
   outvar.plotatts = invar.plotatts.copy()
 
