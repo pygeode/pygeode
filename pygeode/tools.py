@@ -117,7 +117,8 @@ def common_dict (*dicts):
     for x in dicts:
       if k in x:
         t = (x[k] != v)
-        if (hasattr(t, '__len__') and any(t)) or t: 
+        # should we use '__iter__' instead, to exclude strings?
+        if (hasattr(t, '__len__') and  any(t)) or (not hasattr(t, '__len__') and t): 
           del d[k]
           break
   return d
