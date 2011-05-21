@@ -31,7 +31,8 @@ class Var(object):
 
   # Default attributes
   name = '' # default name (blank)
-  atts = {'units': ''} # always there
+  units = '' # default units (none)
+  atts = {} # shared dictionary - replace this in init!
   # attributes for plotting
   plotatts = {'formatstr': '%g',  # default format string for display
               'plotscale': 'linear',  # default scale for plotting
@@ -447,6 +448,8 @@ class Var(object):
 #    axes_details = ''.join(['  '+str(a) for a in self.axes])
 #    s = repr(self) + ':\n\n  axes: ' + axes_list + '\n  shape: ' + str(self.shape) + '\n\n' + axes_details
     s = repr(self) + ':\n'
+    if self.units != '':
+      s += '  Units: ' + self.units
     s += '  Shape:'
     s += '  (' + ','.join(a.name for a in self.axes) + ')'
     s += '  (' + ','.join(str(len(a)) for a in self.axes) + ')\n'

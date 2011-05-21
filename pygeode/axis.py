@@ -434,11 +434,15 @@ class Axis(Var):
   # How the axis is represented as a string
   def __repr__ (self): return '<' + self.__class__.__name__ + '>'
 
+  # Convert an axis value to a string representation
+  def _val2str (self, val):
+    return '%g %s'%(val,self.units) if self.units != '' else '%g'%val
+
   def __str__ (self):
   # {{{
     if len(self) > 0:
-      first = self.formatvalue(self.values[0])
-      last = self.formatvalue(self.values[-1])
+      first = self._val2str(self.values[0])
+      last = self._val2str(self.values[-1])
     else: first = last = "<empty>"
     num = str(len(self.values))
     if self.name != '': head = self.name + ' ' + repr(self)
@@ -499,11 +503,9 @@ class Axis(Var):
         Returns an appropriately formatted string representation of val in the axis space. '''    
     val = val*self.plotatts['scalefactor'] + self.plotatts['offset'] # apply scalefactor and offset 
     strval = self.plotatts['formatstr'] % val # convert to string
-#    if units and hasattr(self, 'units'): su = ' ' + self.units
-#    else: su = ''
     if units:
       if self.plotatts['plotunits']: strval += self.plotatts['plotunits'] # properly formatted units
-      elif self.plotatts['scalefactor']==1 and self.plotatts['offset']==0: strval += self.atts['units'] # fallback option
+      elif self.plotatts['scalefactor']==1 and self.plotatts['offset']==0: strval += self.units # fallback option
       else: pass # warn('no unit specified') # should I have a warning here?
     return strval
   # }}}
@@ -623,6 +625,10 @@ class Lon (XAxis):
   plotatts['formatstr'] = '%d E'
   plotatts['plottitle'] = ''
 
+  @staticmethod
+  def _val2str (val):
+    return '%g '%val + ('W' if val<0 else 'E')
+
 class YAxis (Axis): pass
 class Lat (YAxis):
 # {{{
@@ -650,6 +656,10 @@ class Lat (YAxis):
     if val > 0: return self.plotatts['formatstr'] % val + ' N'
     elif val < 0: return self.plotatts['formatstr'] % -val + ' S'
     else: return 'EQ' 
+
+  @staticmethod
+  def _val2str (val):
+    return '%g N'%val if val>0 else '%g S'%-val if val<0 else 'EQ'
   # }}}
 # }}}
 
@@ -694,6 +704,7 @@ class ZAxis (Axis):
 class Height(ZAxis):
 # {{{  
   name = 'z' # default name
+  units = 'm'
   plotatts = ZAxis.plotatts.copy()
   plotatts['formatstr'] = '%d' # just print integers
   # Formatting attributes for axis labels and ticks (see formatter method for application)
@@ -731,7 +742,8 @@ class Hybrid (ZAxis):
 
 class Pres (ZAxis): 
 # {{{
-  name = 'pres'  
+  name = 'pres'
+  units = 'hPa'
   plotatts = ZAxis.plotatts.copy() 
   plotatts['plottitle'] = 'Pressure'
   plotatts['plotunits'] = 'hPa'
@@ -742,7 +754,7 @@ class Pres (ZAxis):
     su = ''
     if units: 
       if self.plotatts.has_key('plotunits'): su = ' ' + self.plotatts['plotunits']
-      elif self.atts.has_key('units'): su = ' ' + self.atts['units']
+      elif self.units != '': su = ' ' + self.units
 
     if val >= 10: return '%d ' % val + su
     #elif val >= 1: return '%.1g ' % val + su

@@ -536,6 +536,28 @@ class CalendarTime(Time):
     return Template(fmt).substitute(subs)
   # }}}
 
+  # Simple little text output.
+  # Should *not* depend on plot attributes (i.e. plotatts['formatstr'])
+  def _val2str (self, val):
+    s = ''
+    dt = self.val_as_date (val)
+    if 'month' in dt:
+      s += months_full[dt['month']]
+    if 'day' in dt:
+      if len(s) == 0: s = 'day'
+      s += ' '
+      s += str(dt['day'])
+    if 'year' in dt:
+      if len(s) > 0: s += ', '
+      s += str(dt['year'])
+    if 'hour' in dt:
+      hour = dt['hour']
+      minute = dt.get('minute',0)
+      second = dt.get('second',0)
+      if len(s) > 0: s += ' '
+      s += '%02d:%02d:%02d'%(hour,minute,second)
+    return s
+
   def str_as_val(self, key, s):
 # {{{
     ''' str_as_val() - interprets string s as a date and converts it to a value appropriate
