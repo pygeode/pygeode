@@ -1,3 +1,5 @@
+#TODO: remove the 'concat' class method - put the code directly in the static 'concat' method.  There are no longer any cases where Axis subclasses need to overload the merging logic.
+#TODO: change the arguments for 'concat' from axes to *axes
 #TODO: remove NamedAxis class - mostly redundant
 #TODO: make map_to a light wrapper for common_map, since the latter is a more powerful version of the method
 
@@ -66,6 +68,9 @@ class Axis(Var):
     self.auxarrays.update(auxarrays.copy())
     self.auxatts = self.__class__.auxatts.copy() 
     self.auxatts.update(auxatts.copy())    
+#    # update plotatts if dictionary was passed as keyword argument
+#    self.plotatts = self.__class__.plotatts.copy()
+#    if plotatts!=None: self.plotatts.update(plotatts) 
     
     # name defaults
     if self.name == '': self.name = self.__class__.__name__.lower()
@@ -278,26 +283,25 @@ class Axis(Var):
   def _getitem_asvar (self, slices):
   # {{{
     import numpy as np
-    from pygeode.var import copy_meta
 
     values = np.array(self.values[slices], ndmin=1, copy=False)
 
     # Check if we even need to do any slicing
     if len(values) == len(self.values) and np.all(values==self.values): return self
 
-    # Slice all the arrays associated with this axis
-    arraydict = self._pack().copy()
-    for k in arraydict.keys():
-      arraydict[k] = np.array(arraydict[k][slices], ndmin=1, copy=False)
+    aux = {}
 
-    # Make a new axis using these arrays
-    axis = self._unpack(arraydict)
+    # Keep auxiliary attributes
+    for key,val in self.auxatts.iteritems():
+      aux[key] = val
 
-    # Keep the metadata
-    copy_meta (self, axis)
+    # Slice auxiliary arrays
+    for key,val in self.auxarrays.iteritems():
+      aux[key] = np.array(val[slices], ndmin=1)
+
+    axis = type(self)(values, name=self.name, atts=self.atts, **aux)
 
     return axis
-
   # }}}
 
   def str_as_val(self, key, s):
@@ -427,17 +431,6 @@ class Axis(Var):
     return Var([self], values=self.auxarrays[name], name=name)
 # }}}
 
-  # Grab the essential array information out of an axis.
-  # Returns a dictionary of arrays
-  # (whatever is needed to reconstruct the axis values)
-  def _pack (self):
-    return {'values':self.values}
-
-  # Construct a new axis based on the 'packed' information
-  @classmethod
-  def _unpack (cls, arraydict):
-    return cls(values=arraydict['values'])
-
   # How the axis is represented as a string
   def __repr__ (self): return '<' + self.__class__.__name__ + '>'
 
@@ -534,6 +527,50 @@ class Axis(Var):
     pass
   # }}}
 
+  # Concatenate multiple axes together
+  # Use numpy arrays
+  # Assume the segments are pre-sorted
+  @classmethod
+  def concat (cls, axes):
+  # {{{
+    from numpy import concatenate
+    from pygeode.tools import common_dict
+    # Must all be same type of axis
+    for a in axes: assert isinstance(a,cls), 'axes must be the same type'
+
+    values = concatenate([a.values for a in axes])
+
+    # Get common attributes
+    atts = common_dict([a.atts for a in axes])
+
+    aux = {}
+
+    # Check that all pieces have the same auxiliary attributes, and propogate them to the output.
+    auxkeys = set(axes[0].auxatts.keys())
+    for a in axes[1:]:
+      auxkeys = auxkeys.intersection(a.auxatts.keys())
+    for k in auxkeys:
+      vals = [a.auxatts[k] for a in axes]
+      v1 = vals[0]
+#      assert all(v == v1 for v in vals), "inconsistent '%s' attribute"%k
+      # Only use consistent aux atts
+      if all(v == v1 for v in vals):
+        aux[k] = axes[0].auxatts[k]
+
+
+    # Find and concatenate auxilliary arrays common to all axes being concatenated
+    auxkeys = set(axes[0].auxarrays.keys())
+    for a in axes[1:]:      # set.intersection takes multiple arguments only in python 2.6 and later..
+      auxkeys = auxkeys.intersection(a.auxarrays.keys())
+
+    for k in auxkeys:
+      aux[k] = concatenate([a.auxarrays[k] for a in axes])
+
+    name = axes[0].name  #TODO: check all names?
+
+    return cls(values, name=name, atts=atts, **aux)
+  # }}}
+
 
   # Replace the values of an axis
   # (any auxiliary arrays from the old axis are ignored)
@@ -555,7 +592,7 @@ class NamedAxis (Axis):
 # {{{
   '''Slightly less useless than a raw Axis, we can at least use the name
       to uniquely identify them.'''
-  def __init__ (self, values, name='', **kwargs):
+  def __init__ (self, values, name, **kwargs):
   # {{{
     Axis.__init__(self, values, **kwargs)
     self.name = name
@@ -688,18 +725,10 @@ class Hybrid (ZAxis):
 
   def __init__ (self, values, A, B, **kwargs):
   # {{{
-    import numpy as np
-    self.A = np.array(A)
-    self.B = np.array(B)
+    # Just pass all the stuff to the superclass
+    # (All we do here is enforce the existence of 'A' and 'B' associated arrays
     ZAxis.__init__ (self, values, A=A, B=B, **kwargs)
   # }}}
-
-  def _pack (self):
-    return {'values':self.values, 'A':self.A, 'B':self.B}
-
-  @staticmethod
-  def _unpack (arraydict):
-    return Hybrid (values=arraydict['values'], A=arraydict['A'], B=arraydict['B'])
 
   def __eq__ (self, other):
   # {{{
@@ -769,40 +798,22 @@ class Index(Axis):
 class Coef(Index): pass
 
 
-
-# Concatenate multiple axes together
-def concat (*axes):
+# Concatenate a bunch of axes together.
+# Find a common parent class for all of them, and call that class's concat function.
+def concat (axes):
 # {{{
-  from numpy import concatenate
-  from pygeode.var import combine_meta
-  # Must all be same type of axis
-  cls = axes[0].__class__
-  for a in axes: assert isinstance(a,cls), 'axes must be the same type'
+  axes = list(axes) # in case we're given a set, generator, etc.
+  assert len(axes) > 0, 'nothing to concatenate!'
+  # Degenerate case: only 1 axis provided
+  if len(axes) == 1: return axes[0]
 
-  arraydicts = [a._pack() for a in axes]
-  keys = list(set([k for d in arraydicts for k in d.keys()]))
-  # Must have the same arrays
-  for d in arraydicts:
-    for k in list(keys):
-      if k not in d:
-        from warnings import warn
-        warn("concat: one of the %s segments is missing the '%s' array. Dropping that array from all segments"%(cls,k))
-        keys.remove(k)
-
-  # Construct a new set of arrays
-  arraydict = {}
-  for k in keys:
-    arraydict[k] = concatenate([d[k] for d in arraydicts])
-
-  # Make a new axis from this concatenated information
-  newaxis = cls._unpack(arraydict)
-
-  # Grab the metadata stuff
-  combine_meta (axes, newaxis)
-
-  return newaxis
-
-  # }}}
+  cls = type(axes[0])
+  for a in axes:
+    cls2 = type(a)
+    if issubclass(cls, cls2): cls = cls2
+    assert issubclass(cls2, cls), "can't concatenate incompatible axes"
+  return cls.concat(axes)
+# }}}
 
 
 # List of axes provided in this module (for easy importing)

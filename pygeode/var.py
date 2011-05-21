@@ -606,22 +606,6 @@ def copy_meta (invar, outvar):
   outvar.atts = invar.atts.copy()
   outvar.plotatts = invar.plotatts.copy()
 
-# a function to try and combine metadata from multiple inputs into an output
-# (similar to copy_meta, but takes multiple input variables)
-def combine_meta (invars, outvar):
-  from pygeode.tools import common_dict
-
-  # Intrinsic attributes
-  for att in 'name', 'units':
-    s = list(set([getattr(v,att) for v in invars]))
-    if len(s) == 1: setattr(outvar,att,s[0])
-    
-  # Get common metadata from the input segments
-  atts = common_dict([v.atts for v in invars])
-  outvar.atts.update(atts)
-  plotatts = common_dict([v.plotatts for v in invars])
-  outvar.plotatts.update(plotatts)
-
 
 ##################################################
 # Hook various useful methods into the Var class.

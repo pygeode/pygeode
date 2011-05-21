@@ -117,15 +117,8 @@ class Time (TAxis):
     # (Keep the initial start date if one was given)
     if startdate is None:
       startdate = {}
-      # We need at least one value for a start date!
-      if all(len(arr)>0 for arr in auxarrays.values()):
-        for aux,arr in auxarrays.iteritems():
-          startdate[aux] = arr[0]
-      # Otherwise, in the degenerate case where we have no values, just make up a start date
-      else:
-        startdate = {'year':2112, 'month':1, 'day':1, 'hour':0, 'minute':0, 'second':0}
-        for k in list(startdate.keys()):
-          if k not in auxarrays: del startdate[k]
+      for aux,arr in auxarrays.iteritems():
+        startdate[aux] = arr[0]
 
     # Generate relative times from absolute times?
     # (redo the 'values' array to be consistent with the absolute date/times)
@@ -564,14 +557,6 @@ class CalendarTime(Time):
       if len(s) > 0: s += ' '
       s += '%02d:%02d:%02d'%(hour,minute,second)
     return s
-
-  # Pack / unpack essential array information
-  def _pack (self):
-    return self.auxarrays.copy()
-
-  @classmethod
-  def _unpack (cls, arraydict):
-    return cls(**arraydict)
 
   def str_as_val(self, key, s):
 # {{{
