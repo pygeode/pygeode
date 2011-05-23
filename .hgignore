@@ -1,4 +1,6 @@
-
+syntax: glob
+*.pyc
+*.so
 syntax: regexp
 ^\.project$
 syntax: regexp
