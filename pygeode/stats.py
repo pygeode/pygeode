@@ -138,6 +138,143 @@ def regress(X, Y, pbar=None):
   return M, B, P
 # }}}
 
+def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
+# {{{
+  ''' difference(X, Y) - calculates difference between the mean values of X and Y
+      averaged over the dimensions specified by axes. Returns X - Y, p values, confidence
+      intervals, and degrees of freedom.'''
+
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum
+  from pygeode.view import View
+
+  srcaxes = combine_axes([X, Y])
+  riaxes = [whichaxis(srcaxes, n) for n in axes]
+  raxes = [a for i, a in enumerate(srcaxes) if i in riaxes]
+  oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
+  oview = View(oaxes) 
+
+  ixaxes = [X.whichaxis(n) for n in axes]
+  Nx = np.product([len(X.axes[i]) for i in ixaxes])
+
+  iyaxes = [Y.whichaxis(n) for n in axes]
+  Ny = np.product([len(Y.axes[i]) for i in iyaxes])
+  
+  if pbar is None:
+    from pygeode.progress import PBar
+    pbar = PBar()
+
+  assert Nx > 1, '%s has only one element along the reduction axes' % X.name
+  assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
+
+  # Construct work arrays
+  x = np.zeros(oview.shape, 'd')
+  y = np.zeros(oview.shape, 'd')
+  xx = np.zeros(oview.shape, 'd')
+  yy = np.zeros(oview.shape, 'd')
+
+  # Accumulate data
+  for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
+    xdata = xdata.astype('d')
+    x[outsl] += npsum(xdata, ixaxes)
+    xx[outsl] += npsum(xdata**2, ixaxes)
+
+  for outsl, (ydata,) in loopover([Y], oview, pbar=pbar):
+    ydata = ydata.astype('d')
+    y[outsl] += npsum(ydata, iyaxes)
+    yy[outsl] += npsum(ydata**2, iyaxes)
+
+  # remove the mean (NOTE: numerically unstable if mean >> stdev)
+  xx = (xx - x**2/Nx) / (Nx - 1)
+  yy = (yy - y**2/Ny) / (Ny - 1)
+  x /= Nx
+  y /= Ny
+
+  if Nx_fac is not None: eNx = Nx/Nx_fac
+  else: eNx = Nx
+  if Ny_fac is not None: eNy = Ny/Ny_fac
+  else: eNy = Ny
+  print 'eff. Nx = %.1f, eff. Ny = %.1f' % (eNx, eNy)
+
+  d = x - y
+  den = np.sqrt(xx/eNx + yy/eNy)
+  df = (xx/eNx + yy/eNy)**2 / ((xx/eNx)**2/(eNx - 1) + (yy/eNy)**2/(eNy - 1))
+
+  p = tdist.cdf(abs(d/den), df)*np.sign(d)
+  ci = tdist.ppf(1. - alpha/2, df) * den
+
+  xn = X.name if X.name != '' else 'X'
+  yn = Y.name if Y.name != '' else 'Y'
+  if xn == yn: name = xn
+  else: name = '%s-%s'%(xn, yn)
+
+  if len(oaxes) > 0:
+    from pygeode import Var, Dataset
+    D = Var(oaxes, values=d, name=name)
+    DF = Var(oaxes, values=df, name='df_%s' % name)
+    P = Var(oaxes, values=p, name='p_%s' % name)
+    CI = Var(oaxes, values=ci, name='CI_%s' % name)
+    return Dataset([D, DF, P, CI])
+  else: # Degenerate case
+    return d, df, p, ci
+# }}}
+
+def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
+# {{{
+  ''' isnonzero(X) - determins if X is non-zero, assuming X is normally distributed.
+      Returns mean of X along axes, p value, and confidence interval.'''
+
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum
+  from pygeode.view import View
+
+  riaxes = [X.whichaxis(n) for n in axes]
+  raxes = [a for i, a in enumerate(X.axes) if i in riaxes]
+  oaxes = [a for i, a in enumerate(X.axes) if i not in riaxes]
+  oview = View(oaxes) 
+
+  N = np.product([len(X.axes[i]) for i in riaxes])
+
+  if pbar is None:
+    from pygeode.progress import PBar
+    pbar = PBar()
+
+  assert N > 1, '%s has only one element along the reduction axes' % X.name
+
+  # Construct work arrays
+  x = np.zeros(oview.shape, 'd')
+  xx = np.zeros(oview.shape, 'd')
+
+  # Accumulate data
+  for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
+    xdata = xdata.astype('d')
+    x[outsl] += npsum(xdata, riaxes)
+    xx[outsl] += npsum(xdata**2, riaxes)
+
+  # remove the mean (NOTE: numerically unstable if mean >> stdev)
+  xx = (xx - x**2/N) / (N - 1)
+  x /= N
+
+  if N_fac is not None: 
+    eN = N/N_fac
+  else: eN = N
+  print 'eff. N = %.1f' % eN
+
+  sdom = np.sqrt(xx/eN)
+
+  p = tdist.cdf(abs(x/sdom), eN - 1)*np.sign(x)
+  ci = tdist.ppf(1. - alpha/2, eN - 1) * sdom
+
+  name = X.name if X.name != '' else 'X'
+
+  if len(oaxes) > 0:
+    from pygeode import Var, Dataset
+    X = Var(oaxes, values=x, name=name)
+    P = Var(oaxes, values=p, name='p_%s' % name)
+    CI = Var(oaxes, values=ci, name='CI_%s' % name)
+    return Dataset([X, P, CI])
+  else: # Degenerate case
+    return x, p, ci
+# }}}
+
 """
 def regress_old(y, xs, resid=False):
 # {{{
