@@ -52,8 +52,8 @@ from pygeode.ufunc import __all__ as ufunc_all
 __all__.extend(ufunc_all)
 
 # Plotting
-from pygeode.plot import plotvar, plotquiver
-__all__.extend(['plotvar', 'plotquiver'])
+from pygeode.plot import plotvar, plotquiver, plotsigmask
+__all__.extend(['plotvar', 'plotquiver', 'plotsigmask'])
 
 from pygeode.climat import *
 from pygeode.climat import __all__ as climat_all
