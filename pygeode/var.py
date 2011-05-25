@@ -392,28 +392,8 @@ class Var(object):
     --------
     getaxis, hasaxis, Axis
     """
-    from pygeode.axis import Axis
-    # Case 1: a string was given
-    if isinstance(iaxis, str):
-      name = iaxis
-      for i,a in enumerate(self.axes):
-        if a.has_alias(name): return i
-
-    # Degenerate case: an integer index
-    elif isinstance(iaxis, int) and 0 <= iaxis < len(self.axes):
-      return iaxis
-
-    # An axis object?
-    elif isinstance(iaxis, Axis):
-      for i,a in enumerate(self.axes):
-        if a == iaxis: return i
-
-    # Other case: a class was given
-    elif issubclass(iaxis, Axis):
-      for i,a in enumerate(self.axes):
-        if isinstance(a, iaxis): return i
-
-    raise KeyError, "axis %s not found in %s"%(repr(iaxis),self.axes)
+    from pygeode.tools import whichaxis
+    return whichaxis(self.axes, iaxis)
   # }}}
 
   # Indicate if an axis is found

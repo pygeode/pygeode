@@ -124,6 +124,50 @@ def common_dict (*dicts):
   return d
 # }}}
 
+def whichaxis(axes, id):
+# {{{
+  '''
+  Returns the index of the axis in the list of axes provided that is identified
+  by id.
+
+  Parameters
+  ----------
+  axes : list of :class:'Axis' instances
+  id : string, :class:`Axis` class, or int
+      The search criteria for finding the class.
+
+  Returns
+  -------
+  The index of the matching Axis. Raises ``KeyError`` if there is no match.
+
+  See Also
+  --------
+  Var.whichaxis
+  '''
+
+  from pygeode.axis import Axis
+  # Case 1: a string was given
+  if isinstance(id, str):
+    for i,a in enumerate(axes):
+      if a.has_alias(id): return i
+
+  # Degenerate case: an integer index
+  elif isinstance(id, int) and 0 <= id < len(axes):
+    return id
+
+  # An axis object?
+  elif isinstance(id, Axis):
+    for i,a in enumerate(axes):
+      if a == id: return i
+
+  # Other case: a class was given
+  elif issubclass(id, Axis):
+    for i,a in enumerate(axes):
+      if isinstance(a, id): return i
+
+  raise KeyError, "axis %s not found in %s"%(repr(id),axes)
+# }}}
+
 # Make an axis
 # Inputs:
 #   dimtypes - a dictionary mapping names to Axis classes / objects
