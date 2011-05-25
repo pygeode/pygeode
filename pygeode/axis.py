@@ -68,13 +68,10 @@ class Axis(Var):
     self.auxarrays.update(auxarrays.copy())
     self.auxatts = self.__class__.auxatts.copy() 
     self.auxatts.update(auxatts.copy())    
-#    # update plotatts if dictionary was passed as keyword argument
-#    self.plotatts = self.__class__.plotatts.copy()
-#    if plotatts!=None: self.plotatts.update(plotatts) 
     
     # name defaults
     if self.name == '': self.name = self.__class__.__name__.lower()
-    if self.plotatts['plottitle'] is None: self.plotatts['plottitle'] = self.name           
+    if self.plotatts['plottitle'] is None: self.plotatts['plottitle'] = self.name
 
     # Make sure the axis values are unique.  Otherwise, using this axis may give unpredictable results.
     if np.unique1d(self.values).shape != self.values.shape:
