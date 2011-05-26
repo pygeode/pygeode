@@ -22,7 +22,7 @@ def expand_file_list (file_list):
 def openall (files, format, *args, **kwargs):
   from pygeode.dataset import concat
   files = expand_file_list (files)
-  sort = kwargs.pop('sorted', True)
+  sort = kwargs.pop('sorted', False)
   datasets = [ format.open(f, *args, **kwargs) for f in files]
   if sort: datasets = [d.sorted() for d in datasets]
   return concat(*datasets)
