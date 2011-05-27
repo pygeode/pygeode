@@ -54,10 +54,10 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
   from pygeode.timeaxis import Time
   from pygeode.var import Var
   from pygeode.view import View
-  from pygeode.tools import point, load_lib
+  from pygeode.libhelper import point, load_lib
   from pygeode import MAX_ARRAY_SIZE
   from warnings import warn
-  lib = load_lib("libsvd.so")
+  lib = load_lib("svd")
 
   if matrix in ('cov', 'covariance'): matrix = 'cov'
   elif matrix in ('cor', 'corr', 'correlation'): matrix = 'cor'

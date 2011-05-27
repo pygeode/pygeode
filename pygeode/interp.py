@@ -5,13 +5,13 @@
 
 from pygeode.var import Var
 
-from pygeode.tools import load_lib
+from pygeode.libhelper import load_lib
 
 
 gslcblas = load_lib('gslcblas', Global=True)  # GSL needs some symbols from here
 gsl = load_lib('gsl', Global=True)
 
-interp = load_lib("libinterp.so")
+interp = load_lib("interp")
 
 del load_lib
 

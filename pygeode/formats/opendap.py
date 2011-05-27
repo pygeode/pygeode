@@ -17,8 +17,9 @@ dap2np = {'byte':'uint8', 'uint16':'uint16', 'int16':'int16',
 supported_type = dict((k,dap2np[v.lower()]) for k,v in np2dap.iteritems())
 
 # Supporting library
-from pygeode.tools import load_lib
-lib = load_lib("formats/libopendap.so")
+from pygeode.libhelper import load_lib
+lib = load_lib("formats/opendap")
+del load_lib
 
 
 ###############################################################################

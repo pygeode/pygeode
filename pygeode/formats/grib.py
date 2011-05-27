@@ -1,8 +1,8 @@
 from pygeode.var import Var
 from ctypes import byref, c_void_p, c_int, c_float, c_ulonglong, create_string_buffer, cast, c_char_p, c_double
-from pygeode.tools import load_lib
+from pygeode.libhelper import load_lib
 
-lib = load_lib("formats/libgrib.so")
+lib = load_lib('formats/grib')
 del load_lib
 
 class GribFile:

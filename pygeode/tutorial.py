@@ -1,7 +1,7 @@
 import pygeode as pyg
 import numpy as np
-import pylab as pyl
-from pygeode.formats import netcdf as nc
+#import pylab as pyl
+#from pygeode.formats import netcdf as nc
 
 def buildT1():
   lat = pyg.gausslat(32)
