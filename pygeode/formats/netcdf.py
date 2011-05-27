@@ -2,7 +2,7 @@
 # Pygeode interface for netCDF files
 
 from ctypes import c_char_p
-from pygeode.tools import load_lib
+from pygeode.libhelper import load_lib
 lib = load_lib('netcdf')
 lib.nc_strerror.restype = c_char_p
 del c_char_p

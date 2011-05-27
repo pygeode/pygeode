@@ -11,8 +11,8 @@
 
 
 # helper C library (for things that numpy can't do easily)
-from pygeode.tools import load_lib
-lib = load_lib("libtimeaxis.so")
+from pygeode.libhelper import load_lib
+lib = load_lib("timeaxis")
 del load_lib
 
 months = ['Smarch', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

@@ -1,7 +1,7 @@
 # Pygeode interface for HDF4 files
 #TODO: bring out EOSGRID stuff into a separate module?
 
-from pygeode.tools import load_lib
+from pygeode.libhelper import load_lib
 try:
   lib1 = load_lib('df', Global=True)  # so we have symbol 'error_top'
   lib = load_lib('mfhdf')

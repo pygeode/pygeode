@@ -25,7 +25,10 @@ MAX_SWAP_SIZE = 2**30
 __all__ = ['libpath', 'MAX_ARRAY_SIZE', 'MAX_SWAP_SIZE']  # more will be added below
 
 # File I/O
-from pygeode.formats import netcdf
+try:
+  from pygeode.formats import netcdf
+except Exception:
+  print "Warning: can't import netcdf module"
 from pygeode.formats.multifile import openall, open_multi
 
 # Classes

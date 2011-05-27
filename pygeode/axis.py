@@ -76,9 +76,9 @@ class Axis(Var):
     self.auxatts = auxatts
 
     # Make sure the axis values are unique.  Otherwise, using this axis may give unpredictable results.
-    if np.unique1d(self.values).shape != self.values.shape:
+    if np.unique(self.values).shape != self.values.shape:
       from warnings import warn
-      warn ("Non-unique values provided for the axis.\n%s? %s <-> %s\nshapes: %s <-> %s"%(self.name, np.unique1d(self.values), self.values, np.unique1d(self.values).shape, self.values.shape), stacklevel=2)
+      warn ("Non-unique values provided for the axis.\n%s? %s <-> %s\nshapes: %s <-> %s"%(self.name, np.unique(self.values), self.values, np.unique(self.values).shape, self.values.shape), stacklevel=2)
 #      warn ("values of %s are not unique \n%s\n%s\nchanging to a simple integer count"%(self.name, self.values, np.where(np.diff(self.values)==0)), stacklevel=2)
 #      self.values = np.arange(len(self.values), dtype=self.dtype)
 
@@ -641,8 +641,8 @@ class Lat (YAxis):
   # }}}
 # }}}
 
-from pygeode.tools import load_lib
-def gausslat (n, order=1, axis_dict={}, lib=load_lib("libquadrule.so")):
+from pygeode.libhelper import load_lib
+def gausslat (n, order=1, axis_dict={}, lib=load_lib("quadrule")):
 # {{{
   '''Gaussian latitude axis'''
   import numpy as np

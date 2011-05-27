@@ -187,8 +187,8 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
   from pygeode.tools import point
   from math import sqrt
   from pygeode.varoperations import fill
-  from pygeode.tools import load_lib
-  lib = load_lib("libsvd.so")
+  from pygeode.libhelper import load_lib
+  lib = load_lib("svd")
 
   # Iterate over more EOFs than we need
   # (this helps with convergence)
@@ -311,9 +311,9 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
   from pygeode.tools import point
 
   # Load lapack library and lower-level code for this module
-  from pygeode.tools import load_lib
+  from pygeode.libhelper import load_lib
   lapack = load_lib("lapack", Global=True)
-  lib = load_lib("libeof.so")
+  lib = load_lib("eof")
 
   x, time, space = prep (x, iaxis, weight=weight, out=out)
   del iaxis

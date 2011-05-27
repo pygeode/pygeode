@@ -4,7 +4,15 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
-#include <alloca.h>
+
+#ifdef WINDOWS
+  #include <malloc.h>
+  // Note: this may cause issues with files > 2GB on Windows!
+  #define fseeko fseek
+  #define ftello ftell
+#else
+  #include <alloca.h>
+#endif
 
 // Decode a floating-point value from the special encoding used by GRIB.
 // Guess they didn't have IEEE standards when this format was created.

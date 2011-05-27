@@ -48,8 +48,12 @@ def load_lib (name, Global=False):
   mode = RTLD_GLOBAL if Global==True else RTLD_LOCAL
   return CDLL(name, mode=mode)
 # }}}
+
+# Note: above code is overridden with a more platform-independent version in 'libhelper'
+# (above code kept for compatibility while transition plugins, etc.)
+from pygeode.libhelper import load_lib as new_load_lib
 # Some compiled code used by this python module
-libmisc = load_lib("libtools.so")
+libmisc = new_load_lib("tools")
 
 # C Pointer to a numpy array
 def point (x):

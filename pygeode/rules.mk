@@ -1,28 +1,48 @@
-all: $(PROGS) $(addsuffix .dir, $(SUBDIRS)) $(addprefix lib, $(addsuffix .so, $(LIBS)))
+
+# Platform-specific settings
+ifeq ($(MAKE),mingw32-make)
+  # assume Windows
+  PLATFORM = WINDOWS
+  RM = del
+  LIBEXT = dll
+else
+  # assume Linux
+  PLATFORM = LINUX
+  RM = rm -f
+  LIBEXT = so
+endif
+
+all: $(PROGS) $(addsuffix .dir, $(SUBDIRS)) $(addprefix lib, $(addsuffix .$(LIBEXT), $(LIBS)))
 
 CC = gcc
 FC = gfortran
-CFLAGS += -std=c99 -fPIC -g -fbounds-check -fopenmp
-FFLAGS += -fPIC -g -fbounds-check -fopenmp
+CFLAGS += -std=c99 -fPIC -g -fbounds-check -D$(PLATFORM)
+FFLAGS += -fPIC -g -fbounds-check
 LDLIBS += -lm
+SHARED = -shared -Wl,-soname,$(basename $<)
 
 %: %.c
 	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $^
 
-lib%.so: %.c
-	$(CC) $(CFLAGS) $(LDLIBS) -shared -Wl,-soname,$(basename $^) -o $@ $^
+lib%.$(LIBEXT): %.c
+	$(CC) $(CFLAGS) $(LDLIBS) $(SHARED) -o $@ $^
 
-lib%.so: %.f
-	$(FC) $(FFLAGS) $(LDLIBS) -shared -Wl,-soname,$(basename $^) -o $@ $^
+lib%.$(LIBEXT): %.f
+	$(FC) $(FFLAGS) $(LDLIBS) $(SHARED) -o $@ $^
 
 
 %.dir:
-	@(cd $(basename $@); $(MAKE);)
+	@(cd $(basename $@) && $(MAKE))
 
 %.clean:
-	@(cd $(basename $@); $(MAKE) clean;)
+	@(cd $(basename $@) && $(MAKE) clean)
 
 clean: $(addsuffix .clean, $(SUBDIRS))
-	rm -f $(PROGS) *.o *.so *.pyc
+	@( $(RM) $(PROGS) *.o *.$(LIBEXT) *.pyc && exit 0 )
 
-
+# Windows kludges
+# (You must grab these libraries from somewhere else beforehand)
+ifeq ($(PLATFORM),WINDOWS)
+libinterp.$(LIBEXT): interp.c libgsl.dll libgslcblas.dll
+libeof.$(LIBEXT): eof.c liblapack.dll libblas.dll
+endif
