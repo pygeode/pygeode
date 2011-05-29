@@ -3,10 +3,10 @@
 # Get a library name
 # (extends ctypes.util.find_library to include PyGeode-specific paths)
 def find_library (name):
-  from pygeode import libpath
   from ctypes.util import find_library
   from glob import glob
   from os import path
+  import pygeode
 
   if '/' in name:
     dir, name = name.rsplit('/',1)
@@ -14,10 +14,11 @@ def find_library (name):
     dir = ''
 
   # Search in PyGeode directory
-  libnames = glob(path.join(libpath, dir, 'lib'+name+'.so'))
-  if len(libnames) > 0: return libnames[0]
-  libnames = glob(path.join(libpath, dir, 'lib'+name+'.dll'))
-  if len(libnames) > 0: return libnames[0]
+  for libpath in pygeode.__path__:
+    libnames = glob(path.join(libpath, dir, 'lib'+name+'.so'))
+    if len(libnames) > 0: return libnames[0]
+    libnames = glob(path.join(libpath, dir, 'lib'+name+'.dll'))
+    if len(libnames) > 0: return libnames[0]
 
   # Search Linux paths (for installed version)
   libnames = glob(path.join('usr', 'lib', 'pygeode', dir, 'lib'+name+'.so'))
