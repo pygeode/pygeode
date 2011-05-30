@@ -14,11 +14,17 @@ endif
 
 all: $(PROGS) $(addsuffix .dir, $(SUBDIRS)) $(addprefix lib, $(addsuffix .$(LIBEXT), $(LIBS)))
 
-CC = gcc
-FC = gfortran
-CFLAGS += -std=c99 -fPIC -g -fbounds-check -D$(PLATFORM)
-FFLAGS += -fPIC -g -fbounds-check
-LDLIBS += -lm
+# Intel
+CC = icc
+FC = ifort
+CFLAGS += -O3 -std=c99 -fPIC -D$(PLATFORM)
+FFLAGS += -O3 -fPIC
+# GCC
+#CC = gcc
+#FC = gfortran
+#CFLAGS += -std=c99 -fPIC -g -fbounds-check -D$(PLATFORM)
+#FFLAGS += -fPIC -g -fbounds-check
+#LDLIBS += -lm
 SHARED = -shared -Wl,-soname,$(basename $<)
 
 %: %.c
