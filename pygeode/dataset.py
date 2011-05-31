@@ -152,30 +152,19 @@ class Dataset(object):
   # (copies the internal lists and dictionaries, does *not* copy the vars)
   def copy (self): return asdataset(self, copy=True)
 
-  """
   # Rename some variables in the dataset
   # (need to update vars, vardict)
-  def rename (self, *args, **kwargs):
-    if len(args) == 0 and len(kwargs) == 0: return self
-    # Case 1: explicitly renaming just 1 var
-    if len(args) > 0:
-      assert len(args) == 2, "expected 2 parameters - old name and new name"
-      kwargs = dict(kwargs, **{args[0]:args[1]})
-    # Case 2: keyword arguments (oldname/newname)
-    d = self.copy()
-    del self # so we don't accidentally reference the orginal dataset
-    for newname in kwargs.itervalues():
-      assert newname not in d.vardict, "'%s' is already a name in the dataset"%newname
-    assert len(set(kwargs.values())) == len(kwargs), "non-unique names?"
-    for oldname,newname in kwargs.iteritems():
-      oldvar = d.vardict[oldname]
-      i = d.vars.index(oldname)
-      newvar = oldvar.rename(newname)
-      del d.vardict[oldname]
-      d.vardict[newname] = newvar
-      d.vars[i] = newvar
-    return d
-  """
+  def rename_vars (self, vardict, **kwargs):
+    vardict = dict(vardict, **kwargs)
+    varlist = list(self.vars)
+    for i, v in enumerate(varlist):
+      # Rename this var?
+      oldname = v.name
+      if oldname in vardict:
+        newname = vardict[oldname]
+        assert isinstance(newname,str)
+        varlist[i] = v.rename(newname)
+    return Dataset(varlist, atts=self.atts)
 
   # Remove some variables from the dataset
   def remove (self, *varnames):
@@ -208,6 +197,15 @@ class Dataset(object):
     if isinstance(vars,(list,tuple)): return self.add(*vars)
     return self.add(vars)
   def __radd__ (self, vars): return self.__add__(vars)
+
+  # Replace one or more variables
+  def replace_vars (self, vardict={}, **kwargs):
+    vardict = dict(vardict, **kwargs)
+    varlist = list(self.vars)
+    for i, v in enumerate(varlist):
+      if v.name in vardict:
+        varlist[i] = vardict[v.name]
+    return Dataset(varlist, atts=self.atts)
 
   # Apply the specified var->var function to all variables in the dataset,
   # and make a new dataset.  Anything that gets mapped to 'None' is ignored.

@@ -179,7 +179,7 @@ def whichaxis(axes, id):
 #   atts - a dictionary of metadata to attach to the axis
 #   length - expected length of the axis
 #   plotatts - a dictionary of plot attributes (optional)
-
+# DEPRECATED
 def make_axis (name, dimtypes, valfunc, atts, length, plotatts=None):
 # {{{
   from pygeode.axis import Axis, NamedAxis
@@ -222,7 +222,6 @@ def make_axis (name, dimtypes, valfunc, atts, length, plotatts=None):
     # Create an axis instance
     if dimclass is None:  # Use name to determine the axis
       axis = NamedAxis(values, name, atts=atts, plotatts=plotatts)
-#      axis = make_axis (name, atts, values)
     else:                 # Use provided axis class
       axis = dimclass(values, name=name, atts=atts, plotatts=plotatts, **dimargs)
 

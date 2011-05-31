@@ -1,7 +1,11 @@
 syntax: glob
 *.pyc
 *.so
+*.dll
 syntax: regexp
 ^\.project$
 syntax: regexp
 ^\.pydevproject$
+^build/
+^dist/
+^pygeode/plugins/[^_]

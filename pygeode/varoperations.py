@@ -425,7 +425,7 @@ def rename (self, newname):
   return RenamedVar(var, newname)
 
 # Rename the axes of a variable
-def rename_axes (self, ignore_mismatch=False, **namemap):
+def rename_axes (self, ignore_mismatch=False, axisdict={}, **namemap):
   """
   Renames the axes of a variable.
 
@@ -435,6 +435,8 @@ def rename_axes (self, ignore_mismatch=False, **namemap):
     If ``True``, will ignore axis identifiers that don't match any axes of
     this variable.  If ``False``, will raise an exception on a mismatch.
     Default is ``False``.
+  axisdict : dictionary
+    An explicit dictionary mapping old names to new names.
   **namemap : keyword arguments
     One or more keyword-based arguments.  The parameters are the existing axis
     names, and the values are the new names to substitute.
@@ -468,6 +470,7 @@ def rename_axes (self, ignore_mismatch=False, **namemap):
     Type:  Replace_axes (dtype="float64")
   """
   var = self
+  namemap = dict(axisdict, **namemap)
   for n1 in namemap.iterkeys():
     if ignore_mismatch: continue
     assert var.hasaxis(n1), "'%s' not an axis of %s"%(n1,var)
