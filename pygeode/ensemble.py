@@ -11,8 +11,7 @@ def make_ensemble (n, ensdict={}):
 from pygeode.var import Var
 class EnsembleVar(Var):
   def __init__(self, varlist):
-    from pygeode.var import Var, copy_meta
-    from pygeode.tools import common_dict
+    from pygeode.var import Var, combine_meta
     self.varlist = varlist
     # assume the vars have already been checked for consistency
     var0 = varlist[0]
@@ -20,9 +19,11 @@ class EnsembleVar(Var):
 #    axes = [Ensemble(len(varlist))] + axes
     axes = [make_ensemble(len(varlist))] + axes
     Var.__init__(self, axes, dtype=var0.dtype)
-    copy_meta (var0, self)
-    self.atts = common_dict(var.atts for var in varlist)
-    self.plotatts = common_dict(var.plotatts for var in varlist)
+#    copy_meta (var0, self)
+#    self.atts = common_dict(var.atts for var in varlist)
+#    self.plotatts = common_dict(var.plotatts for var in varlist)
+    combine_meta (varlist, self)
+    self.name = varlist[0].name
   def getview (self, view, pbar):
     import numpy as np
     subview = view.remove(0)

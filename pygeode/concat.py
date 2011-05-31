@@ -9,7 +9,8 @@ from var import Var
 class ConcatVar(Var):
   def __init__(self, vars):
     import pygeode.axis
-    from pygeode.tools import common_dtype, common_dict
+    from pygeode.tools import common_dtype
+    from pygeode.var import combine_meta
 
     # Use first var segment for the axes
     axes = list(vars[0].axes)
@@ -40,16 +41,19 @@ class ConcatVar(Var):
 
     Var.__init__(self, axes, dtype=dtype)
 
-    # Assign a name (and other attributes??) to the var
-    name = set(v.name for v in vars if v.name != '')
-    if len(name) == 1: self.name = name.pop()
+    # Grab metadata from the input variables
+    combine_meta (vars, self)
 
-    # Combine the attributes (if applicable)
-    atts = common_dict([v.atts for v in vars])
-    self.atts = atts
-    # Combine the plot attributes (if applicable)
-    plotatts = common_dict([v.plotatts for v in vars])
-    self.plotatts = plotatts
+#    # Assign a name (and other attributes??) to the var
+#    name = set(v.name for v in vars if v.name != '')
+#    if len(name) == 1: self.name = name.pop()
+#
+#    # Combine the attributes (if applicable)
+#    atts = common_dict([v.atts for v in vars])
+#    self.atts = atts
+#    # Combine the plot attributes (if applicable)
+#    plotatts = common_dict([v.plotatts for v in vars])
+#    self.plotatts = plotatts
 
     # Other stuff
     self.vars = vars

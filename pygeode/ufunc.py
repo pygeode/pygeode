@@ -21,7 +21,8 @@ class UfuncVar (Var):
 
   def __init__ (self, *args):
   # {{{
-    from pygeode.tools import combine_axes, common_dict
+    from pygeode.tools import combine_axes
+    from pygeode.var import combine_meta
     import numpy as np
 
     assert self.op is not None, "can't instantiate UfuncVar directly"
@@ -42,6 +43,9 @@ class UfuncVar (Var):
 
     # TODO: Type check arguments. numpy arrays probably shouldn't be allowed
 
+    # Copy any common generic metadata
+    combine_meta(vars, self)
+
     # Generate a default name
     symbol = self.symbol
     names = [(arg.name or '??') if isinstance(arg,Var) else str(arg) for arg in args]
@@ -61,9 +65,9 @@ class UfuncVar (Var):
       assert isinstance(symbol, str)
       self.name = '(' + symbol.join(names) + ')'
 
-    # Copy any common generic metadata
-    self.atts = common_dict(v.atts for v in vars)
-    self.plotatts = common_dict(v.plotatts for v in vars)
+#    # Copy any common generic metadata
+#    self.atts = common_dict(v.atts for v in vars)
+#    self.plotatts = common_dict(v.plotatts for v in vars)
 
     Var.__init__(self, axes, dtype=dtype)
   # }}}
