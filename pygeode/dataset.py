@@ -154,7 +154,7 @@ class Dataset(object):
 
   # Rename some variables in the dataset
   # (need to update vars, vardict)
-  def rename_vars (self, vardict, **kwargs):
+  def rename_vars (self, vardict={}, **kwargs):
     vardict = dict(vardict, **kwargs)
     varlist = list(self.vars)
     for i, v in enumerate(varlist):
