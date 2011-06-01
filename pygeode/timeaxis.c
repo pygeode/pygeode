@@ -292,25 +292,16 @@ int val_as_date_std (int n, int iyear, int imonth, int iday,
   };
   long long int ref = ( month2doy[isleap(iyear)][imonth] + iday - 1) * 86400 + ihour*3600 + iminute*60 + isecond;
 
-  int warn_neg = 0;
-
   for (int i = 0; i < n; i++) {
     long long int s = val[i] + ref;  // Seconds since the beginning of the year of start date
     int y = iyear;
     // Make sure s is positive
     // (estimate number of years to offset, ok so long as overestimate - just don't want a negative s)
 //    assert (s >= 0);  // remove this later
-    if (s < 0) {
-      if (warn_neg==0) {
-        printf ("warning: negative time offsets found! treating them as 0 for the purpose of converting to dates, but I would check that shit out if I were you.\n");
-        warn_neg = 1;
-      }
-      s = 0;
-    }
-    if (s < 0) {
+    while (s < 0) {
       int y_back = y - (-s)/365/86400 - 1;
       if (y_back < 0) y_back = 0;
-      s += ndays(y_back, y);
+      s += ndays(y_back, y) * 365 * 86400;
       y = y_back;
     }
     assert (s >= 0);
