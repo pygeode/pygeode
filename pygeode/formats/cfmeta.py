@@ -280,8 +280,9 @@ def decode_cf (dataset):
     # put the units back (if we didn't use them)?
     if cls in [NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
 
-    # create new axis instance if need be
-    if cls != type(a): axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
+    # create new axis instance if need be (only if a is a generic axis, to prevent replacement of custom axes)
+    if (type(a) in (NamedAxis, XAxis, YAxis, ZAxis, TAxis)) and (cls != type(a)): 
+      axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
 
   # Apply these new axes to the variables
   # Check for fill values, etc.
