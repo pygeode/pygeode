@@ -169,7 +169,7 @@ def encode_cf (dataset):
 # Decode cf-compliant variables
 def decode_cf (dataset):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
+  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from warnings import warn
   import re
@@ -281,7 +281,10 @@ def decode_cf (dataset):
     if cls in [NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
 
     # create new axis instance if need be (only if a is a generic axis, to prevent replacement of custom axes)
-    if (type(a) in (NamedAxis, XAxis, YAxis, ZAxis, TAxis)) and (cls != type(a)): 
+    # TODO: don't do this check.  This filter *should* be called before any
+    # custom axis overrides, so we *should* be able to assume we only have
+    # generic Axis objects at this point (at least, from the netcdf_new module)
+    if (type(a) in (Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis)) and (cls != type(a)): 
       axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
 
   # Apply these new axes to the variables
