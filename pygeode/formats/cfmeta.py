@@ -236,7 +236,11 @@ def decode_cf (dataset):
     _units = atts.pop('units','')
     if _st == 'latitude' or _units == 'degrees_north': cls = Lat
     if _st == 'longitude' or _units == 'degrees_east': cls = Lon
-    if _st == 'air_pressure' or _units in ('hPa','mbar'): cls = Pres
+    if _st == 'air_pressure' or _units in ('hPa','mbar'):
+      cls = Pres
+      # Don't need this in the metadata anymore (it will be put back in encode_cf)
+      assert atts.pop('positive','down') == 'down'
+
     if _st == 'atmosphere_hybrid_sigma_pressure_coordinate':
       #TODO: check formula_terms??
       #TODO: for ccc2nc files, look for long_name == "Model Level", use_AB = <formula>,

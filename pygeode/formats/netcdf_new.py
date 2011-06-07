@@ -440,7 +440,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   from pygeode.axis import Axis
   import numpy as np
   from pygeode.progress import PBar, FakePBar
-  from pygeode.formats import cfmeta
+  from pygeode.formats import cfmeta as cf
 
   assert isinstance(filename,str)
 
@@ -450,7 +450,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 
   # Encode standard axes back into netcdf metadata?
   if cfmeta is True:
-    dataset = cfmeta.encode_cf(in_dataset)
+    dataset = cf.encode_cf(in_dataset)
   else:
     dataset = in_dataset
 
