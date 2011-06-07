@@ -1,12 +1,21 @@
 import unittest
 import numpy as np
+import os
 import pygeode as pyg
+from pygeode.formats import netcdf_new as nc
 
-def varTest(testname='', var=None, name = None, \
+def assertSameVar(v1, v2):
+   assert v1.name == v2.name
+   assert v1.shape == v2.shape
+   assert all([a1 == a2 for a1, a2 in zip(v1.axes, v2.axes)])
+   assert (v1[:] == v2[:]).all()
+
+def varTest(testname='', var=None, name = None, serialize = False,\
          shape = None, axes = None, dtype = None, values = None):
    # Validate inputs; all tests must have a name and a variable
    assert testname is not ''
    assert var is not None
+   formats = {'nc':nc}
 
    # Validate consistency of test outputs
    if axes is not None:    # Define shape from axes list if available
@@ -48,16 +57,29 @@ def varTest(testname='', var=None, name = None, \
             self.assertEqual(len(self.shape), len(data.shape), 'Wrong number of dimensions.')
             self.assertEqual(self.shape, data.shape)
 
-      if axes is not None:
+      if axes is not None:                # Test axes against expected axes
          def test_axes(self):
             for i in range(len(axes)):
                self.assertEqual(self.axes[i], self.var.axes[i])
 
-      if values is not None:
+      if values is not None:              # Test variable data against expected output
          assert values.shape == shape
          def test_values(self):
             data = self.var.get()
             self.assertTrue(np.allclose(data, self.values))
+
+      if serialize:  
+         # Write variable to disk, read it back in, test for equality
+         def test_serialize(self):
+            for k, f in formats.iteritems():
+               fname = '%s.%s' % (testname, k)
+
+               f.save(fname, [self.var])    
+               d = f.open(fname)         
+               assertSameVar(d.vardict[self.name], self.var)
+               
+               os.remove(fname)              
+            
 
    tc.__name__ = testname
    return tc
@@ -71,10 +93,8 @@ data = np.random.randn(*shape)
 var = pyg.Var((ax1, ax2, ax3), values=data, name='var')
 
 tv = varTest('1_Simple', var, \
-         shape = (365, 32, 10), \
-         axes = (ax1, ax2, ax3), \
-         name = 'var', \
-         values = data)
+         name = 'var', axes = (ax1, ax2, ax3), \
+         values = data, serialize=True)
          
 sl1 = varTest('slice_simple', var(i_time=(0, 5), i_lat=(0, 5), i_pres=(0, 5)), \
          shape = (5, 5, 5), \
