@@ -239,7 +239,7 @@ def decode_cf (dataset):
     if _st == 'air_pressure' or _units in ('hPa','mbar'):
       cls = Pres
       # Don't need this in the metadata anymore (it will be put back in encode_cf)
-      assert atts.pop('positive','down') == 'down'
+      atts.pop('positive',None)
 
     if _st == 'atmosphere_hybrid_sigma_pressure_coordinate':
       #TODO: check formula_terms??
