@@ -1,1 +1,1 @@
-include rules.mk
+include ../pygeode/rules.mk

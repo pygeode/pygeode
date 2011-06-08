@@ -1,5 +1,5 @@
 LIBS = grib opendap index
 
-include rules.mk
+include ../rules.mk
 
 
