@@ -1,8 +1,5 @@
 # Issue 4 - The new netcdf module does not write out axis cf metadata
 # http://code.google.com/p/pygeode/issues/detail?id=4
-# Opened: 2011/06/06
-
-from nose import with_setup
 
 def test_io():
 
