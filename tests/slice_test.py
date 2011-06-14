@@ -4,16 +4,17 @@ from pygeode.var import Var
 from pygeode.axis import Axis
 from var_test import varTest
 
-def try_slice (shape):
-  import numpy as np
-  np.random.seed(shape)
-  indata = np.random.randn(*shape)
-
+# Different axis lengths to try out
 sizes = (1, 2, 3, 10, 200)
 
-# Compile a list of slices to try for each dimension size
+# Compile a list of slices to try for each dimension size.
+# Each size listed above is a dictionary entry, containing a list of slices
+# to try for that axis size.
+# First, initialize (no slices to try yet)
 slices = dict([(size,[]) for size in sizes])
 
+# Add some slices for each axis size.
+# Try to cover all types of slicing
 for size in sizes:
   # No slicing
   slices[size].append(slice(None))
@@ -28,6 +29,7 @@ for size in sizes:
   # Empty slice (nothing selected)
 #  slices[size].append([])
 
+  # The stuff below requires a non-degenerate array
   if (size == 0): continue
 
   # Range of values
@@ -45,6 +47,9 @@ for size in sizes:
 # Each axis needs to be a distinct class, or view.get() gives bizarre error messages
 from pygeode.axis import XAxis, YAxis, ZAxis
 axis_classes = (XAxis, YAxis, ZAxis)
+
+# Counter for giving each test a unique name
+i = 1
 
 for naxes in (1,2):
   print "Testing %s dimensions"%naxes
@@ -89,6 +94,16 @@ for naxes in (1,2):
         current_sl = [slice(None)]*dim + [sl[dim]] + [slice(None)]*(naxes-1-dim)
         expected = expected[current_sl]
 
-      # Check that the var is sliced as expected
-      varTest(testname='blah', var=var, values=expected)
+      # Things are just about to start getting crazy-go-nuts.
+      # Pass the var and expected values to 'varTest', which in turn
+      # dynamically defines a test class (subclass of unittest.TestCase)
+      # to check the var for consistency.
+      # We then have to take this test class, and assign it to a variable
+      # (this has to be done dynamically, since we're looping over many tests).
+      # 'nosetests' will then find this file, import it, and look for any
+      # global variables that represent a subclass of unittest.TestCase(?),
+      # then invoke the corresponding tests.
+      testname = 'slicetest%05d'%i
+      globals()[testname] = varTest(testname=testname, var=slicedvar, values=expected)
+      i += 1
 
