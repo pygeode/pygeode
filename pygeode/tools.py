@@ -303,8 +303,14 @@ def shared_axes(axes, sets):
   those that are common to both.'''
   ish, iex = [], []
   for i, a in enumerate(axes):
-    if (a in sets[0]) is not (a in sets[1]): # Logical exclusive or; a is not common to X and Y
-      iex.append(i)
+    xor = False # Logical exclusive or; a is not common to X and Y
+    for s in sets[0]:
+      if s.map_to(a) is not None: xor = not xor; break
+
+    for s in sets[1]:
+      if s.map_to(a) is not None: xor = not xor; break
+
+    if xor: iex.append(i)
     else: ish.append(i)
   return iex, ish
 # }}}
