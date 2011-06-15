@@ -52,7 +52,8 @@ def sorted (var, iaxis, reverse=False):
 # Interpolation Var
 class Interp (Var):
 # {{{
-  def __init__ (self, invar, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'):
+  def __init__ (self, invar, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
+                d_below=0., d_above=0.):
 # {{{
     from pygeode.var import Var
     from pygeode.axis import Axis
@@ -93,12 +94,16 @@ class Interp (Var):
     self.outx = outx
     self.interp_type = interp_type
 
-    Var.__init__ (self, outaxes, name=invar.name, dtype=invar.dtype, atts=invar.atts, plotatts=invar.plotatts)
+    self.d_below = d_below
+    self.d_above = d_above
+
+    Var.__init__ (self, outaxes, name=invar.name, dtype='d', atts=invar.atts, plotatts=invar.plotatts)
 # }}}
 
   def getview (self, view, pbar=None):
 # {{{
     from pygeode.tools import point
+    from ctypes import c_double
     import numpy as np
 
     #TODO: intelligent mapping of the input/output interpolation axes
@@ -146,9 +151,10 @@ class Interp (Var):
     interp_type = interp_types[self.interp_type]
 
     # Do the interpolation
-    ret = interp.interpgsl (narrays, ninx, noutx,
+    ret = interp.interpgsl_nan (narrays, ninx, noutx,
             point(inx_data), point(indata), point(outx_data), point(outdata),
             loop_inx, loop_outx,
+            c_double(self.d_below), c_double(self.d_above),
             interp_type)
 
     assert ret == 0
@@ -157,7 +163,8 @@ class Interp (Var):
 # }}}
 # }}}
 
-def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'):
+def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
+                d_below = 0., d_above = 0.):
 # {{{
   """
   Interpolates a variable along a single dimension.
@@ -240,7 +247,7 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
     using log(pressure) internally as the coordinate over which to perform
     the interpolation.
   """
-  return Interp(var, inaxis, outaxis, inx, outx, interp_type)
+  return Interp(var, inaxis, outaxis, inx, outx, interp_type, d_below, d_above)
 # }}}
 
 del Var
