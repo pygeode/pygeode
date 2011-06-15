@@ -1,4 +1,4 @@
-__all__ = ('climatology', 'dailymean', 'monthlymean', 'diurnalmean', 'seasonalmean', 'climtrend')
+__all__ = ('climatology', 'dailymean', 'monthlymean', 'diurnalmean', 'seasonalmean', 'climtrend', 'from_trend')
 
 from pygeode.var import Var
 
