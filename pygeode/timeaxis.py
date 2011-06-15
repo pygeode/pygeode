@@ -456,6 +456,7 @@ class CalendarTime(Time):
           $b - short month name
           $B - full month name
           $d - day of the month
+          $D - 2-digit day of the month, zero-padded
           $H - hour (24 hr clock)
           $I - hour (12 hr clock)
           $j - day of the year
@@ -500,10 +501,11 @@ class CalendarTime(Time):
     
     if dt.has_key('day'):
       d = dt['day']
-      subs['d'] = d
+      subs['d'] = '%d' % d
+      subs['D'] = '%02d' % d
       if dt.has_key('year') and 'year' in self.allowed_fields: subs['j'] = self._getdoy(dt)
     else:
-      subs['d'], subs['j'] = '', ''
+      subs['d'], subs['D'], subs['j'] = '', '', ''
 
     if dt.has_key('hour'):
       h = dt['hour']
@@ -582,11 +584,12 @@ class CalendarTime(Time):
 
   # Convert a date dictionary to a tuple - fill in missing fields with defaults
   @staticmethod
-  def _get_dates (dates):
+  def _get_dates (dates, use_arrays = None):
 # {{{
     import numpy as np
 
-    use_arrays = any(hasattr(d,'__len__') for d in dates.itervalues())
+    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') for d in dates.itervalues())
+
     if use_arrays:
       assert all(hasattr(d,'__len__') for d in dates.itervalues())
       n = set(len(d) for d in dates.itervalues())
@@ -595,6 +598,8 @@ class CalendarTime(Time):
       zeros = np.zeros(n, 'int32') if use_arrays else 0
       ones = np.ones(n, 'int32') if use_arrays else 1
     else:
+      assert all([(hasattr(d,'__len__') and len(d) == 1) or \
+        not hasattr(d, '__len__') for d in dates.itervalues()])
       zeros = 0
       ones = 1
 
@@ -660,7 +665,7 @@ class CalendarTime(Time):
     if startdate is None: startdate = self.startdate
     if units is None: units = self.units
 
-    iyear, imonth, iday, ihour, iminute, isecond = self._get_dates(startdate)
+    iyear, imonth, iday, ihour, iminute, isecond = self._get_dates(startdate, use_arrays = False)
     year, month, day, hour, minute, second = self._get_dates(dates)
     year   = np.ascontiguousarray(year,   dtype='int32')
     month  = np.ascontiguousarray(month,  dtype='int32')
