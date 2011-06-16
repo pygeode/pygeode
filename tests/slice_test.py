@@ -62,7 +62,7 @@ for naxes in (1,2):
 
     axes = [axis_classes[i](sorted(np.random.randn(n))) for i,n in enumerate(shape)]
     for i,axis in enumerate(axes):
-      axis.name = 'axis%s'%count
+      axis.name = 'axis%s'%i
 #      print "axis %s values: %s"%(i,axis.values)
 
     var = Var(axes, values=values)
