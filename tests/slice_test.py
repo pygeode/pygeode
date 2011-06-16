@@ -49,7 +49,7 @@ from pygeode.axis import XAxis, YAxis, ZAxis
 axis_classes = (XAxis, YAxis, ZAxis)
 
 # Counter for giving each test a unique name
-i = 1
+count = 1
 
 for naxes in (1,2):
   print "Testing %s dimensions"%naxes
@@ -62,7 +62,7 @@ for naxes in (1,2):
 
     axes = [axis_classes[i](sorted(np.random.randn(n))) for i,n in enumerate(shape)]
     for i,axis in enumerate(axes):
-      axis.name = 'axis%s'%i
+      axis.name = 'axis%s'%count
 #      print "axis %s values: %s"%(i,axis.values)
 
     var = Var(axes, values=values)
@@ -72,6 +72,9 @@ for naxes in (1,2):
     print "    # tests:", len(list(product(*slicelists)))
     for sl in product(*slicelists):
       print "    Testing slices %s"%repr(sl)
+      # currently the following tests fail:
+      # 04860, 05184, 06318, 06642
+#      assert (count!=4860), "shape: %s, slices: %s, values: %s, axes: %s"%(shape, str(sl), values, [a.values for a in var.axes])
 
       # slice the var immediately (before massaging the slices for numpy)
       slicedvar = var.slice[sl]
@@ -103,7 +106,8 @@ for naxes in (1,2):
       # 'nosetests' will then find this file, import it, and look for any
       # global variables that represent a subclass of unittest.TestCase(?),
       # then invoke the corresponding tests.
-      testname = 'slicetest%05d'%i
+      testname = 'slicetest%05d'%count
       globals()[testname] = varTest(testname=testname, var=slicedvar, values=expected)
-      i += 1
+
+      count += 1
 
