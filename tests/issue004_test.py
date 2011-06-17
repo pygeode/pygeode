@@ -15,8 +15,8 @@ def test_io():
 
   # Save the dataset, then reload it immediately
   before = Dataset([v])
-  nc.save('test.nc', before)
-  after = nc.open('test.nc')
+  nc.save('issue004_test.nc', before)
+  after = nc.open('issue004_test.nc')
 
   # Compare all vars/axes/attributes
 

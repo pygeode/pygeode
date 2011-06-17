@@ -161,7 +161,8 @@ class NCFile:
     if self.fileid.value != -1:
       ret = self.lib.nc_close(self.fileid)
       if ret != 0: raise IOError, self.lib.nc_strerror(ret)
-    self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
+    if self.ctypes.c_int is not None:
+      self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
   def __enter__(self): return self
   def __exit__(self): self.close()
 
