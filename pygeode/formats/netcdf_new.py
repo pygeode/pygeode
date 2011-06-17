@@ -409,7 +409,9 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
   # Process CF-metadata?
   if cfmeta is True:
-    dataset = decode_cf(dataset)
+    # Skip anything that we're going to override in dimtypes
+    # (so we don't get any meaningless warnings or other crap from cfmeta)
+    dataset = decode_cf(dataset, ignore=dimtypes.keys())
 
   # Apply custom axis types?
   if len(dimtypes) > 0:

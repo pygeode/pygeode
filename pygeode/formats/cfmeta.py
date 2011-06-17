@@ -167,7 +167,7 @@ def encode_cf (dataset):
 
 ###############################################################################
 # Decode cf-compliant variables
-def decode_cf (dataset):
+def decode_cf (dataset, ignore=[]):
   from pygeode.dataset import asdataset, Dataset
   from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
@@ -196,6 +196,9 @@ def decode_cf (dataset):
     offsets[name] = None
 
   for name,a in axisdict.items():
+
+    # Skip over this axis?
+    if name in ignore: continue
 
     atts = a.atts.copy()
     plotatts = a.plotatts.copy() # just carry along and pass to new Axis instance (l.282)
