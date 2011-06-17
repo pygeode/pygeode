@@ -278,11 +278,16 @@ def decode_cf (dataset):
       # Special case: start year=0 implies a climatology
       #NOTE: 'climatology' attribute not used, since we don't currently keep
       #      track of the interval that was used for the climatology.
-      if year == 0:  axisdict[name] = axisdict[name].modify(exclude='year')
+      if year == 0:
+        # Don't climatologize(?) the axis if there's more than a year
+        if not all(axisdict[name].year == 0):
+          warn ("cfmeta: data starts at year 0 (which usually indicates a climatology), but there's more than one year's worth of data!  Keeping it on a regular calendar.", stacklevel=3)
+          continue
+        axisdict[name] = axisdict[name].modify(exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
 
     # put the units back (if we didn't use them)?
-    if cls in [NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
+    if cls in [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
 
     # create new axis instance if need be (only if a is a generic axis, to prevent replacement of custom axes)
     # TODO: don't do this check.  This filter *should* be called before any
