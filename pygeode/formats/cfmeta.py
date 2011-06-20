@@ -275,6 +275,7 @@ def decode_cf (dataset):
           warn ("cfmeta: data starts at year 0 (which usually indicates a climatology), but there's more than one year's worth of data!  Keeping it on a regular calendar.", stacklevel=3)
           continue
         axisdict[name] = axisdict[name].modify(exclude='year')
+      continue  # we've constructed the time axis, so move onto the next axis
 
     # put the units back (if we didn't use them)?
     if cls in [NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
