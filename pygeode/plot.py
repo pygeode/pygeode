@@ -60,7 +60,7 @@ def plotvar (var, **kwargs):
       
     # Add information on degenerate axes to the title
     for a in axes:
-      if len(a) == 1:
+      if len(a) == 1 and title:
         title += ', ' + a.formatvalue(a.values[0])
 
   pbar = kwargs.pop('pbar', True)
@@ -95,7 +95,7 @@ def plotvar (var, **kwargs):
   else:
     fig = ax.figure
 
-  if not hold: ax.set_title(title)
+  if not hold and title: ax.set_title(title)
 
   # 1D case:
   if nd == 1:
