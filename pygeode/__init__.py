@@ -71,6 +71,10 @@ __all__.append('SVD')
 from pygeode.ensemble import ensemble
 __all__.append('ensemble')
 
+from pygeode.stats import *
+from pygeode.stats import __all__ as stats_all
+__all__.append(stats_all)
+
 #from pygeode.composite import composite
 
 #### Dynamic shortcuts to plugins ####

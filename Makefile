@@ -12,3 +12,10 @@ install: buildlibs
 clean:
 	rm -Rf build/
 	@(cd pygeode; $(MAKE) clean)
+	@(cd tests; $(MAKE) clean)
+
+test: buildlibs
+	@(cd tests; env PYTHONPATH=$(PWD) nosetests)
+
+# alias
+check: test

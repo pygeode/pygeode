@@ -1,3 +1,5 @@
+__all__ = ('correlate', 'regress', 'difference', 'isnonzero')
+
 import numpy as np
 from scipy.stats import t as tdist
 
@@ -9,28 +11,33 @@ sigs_c = (  (1.0, 1.0, 1.0),
             (1.0, 0.9, 0.9), 
             (1.0, 1.0, 1.0))
 
-def correlate(X, Y, pbar=None):
+def correlate(X, Y, axes=None, pbar=None):
 # {{{
   ''' correlate(X, Y) - returns correlation between variables X and Y
       computed over all axes shared by x and y. Returns \rho_xy, and p values
       for \rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
       section 8.2.3.'''
 
-  from pygeode.tools import combine_axes, shared_axes, npsum
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
-  from pygeode.reduce import loopover
 
   # Put all the axes being reduced over at the end 
   # so that we can reshape 
   srcaxes = combine_axes([X, Y])
   oiaxes, riaxes = shared_axes(srcaxes, [X.axes, Y.axes])
+  if axes is not None:
+    ri_new = []
+    for a in axes:
+      ri_new.append(whichaxis([srcaxes[i] for i in riaxes], a))
+    oiaxes.extend([r for r in riaxes if r not in ri_new])
+    riaxes = ri_new
+    
   oaxes = [srcaxes[i] for i in oiaxes]
   inaxes = oaxes + [srcaxes[i] for i in riaxes]
   oview = View(oaxes) 
   siaxes = range(len(oaxes), len(srcaxes))
 
-  if len(oaxes) == 0:
-    raise ValueException('%s and %s share no common axes to be correlated over' % (X.name, Y.name))
+  assert len(riaxes) > 0, '%s and %s share no axes to be correlated over' % (X.name, Y.name)
 
   # Construct work arrays
   x = np.zeros(oview.shape, 'd')

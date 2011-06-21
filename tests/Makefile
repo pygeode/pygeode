@@ -1,0 +1,1 @@
+include ../pygeode/rules.mk

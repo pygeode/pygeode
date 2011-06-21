@@ -161,7 +161,8 @@ class NCFile:
     if self.fileid.value != -1:
       ret = self.lib.nc_close(self.fileid)
       if ret != 0: raise IOError, self.lib.nc_strerror(ret)
-    self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
+    if self.ctypes.c_int is not None:
+      self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
   def __enter__(self): return self
   def __exit__(self): self.close()
 
@@ -409,7 +410,9 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
   # Process CF-metadata?
   if cfmeta is True:
-    dataset = decode_cf(dataset)
+    # Skip anything that we're going to override in dimtypes
+    # (so we don't get any meaningless warnings or other crap from cfmeta)
+    dataset = decode_cf(dataset, ignore=dimtypes.keys())
 
   # Apply custom axis types?
   if len(dimtypes) > 0:
@@ -440,7 +443,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   from pygeode.axis import Axis
   import numpy as np
   from pygeode.progress import PBar, FakePBar
-  from pygeode.formats import cfmeta
+  from pygeode.formats import cfmeta as cf
 
   assert isinstance(filename,str)
 
@@ -450,7 +453,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 
   # Encode standard axes back into netcdf metadata?
   if cfmeta is True:
-    dataset = cfmeta.encode_cf(in_dataset)
+    dataset = cf.encode_cf(in_dataset)
   else:
     dataset = in_dataset
 

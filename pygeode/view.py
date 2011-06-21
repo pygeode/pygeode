@@ -246,7 +246,16 @@ class View:
 
 #    from pygeode.var import Var
     if hasattr(var,'values'):
-      values = var.values[unique_view.slices]
+#      values = var.values[unique_view.slices]
+#  ^^ can't do this if we are slicing by integer indices.
+# (Refer to issue 6 - http://code.google.com/p/pygeode/issues/detail?id=6 )
+# Instead, apply the slices one at a time.
+# (TODO: instead, conform the index array shapes the way duplicator is done
+#  above, but need to have addictional check if we have slices or indices.)
+      values = var.values
+      for i,sl in enumerate(unique_view.slices):
+        values = values[[slice(None)]*i + [sl]]
+
     elif hasattr(var,'getview'):
       # Can we use the progress bar?
       if 'pbar' in var.getview.func_code.co_varnames:
