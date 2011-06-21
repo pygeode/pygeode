@@ -3,6 +3,56 @@
 #TODO: check if the axes are subclasses of XAxis/YAxis/ZAxis/TAxis, and use
 #      this as a hint for transposing the data?
 
+def _buildaxistitle(name = '', plottitle = '', plotunits = '', **dummy):
+# {{{
+  if name is None: name = ''
+  if plottitle is None: plottitle = ''
+  if plotunits is None: plotunits = ''
+
+  assert type(plottitle) is str
+  assert type(plotunits) is str
+  assert type(name) is str
+
+  if plottitle is not '': title = plottitle
+  elif name is not '': title = name
+  else: title = ''
+
+  if plotunits is not '': title += ' [%s]' % plotunits
+
+  return title
+# }}}
+
+def _buildvartitle(axes = None, name = '', plottitle = '', plotunits = '', **dummy):
+# {{{
+  if name is None: name = ''
+  if plottitle is None: plottitle = ''
+  if plotunits is None: plotunits = ''
+
+  assert type(plottitle) is str
+  assert type(plotunits) is str
+  assert type(name) is str
+
+  if plottitle is not '': title = plottitle
+  elif name is not '': title = name
+  else: title = 'Unnamed Var'
+
+  if plotunits is not '': title += ' (%s)' % plotunits
+    
+  # Add information on degenerate axes to the title
+  if axes is not None:
+    for a in [a for a in axes if len(a) == 1]:
+      title += ', ' + a.formatvalue(a.values[0])
+
+  return title
+# }}}
+
+def _scalevalues(a, scalefactor = None, offset = None, **dummy):
+# {{{
+  if scalefactor is not None: a *= scalefactor
+  if offset is not None: a += offset
+  return a
+# }}}
+
 def plotvar (var, **kwargs):
 # {{{ 
   ''' plotvar(var, title, clevs, cmap, ax, ifig, hold)
@@ -49,23 +99,10 @@ def plotvar (var, **kwargs):
   # Create title if none has been specified
   title = kwargs.pop('title', None)
   if title is None:
-    if var.plotatts.has_key('plottitle') and var.plotatts['plottitle']:
-      title = var.plotatts['plottitle']
-    elif var.name != '':
-      title = var.name
-    else: title = 'Unnamed Var'
-
-    if var.plotatts.has_key('plotunits'): # units as an optional attribute for which a string can be provided?
-      title += ' (%s)' % var.plotatts['plotunits']
-      
-    # Add information on degenerate axes to the title
-    for a in axes:
-      if len(a) == 1:
-        title += ', ' + a.formatvalue(a.values[0])
+    title = _buildvartitle(axes, var.name, **var.plotatts)
 
   pbar = kwargs.pop('pbar', True)
   if pbar is True:
-#    print 'Loading plot values from %s:'%repr(var)
     pbar = PBar(message='Loading plot values from %s:'%repr(var))
     values = var.get(pbar=pbar).squeeze()
   else:
@@ -75,7 +112,7 @@ def plotvar (var, **kwargs):
   values = ma.masked_where(isnan(values), values)
   
   # Apply linear rescaling for plotting
-  values = var.plotatts.get('scalefactor',1)*values + var.plotatts.get('offset',0)
+  values = _scalevalues(values, **var.plotatts)
 
   wasint = isinteractive()
   ioff()
@@ -108,7 +145,7 @@ def plotvar (var, **kwargs):
       
       ax.plot(values, xaxis.values, **kwargs)
 
-      ax.set_yscale(xaxis.plotatts['plotscale'])
+      ax.set_yscale(xaxis.plotatts.get('plotscale', 'linear'))
       ylims = min(xaxis.values),max(xaxis.values)
       ax.set_ylim(ylims[::xaxis.plotatts['plotorder']])
       
@@ -116,14 +153,11 @@ def plotvar (var, **kwargs):
       ax.yaxis.set_major_formatter(xaxis.formatter())
       if lbly:
         xaxis.set_locator(ax.yaxis)
-        ax.set_ylabel(xaxis.plotatts['plottitle']+' ['+xaxis.plotatts['plotunits']+']')
+        ax.set_ylabel(_buildaxistitle(**xaxis.plotatts))
+
       # value axis
       if lblx:
-        if var.plotatts.has_key('plottitle') and var.plotatts['plottitle']: 
-          varname = var.plotatts['plottitle']
-        else: varname = var.name
-        if var.plotatts.has_key('plotunits'): varname += ' ['+var.plotatts['plotunits']+']' 
-        ax.set_xlabel(varname)
+        ax.set_xlabel(_buildaxistitle(name = var.name, **var.plotatts))
             
     else:
       lblx = kwargs.pop('lblx', True)
@@ -136,10 +170,15 @@ def plotvar (var, **kwargs):
       ax.set_xlim(xlims[::xaxis.plotatts['plotorder']])
 
       ax.xaxis.set_major_formatter(xaxis.formatter())
+      # coordinate axis
       if lblx:
         xaxis.set_locator(ax.xaxis)
-        ax.set_xlabel(xaxis.plotatts['plottitle']+' ['+xaxis.plotatts['plotunits']+']')      
-                      
+        ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))
+
+      # value axis
+      if lbly:
+        ax.set_ylabel(_buildaxistitle(name = var.name, **var.plotatts))
+
   # 2D case:
   elif nd == 2:
     from numpy import meshgrid, concatenate
@@ -290,13 +329,13 @@ def plotvar (var, **kwargs):
 
       # Set x and y labels and formatters     
       if kwargs.pop('lblx', True):
-        ax.set_xlabel(xaxis.plotatts['plottitle'])      
+        ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))
         ax.xaxis.set_major_formatter(xaxis.formatter())
         xaxis.set_locator(ax.xaxis)
       else:
         ax.set_xticklabels('')      
       if kwargs.pop('lbly', True):
-        ax.set_ylabel(yaxis.plotatts['plottitle'])      
+        ax.set_ylabel(_buildaxistitle(**yaxis.plotatts))
         ax.yaxis.set_major_formatter(yaxis.formatter())
         yaxis.set_locator(ax.yaxis)
       else:
@@ -375,14 +414,14 @@ def plotsigmask (var, ax, **kwargs):
 
   # Set x and y labels and formatters
   if kwargs.pop('lblx', True):
-    ax.set_xlabel(xaxis.plotatts['plottitle'])      
+    ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))      
     ax.xaxis.set_major_formatter(xaxis.formatter())
     xaxis.set_locator(ax.xaxis)
   else:
     ax.set_xticklabels('')
 
   if kwargs.pop('lbly', True):
-    ax.set_ylabel(yaxis.plotatts['plottitle'])      
+    ax.set_ylabel(_buildaxistitle(**yaxis.plotatts))      
     ax.yaxis.set_major_formatter(yaxis.formatter())
     yaxis.set_locator(ax.yaxis)
   else:
@@ -445,22 +484,6 @@ def plotquiver (vu, vv, **kwargs):
 
   axes = vu.axes
 
-  # Create title if none has been specified
-  title = kwargs.pop('title', None)
-  if title is None:
-    if vu.plotatts.has_key('plottitle'):
-      title = vu.plotatts['plottitle']
-    elif vu.name != '':
-      title = vu.name
-    else: title = 'Unnamed Var'
-
-    if vu.plotatts.has_key('plotunits'): # units as an optional attribute for which a string can be provided?
-      title += ' (%s)' % vu.plotatts['plotunits']
-    
-    for a in axes:
-      if len(a) == 1:
-        title += ', ' + a.formatvalue(a.values[0])
-
   every = kwargs.pop('every', 1)
   valu = vu.squeeze()[::every, ::every]
   valv = vv.squeeze()[::every, ::every]
@@ -486,6 +509,11 @@ def plotquiver (vu, vv, **kwargs):
     ax = fig.add_subplot(111)
   else:
     fig = ax.figure
+
+  # Create title if none has been specified
+  title = kwargs.pop('title', None)
+  if title is None:
+    title = _buildvartitle(axes, vu.name, **vu.plotatts)
 
   ax.set_title(title)
 
@@ -522,9 +550,6 @@ def plotquiver (vu, vv, **kwargs):
     m.drawparallels([-90,-60,-30,0,30,60,90],labels=[1,0,0,0],ax=ax)
 
   else:
-    if lblx: ax.set_xlabel(xaxis.plotatts['plottitle'])      
-    if lbly: ax.set_ylabel(yaxis.plotatts['plottitle'])
-
     # Disable autoscale.  Otherwise, if we set a log scale below, then
     # the range of our axes will get screwed up.
     # (This is a 'feature' of matplotlib!)
@@ -545,6 +570,17 @@ def plotquiver (vu, vv, **kwargs):
       ax.set_ylim(max(yaxis.values),min(yaxis.values))
     else:
       ax.set_ylim(min(yaxis.values),max(yaxis.values))
+
+    if lblx:
+      ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))      
+      ax.xaxis.set_major_formatter(xaxis.formatter())
+      xaxis.set_locator(ax.xaxis)
+
+    if lbly:
+      ax.set_ylabel(_buildaxistitle(**yaxis.plotatts))      
+      ax.yaxis.set_major_formatter(yaxis.formatter())
+      yaxis.set_locator(ax.yaxis)
+
 
   if wasint:
      ion()
