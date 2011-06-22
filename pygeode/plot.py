@@ -132,7 +132,7 @@ def plotvar (var, **kwargs):
   else:
     fig = ax.figure
 
-  if not hold: ax.set_title(title)
+  if not hold and title: ax.set_title(title)
 
   # 1D case:
   if nd == 1:
