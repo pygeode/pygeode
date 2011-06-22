@@ -4,45 +4,52 @@ from pygeode.var import Var
 from pygeode.axis import Axis
 from var_test import varTest
 
-# Different axis lengths to try out
-sizes = (1, 2, 3, 10, 200)
+# Helper function: given an axis length, return a bunch of
+# different slices to try out.
+def gimme_some_slices(size):
+  slices = []
 
-# Compile a list of slices to try for each dimension size.
-# Each size listed above is a dictionary entry, containing a list of slices
-# to try for that axis size.
-# First, initialize (no slices to try yet)
-slices = dict([(size,[]) for size in sizes])
-
-# Add some slices for each axis size.
-# Try to cover all types of slicing
-for size in sizes:
   # No slicing
-  slices[size].append(slice(None))
+  slices.append(slice(None))
 
   # Slicing a single value
   for scalar in (-1,0,1,2):
     if scalar >= size: continue
-    slices[size].append(scalar)
-    slices[size].append(slice(scalar,scalar+1))
-    slices[size].append([scalar])
+    slices.append(scalar)
+    slices.append(slice(scalar,scalar+1))
+    slices.append([scalar])
 
   # Empty slice (nothing selected)
-#  slices[size].append([])
+  #slices.append([])
 
   # The stuff below requires a non-degenerate array
-  if (size == 0): continue
+  if (size == 0): return slices
 
   # Range of values
   np.random.seed(size)
   start, stop = sorted(np.random.randint(0, size, 2))
 
   for stride in (1,2):
-    slices[size].append(slice(start, stop, stride))
-    slices[size].append(slice(stop, start, -stride))
+    slices.append(slice(start, stop, stride))
+    slices.append(slice(stop, start, -stride))
 
   # Random integer indices
   np.random.seed(size*42)
-  slices[size].append(np.random.randint(-size,size, size/2+1))
+  slices.append(np.random.randint(-size,size, size/2+1))
+
+  return slices
+
+# Okay, now start constructing some test cases
+
+# Different axis lengths to try out
+sizes = (1, 2, 3, 10, 200)
+
+# Compile a list of slices to try for each dimension size.
+# Each size listed above is a dictionary entry, containing a list of slices
+# to try for that axis size.
+slices = {}
+for size in sizes:
+  slices[size] = gimme_some_slices(size)
 
 # Each axis needs to be a distinct class, or view.get() gives bizarre error messages
 from pygeode.axis import XAxis, YAxis, ZAxis
@@ -72,8 +79,7 @@ for naxes in (1,2):
     print "    # tests:", len(list(product(*slicelists)))
     for sl in product(*slicelists):
       print "    Testing slices %s"%repr(sl)
-      # currently the following tests fail:
-      # 04860, 05184, 06318, 06642
+      # Trap any known failures here to further diagnose
 #      assert (count!=4860), "shape: %s, slices: %s, values: %s, axes: %s"%(shape, str(sl), values, [a.values for a in var.axes])
 
       # slice the var immediately (before massaging the slices for numpy)
