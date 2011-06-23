@@ -275,7 +275,8 @@ def dims2axes (dataset):
   replacements = {}
   for i,dim in enumerate(dataset.axes):
     # Do we have a Var with this name?
-    if dim.name in dataset:
+#    if dim.name in dataset:
+    if any (var.name == dim.name for var in dataset.vars):
       # Get the var
       var = dataset[dim.name]
       if var.naxes != 1: continue  # abort if we have > 1 dimension
