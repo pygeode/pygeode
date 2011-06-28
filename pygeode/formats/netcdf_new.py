@@ -419,15 +419,15 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   if len(dimtypes) > 0:
     dataset = set_axistypes(dataset, dimtypes)
 
+  # Keep only specific variables?
+  if len(varlist) > 0:
+    dataset = whitelist(dataset, varlist)
+
   # Rename variables?
   if len(namemap) > 0:
     # Check both axes and variables
     dataset = dataset.rename_vars(vardict=namemap)
     dataset = dataset.rename_axes(axisdict=namemap)
-
-  # Keep only specific variables?
-  if len(varlist) > 0:
-    dataset = whitelist(dataset, varlist)
 
   return dataset
 
