@@ -29,9 +29,6 @@ If the build process fails, check if you have all the prerequisites.
 If you want to run the package without installing first:
 --------------------------------------------------------
 
-1) Go into the pygeode subdirectory
-2) Run 'make'
-3) Go back to this directory
-4) Add this directory to your Python path:
-  export PYTHONPATH=${PYTHONPATH}:$PWD
+1) Run 'make'
+2) Add this directory to your PYTHONPATH
 
