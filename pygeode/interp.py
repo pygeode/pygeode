@@ -85,7 +85,10 @@ class Interp (Var):
 
     # Validate the coordinate fields
     assert all(invar.hasaxis(a) for a in inx.axes)
-    assert all(invar.hasaxis(a) or a is outaxis for a in outx.axes)
+#    assert all(invar.hasaxis(a) or a is outaxis for a in outx.axes)
+    for a in outx.axes:
+      if a is outaxis: continue
+      assert invar.hasaxis(a), "invar doesn't have axis '%s'"%repr(a)
     assert inx.hasaxis(inaxis)
     assert outx.hasaxis(outaxis)
 
