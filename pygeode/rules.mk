@@ -22,8 +22,8 @@ all: $(PROGS) $(addsuffix .dir, $(SUBDIRS)) $(addprefix lib, $(addsuffix .$(LIBE
 # GCC
 CC = gcc
 FC = gfortran
-CFLAGS += -std=c99 -fPIC -g -fbounds-check -D$(PLATFORM)
-FFLAGS += -fPIC -g -fbounds-check
+CFLAGS += -std=c99 -fPIC -g -fbounds-check -Wall -D$(PLATFORM)
+FFLAGS += -fPIC -g -fbounds-check -Wall
 LDLIBS += -lm
 SHARED = -shared -Wl,-soname,$(basename $<)
 

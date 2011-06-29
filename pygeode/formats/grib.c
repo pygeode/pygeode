@@ -265,7 +265,7 @@ int encode_GDS (GDS *gds, GDS_raw *raw) {
 //  if (gds->scan_flag & 128) di *= -1;
 //  if (gds->scan_flag & 64) dj *= -1;
   int la1 = gds->la1, la2 = gds->la2, 
-      lo1 = gds->lo1, lo2 = gds->lo2, scan_flag = gds->scan_flag;
+      lo1 = gds->lo1, lo2 = gds->lo2;
   if (la1 < 0) la1 = (-la1) ^ 0x800000;
   if (lo1 < 0) lo1 = (-lo1) ^ 0x800000;
   if (la2 < 0) la2 = (-la2) ^ 0x800000;
@@ -779,6 +779,7 @@ int close_grib (FILE **f) {
   assert (*f != NULL);
   fclose (*f);
   *f = NULL;
+  return 0;
 }
 
 // Get info about a variable

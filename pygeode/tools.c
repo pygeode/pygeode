@@ -135,6 +135,8 @@ int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices) {
 // Given two sorted arrays, create 2 integer arrays filled with indices where
 // the arrays share common values, and -1 for elements with no common value
 // I.e., (1,3,5,7,9),(2,3,5,7) -> (-1,1,2,3,-1),(-1,1,2,3)
+//TODO: use a relative tolerance in the comparisons?
+// (right now, it's an exact match or nothing)
 int common_map (int na, double *a, int nb, double *b, int *nmap, int *a_map, int *b_map) {
 
   const double rtol=1e-05;

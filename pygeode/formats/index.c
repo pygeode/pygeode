@@ -776,7 +776,7 @@ void save_Index (Index *ind, char *filename) {
       OffsetPattern *pat = ind->patterns[v];
 //      writeX (f, 0, size);
       for (int i = 0; i < nunique_patterns; i++) {
-        if (ind->patterns[v] == patterns[i]) {
+        if (pat == patterns[i]) {
           write8 (f, i);
           break;
         }
