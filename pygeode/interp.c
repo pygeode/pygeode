@@ -96,7 +96,7 @@ int interpgsl_nan (int narrays, int nxin, int nxout,
                double d_below, double d_above,
                const gsl_interp_type *type)                          {
 
-  int i, j, n, start, s_out, end, step; 
+  int i, j, n, start, end, step; 
   double *local_xin, *local_xout, *local_yin;
   double xmin, ymin, xmax, ymax;
 
@@ -138,7 +138,7 @@ int interpgsl_nan (int narrays, int nxin, int nxout,
     xmax = local_xin[j-1];
 
     if (loop_xout) {
-      for (i = 0, j = start; i < nxout; i++, j += step) local_xout[j] = xout[i]; 
+      for (i = 0; i < nxout; i++) local_xout[i] = xout[i]; 
     }
 
     interp = gsl_interp_alloc (type, j);
