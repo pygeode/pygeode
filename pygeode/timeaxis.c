@@ -298,10 +298,10 @@ int val_as_date_std (int n, int iyear, int imonth, int iday,
     // Make sure s is positive
     // (estimate number of years to offset, ok so long as overestimate - just don't want a negative s)
 //    assert (s >= 0);  // remove this later
-    while (s < 0) {
-      int y_back = y - (-s)/365/86400 - 1;
+    while (s < 0LL) {
+      int y_back = y - 1 - (int) ((-s)/365LL/86400LL);
       if (y_back < 0) y_back = 0;
-      s += ndays(y_back, y) * 365 * 86400;
+      s += ndays(y_back, y) * 86400LL;
       y = y_back;
     }
     assert (s >= 0);
