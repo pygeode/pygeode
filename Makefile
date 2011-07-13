@@ -14,8 +14,8 @@ clean:
 	@(cd pygeode; $(MAKE) clean)
 	@(cd tests; $(MAKE) clean)
 
-test: buildlibs
-	@(cd tests; env PYTHONPATH=$(PWD) nosetests)
+test:
+	@(cd tests; $(MAKE) test)
 
 # alias
 check: test
