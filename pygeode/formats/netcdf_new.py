@@ -338,7 +338,7 @@ def whitelist (dataset, varlist):
   assert isinstance(varlist,(list,tuple))
   vars = [dataset[v] for v in varlist]
   dataset = Dataset(vars, atts=dataset.atts)
-
+  return dataset
 ######
 
 

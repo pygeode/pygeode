@@ -17,8 +17,10 @@ all: $(PROGS) $(addsuffix .dir, $(SUBDIRS)) $(addprefix lib, $(addsuffix .$(LIBE
 # Intel
 #CC = icc
 #FC = ifort
-#CFLAGS += -O3 -std=c99 -fPIC -D$(PLATFORM)
-#FFLAGS += -O3 -fPIC
+#CFLAGS += -std=c99 -fPIC -O3 -xHOST -openmp -DMKL_ILP64   
+#FFLAGS += -O3 -fPIC -xHOST -openmp
+#LDLIBS = -L$(MKLROOT)/lib/intel64 -Wl,--start-group -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group -lpthread
+#SHARED = -shared -Wl,-soname,$(basename $<)
 # GCC
 CC = gcc
 FC = gfortran
