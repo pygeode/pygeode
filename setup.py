@@ -7,7 +7,7 @@ from distutils.core import setup, Extension
 #extargs = dict(extra_compile_args=['-std=c99'])
 
 setup (	name="pygeode",
-	version="0.6.0~rc3",
+	version="0.6.0~rc4",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="",
         url="http://sparc01.atmosp.physics.utoronto.ca/pygeode/docs",
