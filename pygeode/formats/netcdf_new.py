@@ -182,6 +182,11 @@ class NCDim (Axis):
     name = name.value
     length = length.value
     Axis.__init__(self, length, name=name)
+  # Override axis equality checking - name needs to match.
+  # (Work around the deficiencies of View.map_to)
+  def __eq__ (self, other):
+    from pygeode.axis import Axis
+    return Axis.__eq__(self,other) and self.name == other.name
 del Axis
 
 # constructor for the dims (wrapper for Dim so it's only created once)
