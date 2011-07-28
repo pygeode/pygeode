@@ -292,7 +292,7 @@ class Time (TAxis):
     if isinstance(exclude,str): exclude = [exclude]
     if isinstance(include,str): include = [include]
     if len(include) > 0:
-      fnames = fields & set(include)
+      fnames = fnames & set(include)
     fnames -= set(exclude)
     if resolution is not None:
       i = list(self.allowed_fields).index(resolution)
