@@ -4,6 +4,7 @@
 # Common stuff
 
 from pygeode.axis import concat
+import numpy as np
 
 # Starting date
 startdate = {'year':2000, 'month':1, 'day':1}
@@ -21,6 +22,8 @@ def test_standard():
   t1 = StandardTime(values1, units='hours', startdate=startdate)
   t2 = StandardTime(values2, units='minutes', startdate=startdate)
   t = concat ([t1, t2])
+  # Assuming the default units are 'days'.  Change this line as necessary.
+  assert np.allclose(t.values * 24, [0,1,2,3,4,5,6,7,8])
 
 # Test 2 - 365-day calendar
 def test_365day():
@@ -28,4 +31,6 @@ def test_365day():
   t1 = ModelTime365(values1, units='hours', startdate=startdate)
   t2 = ModelTime365(values2, units='minutes', startdate=startdate)
   t = concat ([t1, t2])
+  # Assuming the default units are 'days'.  Change this line as necessary.
+  assert np.allclose(t.values * 24, [0,1,2,3,4,5,6,7,8])
 

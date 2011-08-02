@@ -376,6 +376,7 @@ class CalendarTime(Time):
 # {{{
     import timeticker as tt
     import numpy as np
+    from warnings import warn
 
     tg = []
     if 'year' in self.allowed_fields:
@@ -424,9 +425,14 @@ class CalendarTime(Time):
       else: raise Exception ("unrecognized date format '%s'"%datefmt)
 
     elif values is not None and units is None:
-      raise Exception ("Don't know what units to use for the given values")
+#      raise Exception ("Don't know what units to use for the given values")
+      # This can happen during concatenation - mismatched units may be dropped in concat(), so as a workaround, we ignore the values array and hope we have good auxarrays
+      warn ("No units available for the given relative values.  Ignoring values array and relying on absolute date fields for initialization.", stacklevel=2)
+      values = None
 
-    if units is None: units = 'days'
+    if units is None:
+      warn ("No units given, using default of 'days'", stacklevel=2)
+      units = 'days'
 
     return Time.__init__(self, values=values, units=units, startdate=startdate, **kwargs)
 # }}}
