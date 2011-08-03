@@ -172,8 +172,14 @@ class NCFile:
 # A generic dimension (has no attributes except a name and a length)
 from pygeode.axis import Axis
 class NCDim (Axis):
-  def __init__(self, f, dimid):
+  # Override axis equality checking - name needs to match.
+  # (Work around the deficiencies of View.map_to)
+  def __eq__ (self, other):
     from pygeode.axis import Axis
+    return Axis.__eq__(self,other) and self.name == other.name
+  # Make an axis from given fileid and dimid
+  @staticmethod
+  def from_id (f, dimid):
     from ctypes import create_string_buffer, c_long, byref
     name = create_string_buffer(NC_MAX_NAME+1)
     length = c_long()
@@ -181,18 +187,14 @@ class NCDim (Axis):
     assert ret == 0
     name = name.value
     length = length.value
-    Axis.__init__(self, length, name=name)
-  # Override axis equality checking - name needs to match.
-  # (Work around the deficiencies of View.map_to)
-  def __eq__ (self, other):
-    from pygeode.axis import Axis
-    return Axis.__eq__(self,other) and self.name == other.name
+    return NCDim (length, name=name)
+
 del Axis
 
 # constructor for the dims (wrapper for Dim so it's only created once)
 def makedim (f, dimid, dimdict={}):
   if (f,dimid) not in dimdict:
-    dimdict[(f,dimid)] = NCDim(f,dimid)
+    dimdict[(f,dimid)] = NCDim.from_id(f,dimid)
   return dimdict[(f,dimid)]
 
 # A netcdf variable
