@@ -378,6 +378,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   from ctypes import c_int, byref
   from pygeode.dataset import asdataset
   from pygeode.formats.cfmeta import decode_cf
+  from pygeode.axis import Axis
   if not filename.startswith('http://'):
     assert exists(filename)
 
@@ -403,6 +404,15 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
   finally:
     f.close()
+
+  # Add the object stuff from dimtypes to value_override, so we don't trigger a
+  # load operation on those dims.
+  # (We could use any values here, since they'll be overridden again later,
+  #  but we might as well use something relevant).
+  value_override = dict(value_override)  # don't use  the default (static) empty dict
+  for k,v in dimtypes.items():
+    if isinstance(v,Axis):
+      value_override[k] = v.values
 
   #### Filters to apply to the data ####
 
