@@ -46,7 +46,7 @@ class SmoothVar (Var):
     # Extend view along smoothing axis; use data past slice if present, otherwise mirror data
     loffs = self.klen / 2
     roffs = self.klen - loffs
-    src_shape = view.shape[:saxis] + (len(ind) + self.klen,) + view.shape[saxis+1:]
+    src_shape = view.shape[:saxis] + (sp - st + self.klen,) + view.shape[saxis+1:]
     src = np.empty(src_shape, self.var.dtype)
     
     # Construct slices for mirroring pre-convolved data
@@ -63,7 +63,7 @@ class SmoothVar (Var):
     outsl = [ind - (st - loffs) if i == saxis else slice(None) for i in range(self.naxes)]
 
     # Get source data
-    sslo[saxis] = slice(mleft_len, self.shape[saxis] + self.klen - mright_len)
+    sslo[saxis] = slice(mleft_len, src_shape[saxis] - mright_len + 1)
     src[sslo] = aview.get(self.var, pbar=pbar)
 
     # Mirror boundaries, if necessary
