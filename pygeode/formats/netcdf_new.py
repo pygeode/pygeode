@@ -276,7 +276,7 @@ def override_values (dataset, value_override):
 
 # Find axes (1D vars with the same name as a dimension)
 def dims2axes (dataset):
-  from pygeode.axis import Axis
+  from pygeode.axis import NamedAxis
   from pygeode.var import copy_meta
   # Loop over current set of generic "dimensions"  
   replacements = {}
@@ -288,7 +288,7 @@ def dims2axes (dataset):
       var = dataset[dim.name]
       if var.naxes != 1: continue  # abort if we have > 1 dimension
       # Turn it into a proper axis
-      axis = Axis (values=var.get())  # need the values pre-loaded for axes
+      axis = NamedAxis (name=var.name, values=var.get())  # need the values pre-loaded for axes
       copy_meta (var, axis)
       replacements[dim.name] = axis
   dataset = dataset.replace_axes(axisdict=replacements)
