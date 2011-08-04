@@ -57,9 +57,6 @@ class CompositeVar(Var):
       off = Offset(np.arange(-mevoff, mevlen-mevoff))
     axes = var.axes[:iaxis] + (ev, off) + var.axes[iaxis+1:]
 
-    for iev, el, eo in zip(ievents, evlen, evoff):
-      assert iev - eo >= 0 and iev - eo + el < len(caxis), 'Event %d (i: %d) is not fully defined' % (i, iev)
-
     # Build var object
     self.var = var
     self.iaxis = iaxis
@@ -67,6 +64,16 @@ class CompositeVar(Var):
     self.mevlen = mevlen
     self.evoffs = evoff
     self.mevoff = mevoff
+
+    for i, (iev, el, eo) in enumerate(zip(ievents, evlen, evoff)):
+      if iev - eo < 0:
+         self.evoffs[i] += iev - eo
+         self.evlens[i] -= iev - eo
+      if iev - eo + el >= len(caxis):
+         self.evlens[i] = len(caxis) - (iev - eo)
+
+      #assert iev - eo >= 0 and iev - eo + el < len(caxis), \
+         #'Event %d (i: %d) is not fully defined' % (np.where(ievents==iev)[0][0], iev)
     Var.__init__(self, axes, dtype=var.dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
   #}}} 
 
