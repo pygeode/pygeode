@@ -79,7 +79,11 @@ class SmoothVar (Var):
       src[sslo] = src[ssli]
 
     # Return convolved array (forcing the dtype seems to be required)
-    return sg.convolve(src, self.kernel, 'same', old_behavior=False)[outsl].astype(self.dtype)
+    try:
+       # Older versions of scipy require a flag to define the correct convolution behaviour 
+       return sg.convolve(src, self.kernel, 'same', old_behavior=False)[outsl].astype(self.dtype)
+    except TypeError:
+       return sg.convolve(src, self.kernel, 'same')[outsl].astype(self.dtype)
   # }}}
 
 def smooth(var, saxis, klen=15, kernel='hann'):
