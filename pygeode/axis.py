@@ -175,7 +175,10 @@ class Axis(Var):
     # special case: both axes are identical
     if self == other: return np.arange(len(self))
 
-    return map_to(self.values, other.values)
+    # Use less conservative tolerance?
+    rtol = max(self.auxatts.get('rtol', 1e-5), other.auxatts.get('rtol', 1e-5))
+
+    return map_to(self.values, other.values, rtol)
   # }}}
 
   def sorted (self, reverse=None):

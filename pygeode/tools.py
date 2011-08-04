@@ -317,17 +317,17 @@ def shared_axes(axes, sets):
 
 # Find the mapping from one list to another
 # (very similar to np.searchsorted, but it includes an error tolerance)
-def map_to (a, b):
+def map_to (a, b, rtol=1e-5):
 # {{{
   import numpy as np
-  from ctypes import c_int, byref
+  from ctypes import c_int, c_double, byref
   A = np.ascontiguousarray(a, 'd')
   NA = c_int(len(A))
   B = np.ascontiguousarray(b, 'd')
   NB = c_int(len(B))
   ind = np.zeros(len(B), 'int32')
 #  nind = c_int(0)
-  ret = libmisc.map_to(NA, A.ctypes.data, NB, B.ctypes.data, ind.ctypes.data)
+  ret = libmisc.map_to(NA, A.ctypes.data, NB, B.ctypes.data, ind.ctypes.data, c_double(rtol))
 #  print A, "map_to", B, "=>", ind
   # Filter out any unmatched indices
   assert ret == 0

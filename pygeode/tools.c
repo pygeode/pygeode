@@ -91,9 +91,9 @@ int sort (int na, double *a, int *a_ind) {
 
 // Return a mapping from array A to array B
 // Note: arrays must be double-precision
-int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices) {
+int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices, double rtol) {
   // Use same default tolerances as numpy (don't use absolute tolerance, though)
-  const double rtol=1e-05;
+//  const double rtol=1e-05;
 //  double atol=1e-08;
 
   double a[na], b[nb];
