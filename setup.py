@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 
 # PyGeode installation script
-
-#extargs = dict(extra_compile_args=['-std=c99'])
 
 setup (	name="pygeode",
 	version="0.6.0~rc4",
@@ -18,14 +16,3 @@ setup (	name="pygeode",
 	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"]
 )
 
-"""
-        ext_modules=[	Extension('pygeode/libquadrule', ['pygeode/quadrule.c']),
-			Extension('pygeode/libtools', ['pygeode/tools.c'], **extargs),
-			Extension('pygeode/libinterp', ['pygeode/interp.c'], libraries=['gsl'], **extargs),
-			Extension('pygeode/libeof', ['pygeode/eof.c'], **extargs),
-			Extension('pygeode/libsvd', ['pygeode/svd.c'], **extargs),
-			Extension('pygeode/libtimeaxis', ['pygeode/timeaxis.c'], **extargs),
-			Extension('pygeode/formats/libgrib', ['pygeode/formats/grib.c'], **extargs),
-			Extension('pygeode/formats/libopendap', ['pygeode/formats/opendap.c'], **extargs),
-	],
-"""
