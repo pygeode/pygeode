@@ -1,3 +1,2 @@
 recursive-include pygeode *.py *.c *.h
-prune pygeode/tests
 prune pygeode/plugins/*
