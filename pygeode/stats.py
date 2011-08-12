@@ -82,18 +82,24 @@ def correlate(X, Y, axes=None, pbar=None):
   return Rho, P
 # }}}
 
-def regress(X, Y, pbar=None):
+def regress(X, Y, axes=None, pbar=None):
 # {{{
   ''' regress(X, Y) - returns correlation between variables X and Y
-      computed over all axes shared by x and y. Returns \rho_xy, and p values
-      for \rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
+      computed over axes. Returns rho_xy, and p values
+      for rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
       section 8.2.3.'''
-  from pygeode.tools import combine_axes, shared_axes, npsum
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
-  from pygeode.reduce import loopover
 
   srcaxes = combine_axes([X, Y])
   oiaxes, riaxes = shared_axes(srcaxes, [X.axes, Y.axes])
+  if axes is not None:
+    ri_new = []
+    for a in axes:
+      ri_new.append(whichaxis([srcaxes[i] for i in riaxes], a))
+    oiaxes.extend([r for r in riaxes if r not in ri_new])
+    riaxes = ri_new
+    
   oaxes = [srcaxes[i] for i in oiaxes]
   inaxes = oaxes + [srcaxes[i] for i in riaxes]
   oview = View(oaxes) 
@@ -103,8 +109,7 @@ def regress(X, Y, pbar=None):
     from pygeode.progress import PBar
     pbar = PBar()
 
-  if len(oaxes) == 0:
-    raise ValueException('%s and %s share no common axes to be regressed over' % (X.name, Y.name))
+  assert len(riaxes) > 0, '%s and %s share no axes to be regressed over' % (X.name, Y.name)
 
   # Construct work arrays
   x = np.zeros(oview.shape, 'd')
@@ -230,7 +235,7 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   ''' isnonzero(X) - determins if X is non-zero, assuming X is normally distributed.
       Returns mean of X along axes, p value, and confidence interval.'''
 
-  from pygeode.tools import combine_axes, whichaxis, loopover, npsum
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
   from pygeode.view import View
 
   riaxes = [X.whichaxis(n) for n in axes]
@@ -247,28 +252,34 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   assert N > 1, '%s has only one element along the reduction axes' % X.name
 
   # Construct work arrays
-  x = np.zeros(oview.shape, 'd')
-  xx = np.zeros(oview.shape, 'd')
+  x = np.zeros(oview.shape, 'd')*np.nan
+  xx = np.zeros(oview.shape, 'd')*np.nan
+  Na = np.zeros(oview.shape, 'd')*np.nan
 
   # Accumulate data
   for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
     xdata = xdata.astype('d')
-    x[outsl] += npsum(xdata, riaxes)
-    xx[outsl] += npsum(xdata**2, riaxes)
+    x[outsl] = np.nansum([x[outsl], npnansum(xdata, riaxes)], 0)
+    xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, riaxes)], 0)
+    # Sum of weights (kludge to get masking right)
+    Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xdata*0., riaxes)], 0) 
 
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx = (xx - x**2/N) / (N - 1)
-  x /= N
+  xx = (xx - x**2/Na) / (Na - 1)
+  x /= Na
 
   if N_fac is not None: 
     eN = N/N_fac
-  else: eN = N
+    eNa = Na/N_fac
+  else: 
+    eN = N
+    eNa = Na
   print 'eff. N = %.1f' % eN
 
-  sdom = np.sqrt(xx/eN)
+  sdom = np.sqrt(xx/eNa)
 
-  p = tdist.cdf(abs(x/sdom), eN - 1)*np.sign(x)
-  ci = tdist.ppf(1. - alpha/2, eN - 1) * sdom
+  p = tdist.cdf(abs(x/sdom), eNa - 1)*np.sign(x)
+  ci = tdist.ppf(1. - alpha/2, eNa - 1) * sdom
 
   name = X.name if X.name != '' else 'X'
 
