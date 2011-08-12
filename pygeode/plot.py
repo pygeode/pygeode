@@ -388,13 +388,14 @@ def plotsigmask (var, ax, **kwargs):
 
   shi = kwargs.pop('majsig', 0.99)
   slo = kwargs.pop('minsig', 0.95)
+  alph = kwargs.pop('alpha', 0.2)
   sigc = ['1.', '0.7', '0.', '0.7', '1.']
   #sigc = ['0.', '0.7', '1.', '0.7', '0.']
   sigl = [-1.1, -shi, -slo, slo, shi, 1.1]
   ct = ax.contourf(meshx, meshy, values, sigl, colors=sigc, hold=True, zorder=-1)
   setp([ct.collections[0], ct.collections[4]], visible=False)
-  setp([ct.collections[1], ct.collections[3]], alpha=0.4, edgecolor='none')
-  setp(ct.collections[2], alpha=0.4, edgecolor='none')
+  setp([ct.collections[1], ct.collections[3]], alpha=alph, edgecolor='none')
+  setp(ct.collections[2], alpha=alph, edgecolor='none')
   ax.set_rasterization_zorder(0)
 
   # Set the axis limits
