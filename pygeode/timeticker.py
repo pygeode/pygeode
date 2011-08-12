@@ -513,12 +513,14 @@ from pylab import Formatter
 ## most formatting work is done by the time axis itself
 class TimeFormatter(Formatter):
 # {{{
-  def __init__(self, taxis):
+  def __init__(self, taxis, fmt=None):
     self.taxis = taxis
     self.offset = ''
+    self.fmt = fmt
 
   def __call__(self, x, pos=0):
-    fmt = self.taxis.plotatts['plotfmt']
+    fmt = self.fmt
+    if fmt is None: fmt = self.taxis.plotatts['plotfmt']
     return self.taxis.formatvalue(x, fmt=fmt, units=False)
 
   def set_locs(self, locs):
