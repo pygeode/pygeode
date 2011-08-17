@@ -104,7 +104,7 @@ def date_diff(taxis, dt1, dt2, units = None):
 
 
 from pygeode.var import Var
-from pygeode.timeaxis import Time, Yearless
+from pygeode.timeaxis import Yearless
 
 class Lag(Yearless): name = 'Lag'
 
@@ -112,6 +112,8 @@ class LagVar(Var):
   def __init__(self, var, iaxis, lags):
   # {{{
     import numpy as np
+    from pygeode import Var
+    from pygeode.timeaxis import Time
 
     self.iaxis = var.whichaxis(iaxis)
     taxis = var.axes[self.iaxis]
@@ -153,3 +155,5 @@ class LagVar(Var):
     
     return out
   # }}}
+
+del Var, Yearless
