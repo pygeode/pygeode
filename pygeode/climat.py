@@ -67,18 +67,23 @@ class TimeMap(Var):
 class Clim(TimeMap):
   name_suffix1 = '_clim'
   @staticmethod
-  def get_outtime (intime): return intime.modify(exclude='year', uniquify=True)
+  def get_outtime (intime):
+    from pygeode.timeutils import modify
+    return modify(intime, exclude='year', uniquify=True)
 
 class Diurnal(TimeMap):
   name_suffix1 = '_diurnal'
   @staticmethod
-  def get_outtime (intime): return intime.modify(exclude=['year','month','day'], uniquify=True)
+  def get_outtime (intime):
+    from pygeode.timeutils import modify
+    return modify(intime, exclude=['year','month','day'], uniquify=True)
 
 class Daily(TimeMap):
   name_suffix1 = '_daily'
   @staticmethod
   def get_outtime (intime):
-    outtime = intime.modify(resolution='day', uniquify=True)
+    from pygeode.timeutils import modify
+    outtime = modify(intime, resolution='day', uniquify=True)
     assert hasattr(outtime, 'day')  # can we even do a daily mean?
     return outtime
 
@@ -86,7 +91,8 @@ class Monthly(TimeMap):
   name_suffix1 = '_monthly'
   @staticmethod
   def get_outtime (intime):
-    outtime = intime.modify(resolution='month', uniquify=True)
+    from pygeode.timeutils import modify
+    outtime = modify(intime, resolution='month', uniquify=True)
     assert hasattr(outtime, 'month')  # can we even do a monthly mean?
     return outtime
 
@@ -100,7 +106,8 @@ class Seasonal(TimeMap):
 
   @classmethod
   def get_outtime (cls, intime):
-    from pygeode.timeaxis import SeasonalTAxes, _uniquify
+    from pygeode.timeaxis import SeasonalTAxes
+    from pygeode.timeutils import _uniquify
     try:
       SeasonalAxis = SeasonalTAxes[intime.__class__]
     except:
@@ -263,6 +270,7 @@ class from_trend (Var):
     from pygeode.tools import merge_coefs
     from pygeode.var import Var
     from pygeode.timeaxis import Time
+    from pygeode.timeutils import modify
     # Get the coefficients
     if coef is None:
       assert A is not None and B is not None
@@ -277,7 +285,7 @@ class from_trend (Var):
       from warnings import warn
       if len(np.unique(coeft.year.values)) == 1:
         warn ("ignoring degenerate 'year' field", stacklevel=2)
-        coeft = coeft.modify(exclude='year')
+        coeft = modify(coeft, exclude='year')
         coef = coef.replace_axes({Time:coeft})
 
     self.coef = coef

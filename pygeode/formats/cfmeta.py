@@ -171,6 +171,7 @@ def decode_cf (dataset, ignore=[]):
   from pygeode.dataset import asdataset, Dataset
   from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
+  from pygeode import timeutils
   from warnings import warn
   import re
 
@@ -286,7 +287,7 @@ def decode_cf (dataset, ignore=[]):
         if not all(axisdict[name].year == 0):
           warn ("cfmeta: data starts at year 0 (which usually indicates a climatology), but there's more than one year's worth of data!  Keeping it on a regular calendar.", stacklevel=3)
           continue
-        axisdict[name] = axisdict[name].modify(exclude='year')
+        axisdict[name] = timeutils.modify(axisdict[name], exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
 
     # put the units back (if we didn't use them)?
