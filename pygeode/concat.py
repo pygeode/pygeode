@@ -87,7 +87,7 @@ def concat (*vars):
   # Check for presence of varying axis
   axes = vars[0].axes
   naxes = len(axes)
-  iaxis = set(i for v in vars for i in range(naxes) if v.axes[i] not in axes)
+  iaxis = set([i for v in vars for i in range(naxes) if v.axes[i] not in axes])
   if len(iaxis) == 0: 
     # If all axes are identical, return an ensemble var
     from pygeode.ensemble import EnsembleVar
