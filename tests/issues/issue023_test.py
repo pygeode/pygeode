@@ -1,3 +1,6 @@
+# Issue 23 - nansum doesn't actually use NANSumVar
+# http://code.google.com/p/pygeode/issues/detail?id=23
+
 def test_nan():
   from pygeode.axis import XAxis, ZAxis
   from pygeode.reduce import nansum, NANSumVar, WeightedNANSumVar
