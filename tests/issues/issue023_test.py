@@ -7,6 +7,6 @@ def test_nan():
 
   sum1 = nansum(var, ZAxis, weights=False)
   assert isinstance(sum1, NANSumVar)
-  sum2 = nansum(var, ZAxis, weights=True)
+  sum2 = nansum(var, ZAxis, weights=z**2)
   assert isinstance(sum2, WeightedNANSumVar)
 
