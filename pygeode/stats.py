@@ -13,12 +13,12 @@ sigs_c = (  (1.0, 1.0, 1.0),
 
 def correlate(X, Y, axes=None, pbar=None):
 # {{{
-  ''' correlate(X, Y) - returns correlation between variables X and Y
+  r''' correlate(X, Y) - returns correlation between variables X and Y
       computed over all axes shared by x and y. Returns \rho_xy, and p values
       for \rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
       section 8.2.3.'''
 
-  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
 
   # Put all the axes being reduced over at the end 
@@ -40,11 +40,12 @@ def correlate(X, Y, axes=None, pbar=None):
   assert len(riaxes) > 0, '%s and %s share no axes to be correlated over' % (X.name, Y.name)
 
   # Construct work arrays
-  x = np.zeros(oview.shape, 'd')
-  y = np.zeros(oview.shape, 'd')
-  xx = np.zeros(oview.shape, 'd')
-  xy = np.zeros(oview.shape, 'd')
-  yy = np.zeros(oview.shape, 'd')
+  x = np.zeros(oview.shape, 'd')*np.nan
+  y = np.zeros(oview.shape, 'd')*np.nan
+  xx = np.zeros(oview.shape, 'd')*np.nan
+  xy = np.zeros(oview.shape, 'd')*np.nan
+  yy = np.zeros(oview.shape, 'd')*np.nan
+  Na = np.zeros(oview.shape, 'd')*np.nan
 
   if pbar is None:
     from pygeode.progress import PBar
@@ -54,23 +55,45 @@ def correlate(X, Y, axes=None, pbar=None):
   for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes, pbar):
     xdata = xdata.astype('d')
     ydata = ydata.astype('d')
-    x[outsl] += npsum(xdata, siaxes)
-    y[outsl] += npsum(ydata, siaxes)
-    xx[outsl] += npsum(xdata**2, siaxes)
-    yy[outsl] += npsum(ydata**2, siaxes)
-    xy[outsl] += npsum(xdata*ydata, siaxes)
+    xydata = xdata*ydata
+
+    # It seems np.nansum does not broadcast its arguments automatically
+    # so there must be a better way of doing this...
+    xbc = [s1 / s2 for s1, s2 in zip(x[outsl].shape, xdata.shape)]
+    ybc = [s1 / s2 for s1, s2 in zip(y[outsl].shape, ydata.shape)]
+    x[outsl] = np.nansum([x[outsl], np.tile(npnansum(xdata, siaxes), xbc)], 0)
+    xx[outsl] = np.nansum([xx[outsl], np.tile(npnansum(xdata**2, siaxes), xbc)], 0)
+    y[outsl]  = np.nansum([y[outsl],  np.tile(npnansum(ydata, siaxes), ybc)], 0)
+    yy[outsl] = np.nansum([yy[outsl], np.tile(npnansum(ydata**2, siaxes), ybc)], 0)
+    xy[outsl] = np.nansum([xy[outsl], npnansum(xydata, siaxes)], 0)
+
+    # Sum of weights (kludge to get masking right)
+    Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xydata*0., siaxes)], 0) 
 
   N = np.prod([len(srcaxes[i]) for i in riaxes])
 
+  print Na
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx -= x**2/N
-  yy -= y**2/N
-  xy -= (x*y)/N
+  print yy
+  print y**2 / Na
+
+  xx -= x**2/Na
+  yy -= y**2/Na
+  xy -= (x*y)/Na
+
+  print 'xvar'
+  print xx
+  print 'yvar'
+  print yy
+  print 'covar'
+  print xy
 
   # Compute correlation coefficient, t-statistic, p-value
   rho = xy/np.sqrt(xx*yy)
-  t = np.abs(rho) * np.sqrt((N - 2.)/(1 - rho**2))
-  p = tdist.cdf(t, N-2) * np.sign(rho)
+  den = 1 - rho**2
+  den[den < 1e-14] = 1e-14 # Saturate the denominator to avoid div by zero warnings
+  t = np.abs(rho) * np.sqrt((Na - 2.)/den)
+  p = tdist.cdf(t, Na-2) * np.sign(rho)
 
   # Construct and return variables
   xn = X.name if X.name != '' else 'X' # Note: could write:  xn = X.name or 'X'

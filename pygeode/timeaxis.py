@@ -168,7 +168,8 @@ class Time (TAxis):
     import numpy as np
     from ctypes import c_void_p
 
-    if not isinstance(other,Time): return None
+    if not type(self) is type(other): return None
+    #isinstance(other,Time): return None
 
     # "self" attributes must be a subset of "other" attributes
     if not set(self.auxarrays.keys()) <= set(other.auxarrays.keys()):
