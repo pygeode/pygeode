@@ -393,9 +393,9 @@ def nansum (var, *axes, **kwargs):
 
   if weights is False or weights is None or weights.naxes == 0:
     # If weights aren't provided or predefined, return unweighted mean
-    return SumVar(var, axes)
+    return NANSumVar(var, axes)
 
-  return WeightedSumVar(var, axes, weights=weights, **kwargs)
+  return WeightedNANSumVar(var, axes, weights=weights, **kwargs)
 # }}}
 
 def mean (var, *axes, **kwargs): 
