@@ -38,28 +38,9 @@ def correlate(X, Y, axes=None, pbar=None):
   iview = View(inaxes) 
   siaxes = range(len(oaxes), len(srcaxes))
 
-  assert len(riaxes) > 0, '%s and %s share no axes to be correlated over' % (X.name, Y.name)
-  xview = oview
-  for i in range(len(oaxes)): 
-    if not X.hasaxis(oaxes[i]): xview = xview.modify_slice(i, 0)
-  yview = oview
-  for i in range(len(oaxes)): 
-    if not Y.hasaxis(oaxes[i]): yview = yview.modify_slice(i, 0)
-  sxaxes = [whichaxis(inaxes, a) for a in axes]
-  syaxes = [whichaxis(inaxes, a) for a in axes]
-  xshape = []
-  yshape = []
-  for i, s in enumerate(iview.shape):
-    if i < len(oaxes) and Y.hasaxis(inaxes[i]): yshape.append(s)
-    else: yshape.append(1)
-    if i < len(oaxes) and X.hasaxis(inaxes[i]): xshape.append(s)
-    else: xshape.append(1)
-
   # Construct work arrays
-  x  = np.zeros(xview.shape, 'd')*np.nan
-  Nx = np.zeros(xview.shape, 'd')*np.nan
-  y  = np.zeros(yview.shape, 'd')*np.nan
-  Ny = np.zeros(yview.shape, 'd')*np.nan
+  x  = np.zeros(oview.shape, 'd')*np.nan
+  y  = np.zeros(oview.shape, 'd')*np.nan
   xx = np.zeros(oview.shape, 'd')*np.nan
   yy = np.zeros(oview.shape, 'd')*np.nan
   xy = np.zeros(oview.shape, 'd')*np.nan
@@ -69,35 +50,33 @@ def correlate(X, Y, axes=None, pbar=None):
     from pygeode.progress import PBar
     pbar = PBar()
 
-  # Accumulate 1st moments
-  for outsl, (xdata,) in loopover([X], xview, inaxes, pbar):
-    xdata = xdata.astype('d')
-    x[outsl] = np.nansum([x[outsl], npnansum(xdata, sxaxes)], 0)
-    Nx[outsl] = np.nansum([Nx[outsl], npnansum(1. + xdata*0., sxaxes)], 0) 
-  x = (x / Nx).reshape(*xshape)
-
-  for outsl, (ydata,) in loopover([Y], yview, inaxes, pbar):
-    ydata = ydata.astype('d')
-    y[outsl]  = np.nansum([y[outsl], npnansum(ydata, syaxes)], 0)
-    Ny[outsl] = np.nansum([Ny[outsl], npnansum(1. + ydata*0., syaxes)], 0) 
-  y = (y / Ny).reshape(*yshape)
-
   for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes, pbar):
-    xdata = xdata.astype('d') - x
-    ydata = ydata.astype('d') - y
+    xdata = xdata.astype('d')
+    ydata = ydata.astype('d')
     xydata = xdata*ydata
+
+    xbc = [s1 / s2 for s1, s2 in zip(xydata.shape, xdata.shape)]
+    ybc = [s1 / s2 for s1, s2 in zip(xydata.shape, ydata.shape)]
+    xdata = np.tile(xdata, xbc)
+    ydata = np.tile(ydata, ybc)
+    xdata[np.isnan(xydata)] = np.nan
+    ydata[np.isnan(xydata)] = np.nan
 
     # It seems np.nansum does not broadcast its arguments automatically
     # so there must be a better way of doing this...
-    xbc = [s1 / s2 for s1, s2 in zip(xx[outsl].shape, xdata.shape)]
-    ybc = [s1 / s2 for s1, s2 in zip(yy[outsl].shape, ydata.shape)]
-    xx[outsl] = np.nansum([xx[outsl], np.tile(npnansum(xdata**2, siaxes), xbc)], 0)
-    yy[outsl] = np.nansum([yy[outsl], np.tile(npnansum(ydata**2, siaxes), ybc)], 0)
+    x[outsl] = np.nansum([x[outsl], npnansum(xdata, siaxes)], 0)
+    y[outsl]  = np.nansum([y[outsl], npnansum(ydata, siaxes)], 0)
+    xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, siaxes)], 0)
+    yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, siaxes)], 0)
     xy[outsl] = np.nansum([xy[outsl], npnansum(xydata, siaxes)], 0)
 
     # Sum of weights (kludge to get masking right)
     Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xydata*0., siaxes)], 0) 
 
+  xx -= x**2/Na
+  yy -= y**2/Na
+  xy -= (x*y)/Na
+  
   # Compute correlation coefficient, t-statistic, p-value
   rho = xy/np.sqrt(xx*yy)
   den = 1 - rho**2
