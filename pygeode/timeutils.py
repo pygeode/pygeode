@@ -2,7 +2,17 @@
 from pygeode.var import Var
 from pygeode.timeaxis import Time, Yearless
 
-class Lag(Yearless): name = 'Lag'
+class Lag(Yearless): 
+# {{{
+  name = 'lag'
+  @classmethod
+  def class_has_alias(cls, name):
+  # {{{
+    if cls.name.lower() == name.lower(): return True
+    return False
+  # }}}
+# }}}
+
 
 class LagVar(Var):
   def __init__(self, var, iaxis, lags):
