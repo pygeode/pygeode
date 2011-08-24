@@ -118,6 +118,36 @@ class Lag(Yearless):
 # }}}
 
 
+# Remove leap days from data on a standard calendar, coerce the data onto a
+# 365-day calendar.
+def removeleapyears(data):
+  from pygeode.timeaxis import StandardTime, ModelTime365
+  import numpy as np
+
+  taxis = data.getaxis(StandardTime)
+
+  # Determine which times to keep
+  year = taxis.year
+  isleapyear = (year % 4 == 0) & ( (year % 100 != 0) | (year % 400 == 0) )
+  isleapday = isleapyear & (taxis.month == 2) & (taxis.day == 29)
+  indices = np.nonzero(~isleapday)
+
+  # Remove the leap days from the time axis
+  taxis = taxis._getitem_asvar(indices)
+
+  # Re-init as a 365-day calendar (use the absolute date fields, not the relative values)
+  taxis = ModelTime365(units=taxis.units, **taxis.auxarrays)
+
+  # Remove the leap days from the data
+  slices = [slice(None)] * data.naxes
+  slices[data.whichaxis(StandardTime)] = indices
+  data = data._getitem_asvar(*slices)
+
+  # Replace the time axis of the data
+  data = data.replace_axes(time = taxis)
+
+  return data
+
 class LagVar(Var):
   def __init__(self, var, iaxis, lags):
   # {{{
