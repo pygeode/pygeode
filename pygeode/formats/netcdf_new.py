@@ -320,7 +320,9 @@ def set_axistypes (dataset, dimtypes):
     elif hasattr(dt, '__bases__') and issubclass(dt, Axis): # Axis class
       dimclass = dt
       axis = dimclass(values=oldaxis.values)
-      #copy_meta (oldaxis, axis)
+      # Copy the file metadata (but discard plot attributes from the old axis)
+      # (See issue 22)
+      copy_meta (oldaxis, axis, plotatts=False)
     elif hasattr(dt, '__len__'):
       if len(dt) != 2: raise ValueError('Got a list/tuple for dimtypes, but did not have 2 elements as expected (Axis class, parameters).  Instead, got %s.'%dt)
       dimclass, dimargs = dt

@@ -580,11 +580,11 @@ class Var(object):
 # }}}
 
 # a function to copy metadata from one variable to another
-def copy_meta (invar, outvar):
+def copy_meta (invar, outvar, plotatts=True):
   outvar.name = invar.name
   outvar.units = invar.units
   outvar.atts = invar.atts.copy()
-  outvar.plotatts = invar.plotatts.copy()
+  if plotatts: outvar.plotatts = invar.plotatts.copy()
 
 # a function to try and combine metadata from multiple inputs into an output
 # (similar to copy_meta, but takes multiple input variables)
