@@ -102,6 +102,36 @@ def date_diff(taxis, dt1, dt2, units = None):
   return taxis.date_as_val(dt2, startdate=dt1, units = units)
 # }}}
 
+# Conform two time axes so their values are comparable
+def conform_values (taxis1, taxis2):
+  from pygeode.timeaxis import Time
+  assert isinstance(taxis1, Time)
+  assert isinstance(taxis2, Time)
+  assert type(taxis1) is type(taxis2), "can't conform time axes of different types"  
+
+  allowed_fields = type(taxis1).allowed_fields
+
+  if set(taxis1.auxarrays.keys()) < set(taxis2.auxarrays.keys()):
+    return conform_values(taxis2, taxis1)[::-1]
+  assert set(taxis1.auxarrays.keys()) >= set(taxis2.auxarrays.keys()), "incompatible fields"
+
+  # From here on out, can assume that taxis1 contains the superset of all the fields.
+  # Check that the only extra fields of taxis1 occur at the end (fastest varying).
+  blah = False
+  for name in allowed_fields:
+    if name not in taxis1.auxarrays: continue
+    if blah: assert name not in taxis2.auxarrays, "incompatible fields"
+    if name not in taxis2.auxarrays: blah = True
+
+  # Use the units and start date from the second axis
+  units = taxis2.units
+  startdate = taxis2.startdate
+
+  # Change the values of the first time axis
+  taxis1 = type(taxis1)(units=units, startdate=startdate, **taxis1.auxarrays)
+
+  return taxis1, taxis2
+
 
 from pygeode.var import Var
 from pygeode.timeaxis import Yearless
