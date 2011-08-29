@@ -196,4 +196,92 @@ class LagVar(Var):
     return out
   # }}}
 
-del Var, Yearless
+del Yearless
+
+
+# Split a time axis into a 2D representation (year,<everything else>)
+class SplitTime (Var):
+  def __init__ (self, var, iaxis):
+    from pygeode.axis import NamedAxis
+    from pygeode.timeaxis import CalendarTime
+    from pygeode.varoperations import sorted
+    from pygeode.var import copy_meta, Var
+    import numpy as np
+
+    # Get the time axis to split
+    iaxis = var.whichaxis(iaxis)
+    taxis = var.getaxis(iaxis)
+    assert isinstance(taxis,CalendarTime)
+    assert hasattr(taxis,'year'), "no years to split off!"
+
+    # Get the years, turn them into an axis
+    years = np.unique(taxis.year)
+    years = NamedAxis(values=years, name='year')
+
+    # Get the rest, as a 'climatological' axis
+    days = modify(taxis, exclude='year', uniquify=True)
+
+    # Construct the output axes
+    axes = list(var.axes)
+    axes = axes[:iaxis] + [years, days] + axes[iaxis+1:]
+
+    copy_meta(var,self)
+
+    Var.__init__(self, axes=axes, dtype=var.dtype)
+
+    self.iaxis = iaxis
+    self.var = var
+
+  def getview (self, view, pbar):
+    import numpy as np
+
+    # Get the selected years and days
+    iaxis = self.iaxis
+    years = view.subaxis(iaxis).values  # numpy array
+    nyears = len(years)
+    days = view.subaxis(iaxis+1).auxarrays  # dictionary of numpy arrays
+    ndays = view.shape[iaxis+1]
+
+    # Input time axis (full, not sliced)
+    in_taxis = self.var.getaxis(iaxis)
+
+    # Broadcast all combinations of selected years and days, get a list of
+    # dates to request from the input var
+    fields = {}
+    fields['year'] = years.reshape(-1,1).repeat(ndays,axis=1).flatten()
+    for fname, farray in days.iteritems():
+      fields[fname] = farray.reshape(1,-1).repeat(nyears,axis=0).flatten()
+
+    # Construct a time axis with this field information
+    out_times = type(in_taxis)(units=in_taxis.units, **fields)
+
+    # Determine how much of the input axis we need, and how much
+    # that provides for the output (the rest will be NaNs).
+    in_sl, out_sl = in_taxis.common_map(out_times)
+    assert len(in_sl) == len(out_sl)  # just for the hell of it
+
+    # Start with a field of NaNs
+    out = np.empty(view.shape, dtype=self.dtype)
+    out[()] = float('NaN')  # will fail horribly if we have integer data.
+
+    # Get some input data
+    inview = view.remove(iaxis+1).replace_axis(iaxis, in_taxis, sl=in_sl)
+    indata = inview.get(self.var)
+
+    # Now, put this where we need it.
+    # Input data has a single time axis, so we need to reshape the output a bit.
+    squished_shape = out.shape[:iaxis] + (-1,) + out.shape[iaxis+2:]
+    out = out.reshape(squished_shape)
+    sl = [slice(None)] * out.ndim
+    sl[iaxis] = out_sl
+    out[sl] = indata
+
+    # Restore the shape
+    out = out.reshape(view.shape)
+
+    return out
+
+def splittimeaxis (var, iaxis='time'):
+  return SplitTime (var, iaxis)
+
+del Var
