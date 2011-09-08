@@ -111,17 +111,24 @@ def conform_values (taxis1, taxis2):
 
   allowed_fields = type(taxis1).allowed_fields
 
+  # Make taxis1 be the one with the 'larger' set of fields
   if set(taxis1.auxarrays.keys()) < set(taxis2.auxarrays.keys()):
-    return conform_values(taxis2, taxis1)[::-1]
+    taxis1, taxis2 = taxis2, taxis1
   assert set(taxis1.auxarrays.keys()) >= set(taxis2.auxarrays.keys()), "incompatible fields"
 
   # From here on out, can assume that taxis1 contains the superset of all the fields.
+
   # Check that the only extra fields of taxis1 occur at the end (fastest varying).
-  blah = False
+  # Otherwise, we get a non-trivial many-to-one mapping between the axes
+  # (they can't share a linear 'values' relationship).
+  end_resolution = False
   for name in allowed_fields:
     if name not in taxis1.auxarrays: continue
-    if blah: assert name not in taxis2.auxarrays, "incompatible fields"
-    if name not in taxis2.auxarrays: blah = True
+    # If we've already gone beyond the resolution of taxis2, then there
+    # shouldn't be any further fields defined in it.
+    if end_resolution: assert name not in taxis2.auxarrays, "incompatible fields"
+    # Check if we're now beyond the resolution of taxis2
+    if name not in taxis2.auxarrays: end_resolution = True
 
   # Use the units and start date from the second axis
   units = taxis2.units
