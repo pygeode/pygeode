@@ -236,27 +236,72 @@ class LagVar(Var):
 del Yearless
 
 
+# Split a time axis into year,<everything else>
+def _splittime (taxis):
+  from pygeode.timeaxis import CalendarTime
+  from pygeode.axis import NamedAxis
+  import numpy as np
+
+  assert isinstance(taxis,CalendarTime)
+  assert hasattr(taxis,'year'), "no years to split off!"
+
+  # Get the years, turn them into an axis
+  years = np.unique(taxis.year)
+  years = NamedAxis(values=years, name='year')
+
+  # Get the rest, as a 'climatological' axis
+  days = modify(taxis, exclude='year', uniquify=True).rename('day')
+
+  return years, days
+
+
+# Join 2 axes (year,<everything else>) into a single time axis
+# 'years' is an axis, 'days' is a CalendarTime axis.
+# NOTE: magical things can happen when the calendar year doesn't have a fixed length
+def _jointime (years, days):
+  from pygeode.axis import Axis
+  from pygeode.timeaxis import CalendarTime
+  assert isinstance(years, Axis)
+  assert isinstance(days, CalendarTime)
+  assert 'year' not in days
+
+  nyears = len(years)
+  ndays = len(days)
+  timetype = type(days)
+  timeunits = days.units
+
+  # Convert 'years' to a raw numpy array, and 'days' to a dictionary of numpy
+  # arrays, representing the other date/time fields.
+  years = years.values
+  days = days.auxarrays
+
+  # Broadcast all combinations of selected years and days, get a list of
+  # dates to request from the input var
+  fields = {}
+  fields['year'] = years.reshape(-1,1).repeat(ndays,axis=1).flatten()
+  for fname, farray in days.iteritems():
+    fields[fname] = farray.reshape(1,-1).repeat(nyears,axis=0).flatten()
+
+  # Construct a time axis with this field information
+  out_times = timetype(units=timeunits, **fields)
+
+  return out_times
+
+
+
+# Now, define some Var classes that apply the above split/join to
+# variables that contain time axes.
+
 # Split a time axis into a 2D representation (year,<everything else>)
 class SplitTime (Var):
   def __init__ (self, var, iaxis):
-    from pygeode.axis import NamedAxis
-    from pygeode.timeaxis import CalendarTime
-    from pygeode.varoperations import sorted
     from pygeode.var import copy_meta, Var
-    import numpy as np
 
     # Get the time axis to split
     iaxis = var.whichaxis(iaxis)
     taxis = var.getaxis(iaxis)
-    assert isinstance(taxis,CalendarTime)
-    assert hasattr(taxis,'year'), "no years to split off!"
 
-    # Get the years, turn them into an axis
-    years = np.unique(taxis.year)
-    years = NamedAxis(values=years, name='year')
-
-    # Get the rest, as a 'climatological' axis
-    days = modify(taxis, exclude='year', uniquify=True)
+    years, days = _splittime(taxis)
 
     # Construct the output axes
     axes = list(var.axes)
@@ -274,23 +319,14 @@ class SplitTime (Var):
 
     # Get the selected years and days
     iaxis = self.iaxis
-    years = view.subaxis(iaxis).values  # numpy array
-    nyears = len(years)
-    days = view.subaxis(iaxis+1).auxarrays  # dictionary of numpy arrays
-    ndays = view.shape[iaxis+1]
+    years = view.subaxis(iaxis)
+    days = view.subaxis(iaxis+1)
 
     # Input time axis (full, not sliced)
     in_taxis = self.var.getaxis(iaxis)
 
-    # Broadcast all combinations of selected years and days, get a list of
-    # dates to request from the input var
-    fields = {}
-    fields['year'] = years.reshape(-1,1).repeat(ndays,axis=1).flatten()
-    for fname, farray in days.iteritems():
-      fields[fname] = farray.reshape(1,-1).repeat(nyears,axis=0).flatten()
-
-    # Construct a time axis with this field information
-    out_times = type(in_taxis)(units=in_taxis.units, **fields)
+    # Selected output times (joined into a 1D time axis)
+    out_times = _jointime(years,days)
 
     # Determine how much of the input axis we need, and how much
     # that provides for the output (the rest will be NaNs).
@@ -303,7 +339,7 @@ class SplitTime (Var):
 
     # Get some input data
     inview = view.remove(iaxis+1).replace_axis(iaxis, in_taxis, sl=in_sl)
-    indata = inview.get(self.var)
+    indata = inview.get(self.var, pbar=pbar)
 
     # Now, put this where we need it.
     # Input data has a single time axis, so we need to reshape the output a bit.
@@ -320,5 +356,77 @@ class SplitTime (Var):
 
 def splittimeaxis (var, iaxis='time'):
   return SplitTime (var, iaxis)
+
+
+# Join a 2D time representation (year,<everything else>) into a single
+# 1D time axis.
+class JoinTime(Var):
+  def __init__(self, var, yaxis, daxis):
+    from pygeode.var import copy_meta, Var
+
+    yaxis = var.whichaxis(yaxis)
+    daxis = var.whichaxis(daxis)
+    assert (yaxis < daxis)  # need a certain order
+
+    years = var.getaxis(yaxis)
+    days = var.getaxis(daxis)
+
+    # Generate the joined axis
+    taxis = _jointime(years, days)
+
+    axes = list(var.axes)
+    axes = axes[:daxis] + axes[daxis+1:]
+    axes[yaxis] = taxis
+
+    Var.__init__(self, axes=axes, dtype=var.dtype)
+    copy_meta(var,self)
+
+    self.yaxis = yaxis
+    self.daxis = daxis
+    self.var = var
+
+  def getview (self, view, pbar):
+    import numpy as np
+
+    yaxis = self.yaxis
+    daxis = self.daxis
+
+    # Get the requested times.
+    # Since the time axis is in the same position as 'years' when comparing
+    # the input and output vars, we can do:
+    taxis = yaxis
+    times = view.subaxis(taxis)
+
+    # Determine which years and (day-of-year?) these times correspond to
+    years, days = _splittime(times)
+
+    # The full input years/days
+    in_years = self.var.getaxis(yaxis)
+    in_days = self.var.getaxis(daxis)
+
+    # Get the input data
+    inview = view.replace_axis(taxis, years).add_axis(daxis, days,slice(None))
+    data = inview.get(self.var, pbar=pbar)
+
+    # Reshape the data so it has a single time axis.
+    # First, move the year and day axes next to each other
+    data = np.rollaxis(data, daxis, yaxis+1)
+    # Then, combine then
+    shape = list(data.shape)
+    shape = shape[:yaxis] + [-1] + shape[daxis+1:]
+    data = data.reshape(shape)
+
+    # Now, we may have slightly more data than we actually need
+    # (e.g., we may not actually want data at the start of the first year)
+    # Define a time axis that represents *all* the data we just got:
+    uber_time = _jointime(years, days)
+
+    # Slice out what we actually wanted from this
+    slices = [slice(None)] * data.ndim
+    slices[taxis] = uber_time.map_to(times)
+    return data[slices]
+
+def jointimeaxes(var, yaxis='year', daxis='day'):
+  return JoinTime(var, yaxis, daxis)
 
 del Var
