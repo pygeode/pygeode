@@ -57,7 +57,11 @@ def fix_char(n):
   if '0' <= n and n <= '9': return n
   return '_'
 def fix_name (name):
-  return ''.join(fix_char(n) for n in name)
+  # Fix bad characters
+  name = ''.join(fix_char(n) for n in name)
+  # Special case: can't start with a number
+  if name[0].isdigit(): name = '_'+name
+  return name
 
 
 ###############################################################################
