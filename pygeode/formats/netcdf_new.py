@@ -345,7 +345,7 @@ def set_axistypes (dataset, dimtypes):
 def whitelist (dataset, varlist):
   from pygeode.dataset import Dataset
   assert isinstance(varlist,(list,tuple))
-  vars = [dataset[v] for v in varlist]
+  vars = [dataset[v] for v in varlist if dataset.vardict.has_key(v)]
   dataset = Dataset(vars, atts=dataset.atts)
   return dataset
 ######
