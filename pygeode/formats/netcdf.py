@@ -161,26 +161,54 @@ class NCFile:
     if self.fileid.value != -1:
       ret = self.lib.nc_close(self.fileid)
       if ret != 0: raise IOError, self.lib.nc_strerror(ret)
-    self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
+    if self.ctypes.c_int is not None:
+      self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
   def __enter__(self): return self
   def __exit__(self): self.close()
 
 # }}}
 
 
+# A generic dimension (has no attributes except a name and a length)
+from pygeode.axis import Axis
+class NCDim (Axis):
+  # Override axis equality checking - name needs to match.
+  # (Work around the deficiencies of View.map_to)
+  def __eq__ (self, other):
+    from pygeode.axis import Axis
+    return Axis.__eq__(self,other) and self.name == other.name
+  # Make an axis from given fileid and dimid
+  @staticmethod
+  def from_id (f, dimid):
+    from ctypes import create_string_buffer, c_long, byref
+    name = create_string_buffer(NC_MAX_NAME+1)
+    length = c_long()
+    ret = lib.nc_inq_dim (f.fileid, dimid, name, byref(length))
+    assert ret == 0
+    name = name.value
+    length = length.value
+    return NCDim (length, name=name)
+
+del Axis
+
+# constructor for the dims (wrapper for Dim so it's only created once)
+def makedim (f, dimid, dimdict={}):
+  if (f,dimid) not in dimdict:
+    dimdict[(f,dimid)] = NCDim.from_id(f,dimid)
+  return dimdict[(f,dimid)]
+
 # A netcdf variable
 from pygeode.var import Var
 class NCVar(Var):
   # Read variable info (name, dimension ids, attributes)
-  # NOTE: this is an incomplete init - we don't have axis information yet
-  # Once dimensions are loaded, and mapped to appropriate variables, then we can finish the Var.__init__
-  def __init__(self, f, varid, namemap):
+  def __init__(self, f, varid):
   # {{{
+    from pygeode.var import Var
     from ctypes import c_int, byref, create_string_buffer
     from warnings import warn
 
-    self.f = f
-    self.varid = varid
+    self._f = f
+    self._varid = varid
 
     assert f.fileid.value != -1
 
@@ -192,92 +220,149 @@ class NCVar(Var):
     ier = lib.nc_inq_var (f.fileid, varid, name, byref(vtype), byref(ndims), dimids, byref(natts))
     assert ier == 0
 
-    self.nc_name = nc_name = name.value
-    # Change the name?
-    self.name = name = namemap[nc_name] if nc_name in namemap else nc_name
-    self.vtype  = vtype = vtype.value
-    self.dimids = [dimids[j] for j in range(ndims.value)]
+    self._vtype  = vtype = vtype.value
+    dtype = numpy_type[vtype]
+    self._dimids = dimids = [dimids[j] for j in range(ndims.value)]
+    name = name.value
 
     # Load attributes
     atts = get_attributes (f.fileid, varid)
-    self.atts = atts
+
+    # Axes (just generic dimensions right now, until some filter is applied)
+    axes = [makedim(f,d) for d in dimids]
+
+    Var.__init__(self, axes, name=name, dtype=dtype, atts=atts)
 
   # }}}
-
-  # Finish the initialization, once the axes are derived.
-  # (axes are a global list of all axes, corresponding to each dimension in the file)
-  def finish_init (self, axes):
-    from pygeode.var import Var
-    dtype = numpy_type[self.vtype]
-
-    axes = [axes[i] for i in self.dimids] # select only the axes that we need for this var
-    Var.__init__(self, axes, atts=self.atts, dtype=dtype)
-    # since plotatts are not retrieved from netcdf files, they don't have to be passed on here
 
 
   #TODO: a more general (non-contiguous) read routine
   def getvalues (self, start, count):
   # {{{
     import numpy as np
-    already_opened = self.f.opened()
-    if not already_opened: self.f.open()
+    already_opened = self._f.opened()
+    if not already_opened: self._f.open()
     # allocate space for loading the data
-    out = np.empty(count, numpy_type[self.vtype])
-    load_values (self.f.fileid, self.varid, self.vtype, start, count, out)
-    if not already_opened: self.f.close()
+    out = np.empty(count, numpy_type[self._vtype])
+    load_values (self._f.fileid, self._varid, self._vtype, start, count, out)
+    if not already_opened: self._f.close()
 
     return out
   # }}}
 del Var
 
-# A netcdf dimension
-def nc_dim (f, dimid, vardict, dimtypes, namemap):
-  from pygeode.axis import Axis, NamedAxis
-  from pygeode.var import copy_meta
-  from pygeode.tools import make_axis
-  from ctypes import c_int, c_long, byref, create_string_buffer
+
+### internal data filters ###
+
+# Override values from the source?
+def override_values (dataset, value_override):
+  from warnings import warn
   import numpy as np
-  assert f.fileid.value != -1
+  from pygeode.var import Var, copy_meta
+  vardict = {}
+  for name, values in value_override.iteritems():
+    if name not in dataset:
+      warn ("var '%s' not found - values not overridden"%name, stacklevel=3)
+      continue
+    values = np.asarray(values)
+    oldvar = dataset[name]
+    assert values.shape == oldvar.shape, "bad shape for '%s'.  Expected %s, got %s"%(name,oldvar.shape,values.shape)
+    var = Var(oldvar.axes, values=values)
+    copy_meta (oldvar, var)
+    vardict[name] = var
+  dataset = dataset.replace_vars(vardict)
+  return dataset
 
-  name = create_string_buffer(NC_MAX_NAME+1)
-  length = c_long()
-  ret = lib.nc_inq_dim (f.fileid, dimid, name, byref(length))
-  assert ret == 0
-  name = name.value
-  length = length.value
 
-  # use values and attributes from corresponding variable (if one exists)   
-  if name in vardict: 
-    # if a corresponding variable exists (i.e. same name)    
-    var = vardict.pop(name) # get variable and remove it from dictionary
-    # A function for getting the values (if we need to)
-    valfunc = lambda: load_values(f.fileid, var.varid, var.vtype, [0], [length])
-    atts = var.atts    
-    plotatts = var.plotatts # for completeness... although plotatts will be default anyway
-  else: 
-    # if no corresponding variable exists, assume indices
-    valfunc = lambda: np.arange(length)
-    atts = {}; plotatts = {}
-  
-  # select axis type for this particular axis
-  if name in dimtypes:
+# Find axes (1D vars with the same name as a dimension)
+def dims2axes (dataset):
+  from pygeode.axis import NamedAxis
+  from pygeode.var import copy_meta
+  # Loop over current set of generic "dimensions"  
+  replacements = {}
+  for i,dim in enumerate(dataset.axes):
+    # Do we have a Var with this name?
+#    if dim.name in dataset:
+    if any (var.name == dim.name for var in dataset.vars):
+      # Get the var
+      var = dataset[dim.name]
+      if var.naxes != 1: continue  # abort if we have > 1 dimension
+      # Turn it into a proper axis
+      axis = NamedAxis (name=var.name, values=var.get())  # need the values pre-loaded for axes
+      copy_meta (var, axis)
+      replacements[dim.name] = axis
+  dataset = dataset.replace_axes(axisdict=replacements)
+  # Remove the axes from the list of variables
+  dataset = dataset.remove(*replacements.keys())
+  return dataset
+
+# Coerce axes into particular types
+# (useful if there's no existing ruleset for detecting your axes)
+# (based on deprecated tools.make_axis)
+def set_axistypes (dataset, dimtypes):
+# {{{
+
+  from pygeode.axis import Axis
+  from pygeode.var import copy_meta
+  assert isinstance(dimtypes, dict)
+
+  replacements = {}
+
+  for oldaxis in dataset.axes:
+    name = oldaxis.name
+    if name not in dimtypes: continue
     dt = dimtypes[name]
-  else: dt = None
-  
-  # change the name according to namemap
-  if name in namemap: name = namemap[name]
-      
-  return make_axis(name, dt, valfunc, atts, length, plotatts=plotatts)
+    # Determine axis type      
+    if isinstance(dt, Axis):   # Axis instance
+      if len(dt) != len(oldaxis):
+        raise ValueError('Provided axis instance %s is the wrong length (expected length %d, got length %d)' % (repr(dt),len(oldaxis),len(dt)))
+      axis = dt 
+    elif hasattr(dt, '__bases__') and issubclass(dt, Axis): # Axis class
+      dimclass = dt
+      axis = dimclass(values=oldaxis.values)
+      # Copy the file metadata (but discard plot attributes from the old axis)
+      # (See issue 22)
+      copy_meta (oldaxis, axis, plotatts=False)
+    elif hasattr(dt, '__len__'):
+      if len(dt) != 2: raise ValueError('Got a list/tuple for dimtypes, but did not have 2 elements as expected (Axis class, parameters).  Instead, got %s.'%dt)
+      dimclass, dimargs = dt
+      dimargs = dimargs.copy()
+      assert issubclass (dimclass, Axis), "expected an Axis subclass, got %s instead."%dimclass
+      assert isinstance (dimargs, dict)
+      if 'values' not in dimargs:  dimargs['values'] = oldaxis.values
+      axis = dimclass(**dimargs)
+    else: raise ValueError('Unrecognized dimtypes parameter. Expected a dictionary, axis class, or axis instance.  Got %s instead.'%type(dt))
+
+    assert len(axis) == len(oldaxis), "expected axis of length %s, ended up with axis of length %s"%(len(oldaxis),len(axis))
+    replacements[name] = axis
+
+  return dataset.replace_axes(axisdict=replacements)
+
+# }}}
 
 
-def open(filename, dimtypes = {}, namemap = {},  varlist = []):
-  ''' open (filename, [dimtypes = {}, namemap = {}, dimmap = {},  varlist = [] ])
+# Apply variable whitelist to a dataset (only keep specific variables)
+def whitelist (dataset, varlist):
+  from pygeode.dataset import Dataset
+  assert isinstance(varlist,(list,tuple))
+  vars = [dataset[v] for v in varlist if dataset.vardict.has_key(v)]
+  dataset = Dataset(vars, atts=dataset.atts)
+  return dataset
+######
+
+
+def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [],
+         cfmeta = True):
+  ''' open (filename, [value_override = {}, dimtypes = {}, namemap = {}, varlist = [] ])
 
   Returns a Dataset of PyGeode variables contained in the specified files. The axes of the 
   variables are created from the dimensions of the NetCDF file. NetCDF variables in the file that do
   not correspond to dimensions are imported as PyGeode variables.
 
   filename - NetCDF file to open
+  value_override - an optional dictionary with replacement values for one or more variables.
+           The only known use for this dictionary is to avoid loading in values from a severely
+           scattered variable (such as a 'time' axis or other slowest-varying dimension).
   dimtypes - a dictionary mapping dimension names to axis classes. The keys should be axis names
               as defined in the NetCDF file; values should be one of:
               1) an axis instance, 
@@ -294,64 +379,83 @@ def open(filename, dimtypes = {}, namemap = {},  varlist = []):
         not the names given in namemap.'''
 
   from os.path import exists
+  from ctypes import c_int, byref
+  from pygeode.dataset import asdataset
+  from pygeode.formats.cfmeta import decode_cf
+  from pygeode.axis import Axis
   if not filename.startswith('http://'):
     assert exists(filename)
 
-  from ctypes import c_int, byref, create_string_buffer
-  from numpy import empty, arange
-  from pygeode.formats.cfmeta import decode_cf
 
+  # Read variable dimensions and metadata from the file
   f = NCFile(filename)
   f.open()
   try:
     fileid = f.fileid
 
-    # Get variable info (name, type, dimensions)
+    # Get number of variables
     nvars = c_int()
     ret = lib.nc_inq_nvars(fileid, byref(nvars))
     assert ret == 0
     nvars = nvars.value
 
-    # Partial construction of variable objects, storage in dictonary
-    # (we need to explicitly invoke Var.__init__ once we have axis information)    
-    vardict = dict([[var.nc_name, var] for var in [NCVar(f,i,namemap) for i in range(nvars)]])    
-    
-    # Get the number of dimensions, and their length
-    ndims = c_int()
-    ret = lib.nc_inq_ndims(fileid, byref(ndims))
-    assert ret == 0
-    ndims = ndims.value
-    
-    # Get the dimension values, and represent the dimensions as pygeode axes
-    dims = [nc_dim(f, i, vardict, dimtypes, namemap) for i in range(ndims)]
-    
-    # create list from vardict, only keep requested variables (if list is provided) 
-    if varlist: 
-      vars = [var for var in vardict.itervalues() if var.nc_name in varlist]
-    else:
-      vars = vardict.values()
-     
-    # Finish constructing the variables, now that we have/removed all the axes
-    for var in vars: var.finish_init(dims)    
+    # Construct all the variables, put in a list
+    vars = [NCVar(f,i) for i in range(nvars)]
 
-    # Now, create a dataset to contain all these variables
-    # (and do any translation from cf metadata)
-    dataset = decode_cf(vars)
-
-    # Store global attributes in the dataset
-    # (variable attributes are handled in the NC_Var initializer
+    # Construct a dataset from these Vars
+    dataset = asdataset(vars)
     dataset.atts = get_attributes (fileid, -1)
 
   finally:
     f.close()
+
+  # Add the object stuff from dimtypes to value_override, so we don't trigger a
+  # load operation on those dims.
+  # (We could use any values here, since they'll be overridden again later,
+  #  but we might as well use something relevant).
+  value_override = dict(value_override)  # don't use  the default (static) empty dict
+  for k,v in dimtypes.items():
+    if isinstance(v,Axis):
+      value_override[k] = v.values
+
+  #### Filters to apply to the data ####
+
+  # Override values from the source?
+  if len(value_override) > 0:
+    dataset = override_values(dataset, value_override)
+
+  # Set up the proper axes (get coordinate values / metadata from a 1D variable
+  # with the same name as the dimension)
+  dataset = dims2axes(dataset)
+
+  # Process CF-metadata?
+  if cfmeta is True:
+    # Skip anything that we're going to override in dimtypes
+    # (so we don't get any meaningless warnings or other crap from cfmeta)
+    dataset = decode_cf(dataset, ignore=dimtypes.keys())
+
+  # Apply custom axis types?
+  if len(dimtypes) > 0:
+    dataset = set_axistypes(dataset, dimtypes)
+
+  # Keep only specific variables?
+  if len(varlist) > 0:
+    dataset = whitelist(dataset, varlist)
+
+  # Rename variables?
+  if len(namemap) > 0:
+    # Check both axes and variables
+    dataset = dataset.rename_vars(vardict=namemap)
+    dataset = dataset.rename_axes(axisdict=namemap)
 
   return dataset
 
 # }}}
 
 
+#TODO: factor out cf-meta encoding and other processing steps
 # Write a dataset to netcdf
-def save (filename, in_dataset, version=3, compress=False):
+def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 # {{{
   from ctypes import c_int, c_long, byref
   from pygeode.view import View
@@ -359,7 +463,7 @@ def save (filename, in_dataset, version=3, compress=False):
   from pygeode.axis import Axis
   import numpy as np
   from pygeode.progress import PBar, FakePBar
-  from pygeode.formats import cfmeta
+  from pygeode.formats import cfmeta as cf
 
   assert isinstance(filename,str)
 
@@ -367,7 +471,11 @@ def save (filename, in_dataset, version=3, compress=False):
   if compress: version = 4
   assert version in (3,4)
 
-  dataset = cfmeta.encode_cf(in_dataset)
+  # Encode standard axes back into netcdf metadata?
+  if cfmeta is True:
+    dataset = cf.encode_cf(in_dataset)
+  else:
+    dataset = in_dataset
 
   fileid = c_int()
 
@@ -493,11 +601,11 @@ def save (filename, in_dataset, version=3, compress=False):
   # Finished
   lib.nc_close(fileid)
 
-  # Return a function stub for reloading the saved data
-  from pygeode.var import Var
-  if isinstance(in_dataset, Var):
-    return lambda : open(filename).vars[0]
-  else: return lambda : open(filename)
+#  # Return a function stub for reloading the saved data
+#  from pygeode.var import Var
+#  if isinstance(in_dataset, Var):
+#    return lambda : open(filename).vars[0]
+#  else: return lambda : open(filename)
 
 
 # }}}
