@@ -3,7 +3,7 @@
 
 def test_io():
 
-  from pygeode.formats import netcdf_new as nc
+  from pygeode.formats import netcdf as nc
   from pygeode.timeaxis import StandardTime
   from pygeode.axis import Pres
   from pygeode.dataset import Dataset

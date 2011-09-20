@@ -1,10 +1,10 @@
-# Issue 10 - netcdf_new.dim2axes crashes if a dimension doesn't have a corresponding variable
+# Issue 10 - netcdf.dim2axes crashes if a dimension doesn't have a corresponding variable
 # http://code.google.com/p/pygeode/issues/detail?id=10
 def test_issue010():
   from pygeode.var import Var
   from pygeode.axis import Axis
   from pygeode.dataset import Dataset
-  from pygeode.formats import netcdf_new as nc
+  from pygeode.formats import netcdf as nc
 
   # Make some axes
   time_axis = Axis(values=[0], name='time')

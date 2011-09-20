@@ -1,8 +1,8 @@
-# Issue 15 - netcdf_new crashes because of axes mismatch
+# Issue 15 - netcdf crashes because of axes mismatch
 # http://code.google.com/p/pygeode/issues/detail?id=15
 
 def test_issue015():
-  from pygeode.formats import netcdf_new as nc
+  from pygeode.formats import netcdf as nc
   from pygeode.axis import Lat, Lon, Pres
 
   # Create a simple variable

@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import os
 import pygeode as pyg
-from pygeode.formats import netcdf_new as nc
+from pygeode.formats import netcdf as nc
 
 def assertSameVar(v1, v2):
    assert v1.name == v2.name

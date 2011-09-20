@@ -7,7 +7,7 @@ def test_issue005():
   from pygeode.axis import TAxis
   import numpy as np
   from pygeode.var import Var
-  from pygeode.formats import netcdf_new as nc
+  from pygeode.formats import netcdf as nc
 
   # Make a time axis starting at year 0
   startdate = dict(year=0,month=1,day=1)

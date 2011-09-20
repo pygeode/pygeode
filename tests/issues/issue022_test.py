@@ -3,7 +3,7 @@
 
 # Make a sample file with a non-annotated pressure axis
 from pygeode.axis import NamedAxis, Pres
-from pygeode.formats import netcdf_new as nc
+from pygeode.formats import netcdf as nc
 
 lat = NamedAxis(values=[-80,-70,-60,-50], name='lat')
 p1 = NamedAxis(values=[1000.,900.,800.], name='p1')
