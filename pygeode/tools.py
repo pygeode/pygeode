@@ -335,15 +335,6 @@ def common_map (a, b):
 # }}}
 
 """
-# Hash a numpy array (modular addition of the hash of all elements, since it's convenient to do in numpy)
-def hasharray (x):
-  import numpy as np
-  h = np.frompyfunc(hash, 1, 1)
-  y = np.asarray(h(x), int)
-  return int(y.sum())
-"""
-
-"""
 def npsum(a, axes):
   ''' npsum(a, axes) - alternative implementation. '''
   ret = [i for i in range(a.ndim) if i not in axes]
