@@ -523,11 +523,13 @@ class Var(object):
     return View(var.axes).get(var,pbar=pbar)
   # }}}
 
+  """
   # Get all values (deprecated - use 'get')
   def getallvalues (self, pbar=False):
     from warnings import warn
     warn ("getallvalues() is deprecated.  Please use get()", stacklevel=2)
     return self.get(pbar=pbar)
+  """
 
   # Get weights variable corresponding to given axes
   # Axes without explicit weights are skipped, so this probably won't
