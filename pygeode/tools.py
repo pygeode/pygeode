@@ -172,61 +172,6 @@ def whichaxis(axes, id):
   raise KeyError, "axis %s not found in %s"%(repr(id),axes)
 # }}}
 
-# Make an axis
-# Inputs:
-#   dimtypes - a dictionary mapping names to Axis classes / objects
-#   valfunc - a function that can be called to give the values, if they're needed.  No parameters expected
-#   atts - a dictionary of metadata to attach to the axis
-#   length - expected length of the axis
-#   plotatts - a dictionary of plot attributes (optional)
-# DEPRECATED
-def make_axis (name, dimtypes, valfunc, atts, length, plotatts=None):
-# {{{
-  from pygeode.axis import Axis, NamedAxis
-
-  axis = None
-
-  dimclass = None
-  dimargs = {}
-
-  # if dimtypes is provided...
-  if dimtypes:
-    # check how the axis type is provided
-    if type(dimtypes) is dict: # can be a dictionary or ...
-      if name in dimtypes:
-        dt = dimtypes[name]
-    else: # ... a single axis instance or class/type is directly passed into dimtypes
-      dt = dimtypes    
-    # Determine axis type      
-    if isinstance(dt, Axis):   # Axis instance
-      if len(dt) != length: raise ValueError('Provided axis instance %s is the wrong length (expected length %d, got length %d)' % (dt,length,len(dt)))
-      axis = dt 
-    elif hasattr(dt, '__bases__') and issubclass(dt, Axis): # Axis class
-      dimclass = dt
-    elif hasattr(dt, '__len__'):
-      if len(dt) != 2: raise ValueError('Got a list/tuple for dimtypes, but did not have 2 elements as expected (Axis class, parameters).  Instead, got %s.'%dt)
-      dimclass, dimargs = dt
-    #TODO: update this message
-    else: raise ValueError('Unrecognized dimtypes parameter. Expected a dictionary, axis class, or axis instance.  Got %s instead.'%type(dt))
-
-  # Axis instance not provided?
-  if axis is None:
-    # Values provided?
-    if dimargs.has_key('values'): 
-      dimargs = dimargs.copy()
-      values = dimargs.pop('values')
-      if len(values) != length: raise ValueError('%s, %s: Values provided for axis are the wrong length' % (f.filename, name))
-
-    else: values = valfunc()
-
-    # Create an axis instance
-    if dimclass is None:  # Use name to determine the axis
-      axis = NamedAxis(values, name, atts=atts, plotatts=plotatts)
-    else:                 # Use provided axis class
-      axis = dimclass(values, name=name, atts=atts, plotatts=plotatts, **dimargs)
-
-  return axis
-# }}}
 
 # Resolve all input axes into a set of output axes
 # (similar to an outer product, but each axis appears only once when matched)
