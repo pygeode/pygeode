@@ -304,6 +304,7 @@ def set_axistypes (dataset, dimtypes):
 
   from pygeode.axis import Axis
   from pygeode.var import copy_meta
+  from types import FunctionType
   assert isinstance(dimtypes, dict)
 
   replacements = {}
@@ -331,6 +332,9 @@ def set_axistypes (dataset, dimtypes):
       assert isinstance (dimargs, dict)
       if 'values' not in dimargs:  dimargs['values'] = oldaxis.values
       axis = dimclass(**dimargs)
+    # Axis-creating function?
+    elif isinstance (dt, FunctionType):
+      axis = dt(oldaxis)
     else: raise ValueError('Unrecognized dimtypes parameter. Expected a dictionary, axis class, or axis instance.  Got %s instead.'%type(dt))
 
     assert len(axis) == len(oldaxis), "expected axis of length %s, ended up with axis of length %s"%(len(oldaxis),len(axis))
