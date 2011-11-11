@@ -144,8 +144,9 @@ def plotvar (var, **kwargs):
       lbly = kwargs.pop('lbly', True)
       
       ax.plot(values, xaxis.values, **kwargs)
-
-      ax.set_yscale(xaxis.plotatts.get('plotscale', 'linear'))
+      ax.set_xscale(var.plotatts.get('plotscale', 'linear')) # value axis
+      
+      ax.set_yscale(xaxis.plotatts.get('plotscale', 'linear')) # coordiante
       ylims = min(xaxis.values),max(xaxis.values)
       ax.set_ylim(ylims[::xaxis.plotatts['plotorder']])
       
@@ -164,8 +165,9 @@ def plotvar (var, **kwargs):
       lbly = kwargs.pop('lbly', False) # preserve previous behaviour
       
       ax.plot(xaxis.values, values, **kwargs)
+      ax.set_yscale(var.plotatts.get('plotscale', 'linear')) # value axis
 
-      ax.set_xscale(xaxis.plotatts['plotscale'])
+      ax.set_xscale(xaxis.plotatts['plotscale']) # coordinate
       xlims = min(xaxis.values),max(xaxis.values)
       ax.set_xlim(xlims[::xaxis.plotatts['plotorder']])
 
