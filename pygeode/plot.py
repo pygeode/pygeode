@@ -78,6 +78,7 @@ def plotvar (var, **kwargs):
     ax: A matplotlib axes object on which to produce the plot
     lblx: Show xaxis titles and labels 
     lbly: Show yaxis titles and labels 
+    scaleAx: Scale values with coordinate value (for logarithmic axes only) 
     colorbar: Show colorbar
     clevs: Filled contour levels, if None, no filled contours are plotted
     cmap: A colormap passed on to the contour pylab function
@@ -144,6 +145,11 @@ def plotvar (var, **kwargs):
   if nd == 1:
     from axis import ZAxis, Pres, Hybrid
     xaxis = [a for a in axes if len(a)>1][0]
+    
+    # Scaling by coordinate value preserves integral for log-scaling
+    scaleAx = kwargs.pop('scaleAx',False) and var.plotatts.get('plotscale', 'linear')=='log'
+    if scaleAx: values = values * xaxis.values
+    
     # Vertical?
     if isinstance(xaxis,ZAxis):
       lblx = kwargs.pop('lblx', False) # preserve previous behaviour
@@ -350,9 +356,9 @@ def plotvar (var, **kwargs):
         ax.set_yticklabels('')
 
   if wasint:
-     ion()
-     draw()
-     if not wait: show()
+    ion()
+    draw()
+    if not wait: show()
 
   if ret is not None: return ret
 # }}}
@@ -437,9 +443,9 @@ def plotsigmask (var, ax, **kwargs):
     ax.set_yticklabels('')
 
   if wasint:
-     ion()
-     draw()
-     if not kwargs.pop('wait', False): show()
+    ion()
+    draw()
+    if not kwargs.pop('wait', False): show()
 # }}}
 
 def plotprofiles (var,paxis,**kwargs):
