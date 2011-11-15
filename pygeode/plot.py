@@ -3,17 +3,20 @@
 #TODO: check if the axes are subclasses of XAxis/YAxis/ZAxis/TAxis, and use
 #      this as a hint for transposing the data?
 
-def _buildaxistitle(name = '', plottitle = '', plotunits = '', **dummy):
+def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
 # {{{
   if name is None: name = ''
+  if plotname is None: plotname = ''
   if plottitle is None: plottitle = ''
   if plotunits is None: plotunits = ''
 
+  assert type(plotname) is str
   assert type(plottitle) is str
   assert type(plotunits) is str
   assert type(name) is str
-
-  if plottitle is not '': title = plottitle
+  
+  if plotname is not '': title = plotname # plotname is shorter, hence more suitable for axes
+  elif plottitle is not '': title = plottitle
   elif name is not '': title = name
   else: title = ''
 
@@ -22,17 +25,20 @@ def _buildaxistitle(name = '', plottitle = '', plotunits = '', **dummy):
   return title
 # }}}
 
-def _buildvartitle(axes = None, name = '', plottitle = '', plotunits = '', **dummy):
+def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
 # {{{
   if name is None: name = ''
+  if plotname is None: plotname = ''
   if plottitle is None: plottitle = ''
   if plotunits is None: plotunits = ''
-
+  
+  assert type(plotname) is str
   assert type(plottitle) is str
   assert type(plotunits) is str
   assert type(name) is str
 
-  if plottitle is not '': title = plottitle
+  if plottitle is not '': title = plottitle # plottitle is longer, hence more suitable for axes
+  elif plotname is not '': title = plotname
   elif name is not '': title = name
   else: title = 'Unnamed Var'
 
