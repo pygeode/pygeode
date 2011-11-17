@@ -120,6 +120,9 @@ def plotvar (var, **kwargs):
   
   # Apply linear rescaling for plotting
   values = _scalevalues(values, **var.plotatts)
+  
+  # Scaling by coordinate value preserves integral for log-scaling
+  scaleAx = kwargs.pop('scaleAx',False)
 
   wasint = isinteractive()
   ioff()
@@ -147,8 +150,8 @@ def plotvar (var, **kwargs):
     xaxis = [a for a in axes if len(a)>1][0]
     
     # Scaling by coordinate value preserves integral for log-scaling
-    scaleAx = kwargs.pop('scaleAx',False) and var.plotatts.get('plotscale', 'linear')=='log'
-    if scaleAx: values = values * xaxis.values
+    if scaleAx and xaxis.plotatts.get('plotscale', 'linear')=='log': 
+      values = values * xaxis.values
     
     # Vertical?
     if isinstance(xaxis,ZAxis):
@@ -221,6 +224,12 @@ def plotvar (var, **kwargs):
       xvals = xaxis.values
       yvals = yaxis.values
       meshx, meshy = meshgrid (xvals, yvals)
+      
+    # Scaling by coordinate value preserves integral for log-scaling
+    if scaleAx and xaxis.plotatts.get('plotscale', 'linear')=='log': 
+      values = values * meshx
+    if scaleAx and yaxis.plotatts.get('plotscale', 'linear')=='log': 
+      values = values * meshy
 
     #cmap = kwargs.pop('cmap', cm.gist_rainbow_r)
     clevs = kwargs.pop('clevs', 21)
