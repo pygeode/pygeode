@@ -123,6 +123,9 @@ def plotvar (var, **kwargs):
   
   # Scaling by coordinate value preserves integral for log-scaling
   scaleAx = kwargs.pop('scaleAx',False)
+  
+  # Log scale for values (not axis)
+  logVal = kwargs.pop('logVal',False)
 
   wasint = isinteractive()
   ioff()
@@ -159,7 +162,9 @@ def plotvar (var, **kwargs):
       lbly = kwargs.pop('lbly', True)
       
       ax.plot(values, xaxis.values, **kwargs)
-      ax.set_xscale(var.plotatts.get('plotscale', 'linear')) # value axis
+      if logVal or var.plotatts.get('plotscale', 'linear')=='log': ax.set_xscale('log') # value axis 
+      else: ax.set_xscale('linear') # value axis
+#      ax.set_xscale(var.plotatts.get('plotscale', 'linear')) # value axis
       
       ax.set_yscale(xaxis.plotatts.get('plotscale', 'linear')) # coordiante
       ylims = min(xaxis.values),max(xaxis.values)
@@ -180,7 +185,9 @@ def plotvar (var, **kwargs):
       lbly = kwargs.pop('lbly', False) # preserve previous behaviour
       
       ax.plot(xaxis.values, values, **kwargs)
-      ax.set_yscale(var.plotatts.get('plotscale', 'linear')) # value axis
+      if logVal or var.plotatts.get('plotscale', 'linear')=='log': ax.set_yscale('log') # value axis 
+      else: ax.set_yscale('linear') # value axis
+#      ax.set_yscale(var.plotatts.get('plotscale', 'linear')) # value axis
 
       ax.set_xscale(xaxis.plotatts['plotscale']) # coordinate
       xlims = min(xaxis.values),max(xaxis.values)
@@ -198,7 +205,7 @@ def plotvar (var, **kwargs):
 
   # 2D case:
   elif nd == 2:
-    from numpy import meshgrid, concatenate
+    from numpy import meshgrid, concatenate, log10
     from matplotlib.pyplot import contourf, colorbar, xlim, ylim, xlabel, ylabel, gca
     from axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
     yaxis, xaxis = [a for a in axes if len(a) > 1]
@@ -230,6 +237,9 @@ def plotvar (var, **kwargs):
       values = values * meshx
     if scaleAx and yaxis.plotatts.get('plotscale', 'linear')=='log': 
       values = values * meshy
+      
+    # scaling of field values
+    if logVal: values = log10(values)
 
     #cmap = kwargs.pop('cmap', cm.gist_rainbow_r)
     clevs = kwargs.pop('clevs', 21)
