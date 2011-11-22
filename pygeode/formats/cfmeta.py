@@ -240,8 +240,10 @@ def decode_cf (dataset):
       #TODO: check formula_terms??
       #TODO: for ccc2nc files, look for long_name == "Model Level", use_AB = <formula>,
       #       A & B embedded as metadata or as data arrays not attached to ancillary_variables
-      assert 'A' in aux and 'B' in aux
-      cls = Hybrid
+      if 'A' in aux and 'B' in aux:
+        cls = Hybrid
+      else:
+        warn ("Cannot create a proper Hybrid vertical axis, since 'A' and 'B' coefficients aren't found.")
     if (_st == 'time' or cls == TAxis) and ' since ' in _units:
       _calendar = atts.pop('calendar', 'standard')
       if _calendar in ('standard', 'gregorian', 'proleptic_gregorian'): cls = StandardTime
