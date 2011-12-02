@@ -300,7 +300,7 @@ int val_as_date_std (int n, int iyear, int imonth, int iday,
 //    assert (s >= 0);  // remove this later
     while (s < 0LL) {
       int y_back = y - 1 - (int) ((-s)/365LL/86400LL);
-      if (y_back < 0) y_back = 0;
+      //if (y_back < 0) y_back = 0;
       s += ndays(y_back, y) * 86400LL;
       y = y_back;
     }

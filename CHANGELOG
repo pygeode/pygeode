@@ -1,0 +1,7 @@
+0.6.1:
+  - Fix issue 23 (http://code.google.com/p/pygeode/issues/detail?id=23)
+  - Fix issue 25 (http://code.google.com/p/pygeode/issues/detail?id=25)
+  - Don't abort on missing 'A' and 'B' coefficients when loading netcdf files with hybrid vertical coordinates.
+
+0.6.0:
+  - Initial stable release
