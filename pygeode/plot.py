@@ -152,6 +152,10 @@ def plotvar (var, **kwargs):
     from axis import ZAxis, Pres, Hybrid
     xaxis = [a for a in axes if len(a)>1][0]
     
+    # adjust axis scaling
+    if xaxis.atts['units'] != xaxis.plotatts['plotunits']:
+      xaxis.values = xaxis.values*xaxis.plotatts.get('scalefactor',1) + xaxis.plotatts.get('offset',0) 
+    
     # Scaling by coordinate value preserves integral for log-scaling
     if (scaleAx and xaxis.plotatts.get('plotscale', 'linear')=='log' and
         var.plotatts.get('preserve', 'value')=='area'): 
@@ -210,6 +214,13 @@ def plotvar (var, **kwargs):
     from matplotlib.pyplot import contourf, colorbar, xlim, ylim, xlabel, ylabel, gca
     from axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
     yaxis, xaxis = [a for a in axes if len(a) > 1]
+    
+    # adjust x-axis scaling
+    if xaxis.atts['units'] != xaxis.plotatts['plotunits']:
+      xaxis.values = xaxis.values*xaxis.plotatts.get('scalefactor',1) + xaxis.plotatts.get('offset',0)
+    # adjust y-axis scaling
+    if yaxis.atts['units'] != yaxis.plotatts['plotunits']:
+      yaxis.values = yaxis.values*yaxis.plotatts.get('scalefactor',1) + yaxis.plotatts.get('offset',0)
  
     # Transpose vertical axis?
     if isinstance(xaxis, ZAxis):
