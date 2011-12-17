@@ -122,7 +122,9 @@ def plotvar (var, **kwargs):
   values = _scalevalues(values, **var.plotatts)
   
   # Scaling by coordinate value preserves integral for log-scaling
-  scaleAx = kwargs.pop('scaleAx',False)
+  scaleAx = kwargs.pop('scaleAx',False) # for line plots
+  scaleX = kwargs.pop('scaleX',False) # for surface plots
+  scaleY = kwargs.pop('scaleY',False) # for surface plots
   
   # Log scale for values (not axis)
   logVal = kwargs.pop('logVal',False)
@@ -245,10 +247,10 @@ def plotvar (var, **kwargs):
       meshx, meshy = meshgrid (xvals, yvals)
       
     # Scaling by coordinate value preserves integral for log-scaling
-    if (scaleAx and xaxis.plotatts.get('plotscale', 'linear')=='log' and 
+    if (scaleX and xaxis.plotatts.get('plotscale', 'linear')=='log' and 
       var.plotatts.get('preserve', 'value')=='area'): 
       values = values * meshx
-    if (scaleAx and yaxis.plotatts.get('plotscale', 'linear')=='log' and 
+    if (scaleY and yaxis.plotatts.get('plotscale', 'linear')=='log' and 
         var.plotatts.get('preserve', 'value')=='area'): 
       values = values * meshy
       
