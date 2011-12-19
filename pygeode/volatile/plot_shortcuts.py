@@ -44,22 +44,32 @@ def get_XYC (var):
   X = var.axes[1].get()
   Y = var.axes[0].get()
   C = var.get()
+
+  # Special case: we have regular longitudes on a global grid.
+  # Add a repeated longitude for this data
+  from pygeode.axis import Lon
+  import numpy as np
+  if isinstance(var.axes[1], Lon):
+    dlon = np.diff(X)
+    if np.allclose(dlon, dlon[0]):
+      dlon = dlon[0]
+      firstlon = X[0] % 360.
+      lastlon = (X[-1] + dlon) % 360.
+      if np.allclose(lastlon,360.): lastlon = 0.
+      if np.allclose(firstlon,lastlon):
+        # Add the extra longitude
+        X = np.concatenate([X, [X[0]+360.]])
+        C = np.concatenate([C, C[:,0:1]], axis=1)
+
   return X, Y, C
 
 # A decorator for a plot maker
 # (does the work of setting up the generic Axes info)
 def plot_maker (f):
   def g (var, **kwargs):
-    import matplotlib.pyplot as pl
-    axes_args = {}
-    plot_args = {}
+    from plot_wrapper import split_axes_args
     # Separate out the plot arguments from the Axes arguments
-    for argname, argval in kwargs.iteritems():
-      if hasattr(pl.Axes, 'set_'+argname):
-        axes_args[argname] = argval
-      else:
-        plot_args[argname] = argval
-
+    axes_args, plot_args = split_axes_args(kwargs)
     axes = get_axes_args(var).modify(**axes_args)
     return f(var, axes, **plot_args)
   g.__name__ = f.__name__
