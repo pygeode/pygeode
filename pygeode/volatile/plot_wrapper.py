@@ -82,6 +82,11 @@ class PlotWrapper:
     return  # Nothing to plot in this generic wrapper!
             # (this should never be called)
 
+# 1D plot
+class Plot(PlotWrapper):
+  def _doplot (self, figure, pl, axes, transform):
+    pl.plot (*self.plot_args, **self.plot_kwargs)
+
 
 # Both contour-type plots (contour/contourf) use the same input argument
 # conventions, so only need to define the transformation method once.
@@ -152,20 +157,45 @@ class Pcolor(PlotWrapper):
     return inputs
 
 
-"""
-# Colorbar
-# Treated as a plot-type thing.
-# Use it in an overlay; will use the values from the plot 'underneath' it.
-class Colorbar(PlotWrapper):
-  def __init__ (self, cax=None, ax=None, mappable=None, **kwargs):
-    # Ignore cax/ax/mappable arguments
-    self.cbar_kwargs = kwargs
-    self.default_axes = Axes()  # Don't need any special axes configuration
+# A quiver plot
+class Quiver(PlotWrapper):
+  @staticmethod
+  def _transform (inputs, transform):
+    from numpy import meshgrid
+    # U, V
+    if len(inputs) == 2: return inputs
+    # U, V, C
+    if len(inputs) == 3: return inputs
+    # X, Y, U, V
+    if len(inputs) == 4:
+      X, Y, U, V = inputs
+      X, Y = meshgrid(X, Y)
+      X, Y = transform(X, Y)
+      return X, Y, U, V
+    if len(inputs) == 5:
+      X, Y, U, V, C = inputs
+      X, Y = meshgrid(X, Y)
+      X, Y = transform(X, Y)
+      return X, Y, U, V, C
+
   def _doplot (self, figure, pl, axes, transform):
-    # There's a problem with older versions of Basemap not having a colorbar.
-    if not hasattr(pl,'colorbar'): return
-    pl.colorbar (ax=axes, **self.cbar_kwargs)
-"""
+    # Coordinate transformation?
+    inputs = self._transform(self.plot_args, transform)
+    return pl.quiver(*inputs, axes=axes, **self.plot_kwargs)
+
+# A quiver key
+class QuiverKey(PlotWrapper):
+  def __init__ (self, plot, *plot_args, **plot_kwargs):
+    self.plot = plot
+    self.plot_args = plot_args
+    self.plot_kwargs = plot_kwargs
+  def _doplot (self, figure, pl, axes, transform):
+    theplot = self.plot._doplot(figure,pl,axes,transform)
+    # Ignore 'pl' argument, use matplotlib.pyplot exclusively
+    # (Basemap doesn't have a quiverkey method)
+    import matplotlib.pyplot as pl
+    return pl.quiverkey(theplot, *self.plot_args, **self.plot_kwargs)
+
 
 # Colorbar
 # Treated as a plot-type thing.
