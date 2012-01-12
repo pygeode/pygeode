@@ -41,11 +41,7 @@ def get_axes_args (var):
   axes_args = dict(locals())
   del axes_args['var']
 
-  # Create an Axes wrapper with this information
-  from plot_wrapper import Axes
-  axes = Axes(**axes_args)
-
-  return axes, var
+  return axes_args, var
 
 
 # Get 2D data
@@ -77,17 +73,13 @@ def get_XYC (var):
 # (does the work of setting up the generic Axes info)
 def plot_maker (f):
   def g (var, **kwargs):
-    from plot_wrapper import split_axes_args
-    # Separate out the plot arguments from the Axes arguments
-    axes_args, plot_args = split_axes_args(kwargs)
 
     # Get the default axes args
-    axes, var = get_axes_args(var)
+    axes_args, var = get_axes_args(var)
 
-    # Apply the custom axes args
-    axes = axes.modify(**axes_args)
+    kwargs = dict(axes_args, **kwargs)
 
-    return f(var, axes, **plot_args)
+    return f(var, **kwargs)
 
   g.__name__ = f.__name__
   return g
@@ -95,30 +87,54 @@ def plot_maker (f):
 
 # Do a contour plot
 @plot_maker
-def contour (var, axes, **options):
+def contour (var, **kwargs):
   from plot_wrapper import Contour
   X, Y, C = get_XYC(var)
-  return Contour(X, Y, C, axes=axes, **options)
+  return Contour(X, Y, C, **kwargs)
 
 # Do a filled contour plot
 @plot_maker
-def contourf (var, axes, **options):
+def contourf (var, **kwargs):
   from plot_wrapper import Contourf
   X, Y, C = get_XYC(var)
-  return Contourf(X, Y, C, axes=axes, **options)
+  return Contourf(X, Y, C, **kwargs)
 
 # Do a pseudocolor plot
 @plot_maker
-def pcolor (var, axes, **options):
+def pcolor (var, **kwargs):
   from plot_wrapper import Pcolor
   X, Y, C = get_XYC(var)
-  return Pcolor (X, Y, C, axes=axes, **options)
+  return Pcolor (X, Y, C, **kwargs)
+
+
+# Helper function
+# Transpose the x/y axes parameters
+def transpose_axes (axes_args):
+  # Start with non-x,y arguments
+  new_axes_args = dict(axes_args)
+  for k in new_axes_args.keys():
+    # Get rid of the x,y arguments
+    if k.startswith('x') or k.startswith('y'):
+      del new_axes_args[k]
+
+  # Now, go back and scan in the rest of the arguments
+  # Change the role of 'x' and 'y' attributes
+  for k, v in axes_args.iteritems():
+
+    # Swap the meaning of x and y
+    if k.startswith('x'): k = 'y'+k[1:]
+    elif k.startswith('y'): k = 'x'+k[1:]
+    else: continue
+
+    new_axes_args[k] = v
+
+  return new_axes_args
 
 
 # Do a 1D line plot
 # Assumes the X coordinate is provided by the Var, not in the parameter list
 def plot (*args, **kwargs):
-  from plot_wrapper import Plot, split_axes_args
+  from plot_wrapper import Plot
 
   outargs = []
   i = 0
@@ -128,21 +144,14 @@ def plot (*args, **kwargs):
     X = Y.squeeze().axes[0]
     i += 1
 
-    axes, Y = get_axes_args(Y)
+    axes_args, Y = get_axes_args(Y)
 
     # Special case: have a vertical coordinate
     # (transpose the plot)
     from pygeode.axis import ZAxis
-    from plot_wrapper import Axes
     if isinstance(X, ZAxis):
       X, Y = Y, X
-      axes_args = {}
-      # Change the role of 'x' and 'y' attributes
-      for k, v in axes.args.iteritems():
-        if k.startswith('x'): k = 'y'+k[1:]
-        elif k.startswith('y'): k = 'x'+k[1:]
-        axes_args[k] = v
-      axes = Axes(**axes_args)
+      axes_args = transpose_axes(axes_args)
 
     Y = Y.get()
     X = X.get()
@@ -153,14 +162,12 @@ def plot (*args, **kwargs):
       outargs.append(args[i])
       i += 1
 
-  # Split out axes args and plot args
-  axes_args, plot_args = split_axes_args(kwargs)
 
   # Apply the custom axes args
-  axes = axes.modify(**axes_args)
+  kwargs = dict(axes_args, **kwargs)
 
 
-  return Plot(*outargs, axes=axes, **plot_args)
+  return Plot(*outargs, **kwargs)
 
 
 # Do many 1D line plots
@@ -193,15 +200,15 @@ def spaghetti (var, data_axis, **kwargs):
 
 # Do a quiver plot
 def quiver (u, v, **kwargs):
-  from plot_wrapper import Quiver, split_axes_args
+  from plot_wrapper import Quiver
   import numpy as np
-  # Filter the vars
-  u_axes, u = get_axes_args(u)
-  v_axes, v = get_axes_args(v)
-
   # Get a proper title
   dummy = u.rename(u.name+','+v.name)
-  axes, dummy = get_axes_args(dummy)
+  axes_args, dummy = get_axes_args(dummy)
+
+  # Filter the vars
+  u_axes_args, u = get_axes_args(u)
+  v_axes_args, v = get_axes_args(v)
 
   # Get the data
   X, Y, u = get_XYC(u)
@@ -211,8 +218,34 @@ def quiver (u, v, **kwargs):
   assert np.allclose(Y,Y2), "U/V domain mismatch"
 
   # Apply custom arguments
-  axes_args, plot_args = split_axes_args(kwargs)
-  axes = axes.modify(**axes_args)
+  kwargs = dict(axes_args, **kwargs)
 
-  return Quiver (X, Y, u, v, axes=axes, **plot_args)
+  return Quiver (X, Y, u, v, **kwargs)
 
+
+# Put the plot onto a decorated map.
+# NOTE: this expects an existing PlotWrapper instance, it can't take
+# a PyGeode Var as input.
+# This is just a convenient shortcut for automatically drawing certain map
+# features (coastlines, meridians, etc.).
+def Map (plot, **kwargs):
+  from plot_wrapper import Map
+  result = Map(plot, **kwargs)
+  # Modify the parallels/meridians depending on the size of the map region,
+  # and the type of projection.
+  # (TODO)
+  result.drawcoastlines()
+  projection = kwargs.get('projection','cyl')
+  parallels = [-90,-60,-30,0,30,60,90]
+  meridians = [0,60,120,180,240,300,360]
+  if projection.startswith('ortho'):
+    parallels_labels = [False, False, False, False]
+    meridians_labels = [False, False, False, False]
+  else:
+    parallels_labels = [True, True, False, False]
+    meridians_labels = [False, False, False, True]
+
+  result.drawparallels(parallels, labels=parallels_labels)
+  result.drawmeridians(meridians, labels=meridians_labels)
+  result.drawmapboundary()
+  return result

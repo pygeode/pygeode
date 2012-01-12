@@ -3,8 +3,8 @@
 from pygeode.tutorial import t1
 import pickle
 
-from plot_wrapper import Overlay, Multiplot, Colorbar, Map
-from plot_shortcuts import contour, pcolor
+from plot_wrapper import Overlay, Multiplot, Colorbar
+from plot_shortcuts import contour, pcolor, Map
 
 # Define a contour plot
 cont = contour (t1.Temp, title='Contours', colors='black')
@@ -19,12 +19,6 @@ comb = Overlay (pcol, cont, title='Combined')
 
 # Project it onto a map
 mapped = Map (comb, projection='ortho', lon_0=-105, lat_0=40, resolution='c', title = 'On a map')
-# Decorate the map
-mapped.drawcoastlines()
-import numpy as np
-mapped.drawparallels(np.arange(-90.,120.,30.))
-mapped.drawmeridians(np.arange(0.,420.,60.))
-mapped.drawmapboundary() 
 
 # Define a plot that's a multiplot of the above 4 objects
 theplot = Multiplot ([[cont,pcol],[comb,mapped]])

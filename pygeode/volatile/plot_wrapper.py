@@ -42,15 +42,12 @@ def notransform (*inputs): return inputs
 
 # Generic object for holding plot information
 class PlotWrapper:
-  def __init__(self, *plot_args, **plot_kwargs):
-    axes = plot_kwargs.pop('axes', None)
+  def __init__(self, *plot_args, **kwargs):
+    axes_args, plot_kwargs = split_axes_args(kwargs)
+    self.default_axes = Axes(**axes_args)
     plot_kwargs.pop('figure', None)
-    if axes is None:
-      axes = Axes()
-    assert isinstance(axes, Axes)
     self.plot_args = plot_args
     self.plot_kwargs = plot_kwargs
-    self.default_axes = axes
 
   # Draw the thing
   # This is pretty much the only public-facing method.
@@ -248,17 +245,6 @@ class Multiplot:
         plot._apply_axes(axes)
 
 
-# Helper for Basemap wrapper
-# defines a decorator for drawing map elements on the plot
-def drawing (f):
-  from functools import wraps
-  @wraps(f)
-  def g (self, *args, **kwargs):
-    # Don't allow the axes object to be overridden
-    kwargs.pop('ax',None)
-    # Save this call
-    self.map_stuff.append([f.__name__, args, kwargs])
-  return g
 
 # Basemap wrapper
 # Takes a plot object, wraps it so it appears within a map projection
