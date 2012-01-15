@@ -1,5 +1,4 @@
-import pickle
-from plot_wrapper import Overlay, Multiplot, Colorbar, QuiverKey
+from plot_wrapper import Overlay, Multiplot, Colorbar, QuiverKey, load
 from plot_shortcuts import pcolor, contourf, quiver, Map
 
 from pygeode.data.ccmval2 import ref2
@@ -21,14 +20,8 @@ theplot = Map(theplot, projection='cyl', llcrnrlon=0, urcrnrlon=360, llcrnrlat=-
 
 
 # Save and re-load the plot
-outfile = open('myplot.pickle','w')
-pickle.dump(theplot, outfile)
-outfile.close()
-
-infile = open('myplot.pickle','ro')
-theplot = pickle.load(infile)
-infile.close()
-
+theplot.save('myplot.dat')
+theplot = load('myplot.dat')
 
 theplot.render()
 

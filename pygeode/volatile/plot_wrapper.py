@@ -1,25 +1,7 @@
 # Wrapper for matplotlib.pyplot
-# Make plots picklable (pickleable? pickle-able?)
-# Makes it so you can pickle them.
-
-
-# Axes container
-# (Just contains a dictionary of init args)
-class Axes:
-  def __init__(self, **axes_args):
-    self.args = axes_args
-
-  # Method to override with other axes args
-  def modify (self, **axes_args):
-    axes_args = dict(self.args, **axes_args)
-    return Axes(**axes_args)
-
-  # Method for removing certain axes args
-  def remove (self, *remove_arg_list):
-    args = dict(self.args)
-    for remove_arg in remove_arg_list:
-      args.pop(remove_arg,None)
-    return Axes(**args)
+# Allows plots to be constructed in a slightly more object-oriented way.
+# Also allows plot objects to be saved to / loaded from files, something which
+# normal matplotlib plots can't do.
 
 
 # Helper function
@@ -44,7 +26,7 @@ def notransform (*inputs): return inputs
 class PlotWrapper:
   def __init__(self, *plot_args, **kwargs):
     axes_args, plot_kwargs = split_axes_args(kwargs)
-    self.default_axes = Axes(**axes_args)
+    self.axes_args = axes_args
     plot_kwargs.pop('figure', None)
     self.plot_args = plot_args
     self.plot_kwargs = plot_kwargs
@@ -62,7 +44,7 @@ class PlotWrapper:
 
   # Apply the axes stuff
   def _apply_axes (self, axes):
-    for k, v in self.default_axes.args.items():
+    for k, v in self.axes_args.items():
       getattr(axes,'set_'+k)(v)
 
   # Routine for doing the actual plot
@@ -78,6 +60,23 @@ class PlotWrapper:
   def _doplot (self, figure, pl, axes, transform):
     return  # Nothing to plot in this generic wrapper!
             # (this should never be called)
+
+  # Routine for saving this plot to a file
+  def save (self, filename):
+    import pickle
+    outfile = open(filename,'w')
+    pickle.dump(self, outfile)
+    outfile.close()
+
+# Module-level routine for loading a plot from file
+def load (filename):
+  import pickle
+  infile = open(filename,'ro')
+  theplot = pickle.load(infile)
+  infile.close()
+  return theplot
+
+
 
 # 1D plot
 class Plot(PlotWrapper):
@@ -202,7 +201,7 @@ class Colorbar(PlotWrapper):
     self.plot = plot
     # Ignore cax/ax/mappable arguments
     self.cbar_kwargs = kwargs
-    self.default_axes = plot.default_axes
+    self.axes_args = plot.axes_args
   def _doplot (self, figure, pl, axes, transform):
     theplot = self.plot._doplot(figure,pl,axes,transform)
     return figure.colorbar (theplot, ax=axes, **self.cbar_kwargs)
@@ -215,7 +214,7 @@ class Overlay(PlotWrapper):
   def __init__ (self, *plots, **axes_args):
     self.plots = plots
     # Create an Axes from the first plot, and additional keyword arguments
-    self.default_axes = plots[0].default_axes.modify(**axes_args)
+    self.axes_args = dict(plots[0].axes_args, **axes_args)
 
   def _doplot (self, figure, pl, axes, transform):
     # Loop over all plots, and render them on top of each other
@@ -226,7 +225,7 @@ class Overlay(PlotWrapper):
 
 # Multiplot
 # (more than one plot in a figure)
-class Multiplot:
+class Multiplot (PlotWrapper):
   def __init__ (self, plots):
     self.plots = plots
 
@@ -244,6 +243,13 @@ class Multiplot:
         # Apply the axes decorations
         plot._apply_axes(axes)
 
+  def _apply_axes (self, axes):
+    raise NotImplementedError,"Multiplot can't be embedded in other operations"
+
+  def _doplot (self, figure, pl, axes, transform):
+    raise NotImplementedError,"Multiplot can't be embedded in other operations"
+
+
 
 
 # Basemap wrapper
@@ -256,17 +262,19 @@ class Map(PlotWrapper):
     self.basemap_args = basemap_args
 
     # Start with the axes decorators from the original plot
-    default_axes = plot.default_axes.modify(**axes_args)
+    axes_args = dict(plot.axes_args, **axes_args)
 
     # Remove some arguments which no longer make sense
-    default_axes = default_axes.remove('xlim','ylim')
+    del axes_args['xlim']
+    del axes_args['ylim']
 
     # Remove axes labels on circular-type projections
     for prefix in 'aeqd', 'gnom', 'ortho', 'geos', 'nsper', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', 'spaeqd':
       if basemap_args.get('projection','cyl').startswith(prefix):
-        default_axes = default_axes.remove('xlabel','ylabel')
+        del axes_args['xlabel']
+        del axes_args['ylabel']
 
-    self.default_axes = default_axes
+    self.axes_args = axes_args
 
     # Start with no extra map stuff
     self.map_stuff = []

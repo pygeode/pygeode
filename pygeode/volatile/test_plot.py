@@ -1,9 +1,8 @@
 # Demo program for the wrapped plot objects
 
 from pygeode.tutorial import t1
-import pickle
 
-from plot_wrapper import Overlay, Multiplot, Colorbar
+from plot_wrapper import Overlay, Multiplot, Colorbar, load
 from plot_shortcuts import contour, pcolor, Map
 
 # Define a contour plot
@@ -25,13 +24,8 @@ theplot = Multiplot ([[cont,pcol],[comb,mapped]])
 
 
 # Save and re-load the plot
-outfile = open('myplot.pickle','w')
-pickle.dump(theplot, outfile)
-outfile.close()
-
-infile = open('myplot.pickle','ro')
-theplot = pickle.load(infile)
-infile.close()
+theplot.save('myplot.dat')
+theplot = load('myplot.dat')
 
 # Render the plot on the screen
 theplot.render()
