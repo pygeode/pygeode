@@ -72,14 +72,14 @@ def get_XYC (var):
 # A decorator for a plot maker
 # (does the work of setting up the generic Axes info)
 def plot_maker (f):
-  def g (var, **kwargs):
+  def g (var, *args, **kwargs):
 
     # Get the default axes args
     axes_args, var = get_axes_args(var)
 
     kwargs = dict(axes_args, **kwargs)
 
-    return f(var, **kwargs)
+    return f(var, *args, **kwargs)
 
   g.__name__ = f.__name__
   return g
@@ -87,17 +87,17 @@ def plot_maker (f):
 
 # Do a contour plot
 @plot_maker
-def contour (var, **kwargs):
+def contour (var, *args, **kwargs):
   from plot_wrapper import Contour
   X, Y, C = get_XYC(var)
-  return Contour(X, Y, C, **kwargs)
+  return Contour(X, Y, C, *args, **kwargs)
 
 # Do a filled contour plot
 @plot_maker
-def contourf (var, **kwargs):
+def contourf (var, *args, **kwargs):
   from plot_wrapper import Contourf
   X, Y, C = get_XYC(var)
-  return Contourf(X, Y, C, **kwargs)
+  return Contourf(X, Y, C, *args, **kwargs)
 
 # Do a pseudocolor plot
 @plot_maker
@@ -228,8 +228,14 @@ def quiver (u, v, **kwargs):
 # a PyGeode Var as input.
 # This is just a convenient shortcut for automatically drawing certain map
 # features (coastlines, meridians, etc.).
-def Map (plot, **kwargs):
+def Map (plot, region=None, **kwargs):
   from plot_wrapper import Map
+  # Set some default kwargs - update the region of interest
+  if region is not None:
+    lon = region.lon
+    lat = region.lat
+    defaults = dict(llcrnrlon=lon[0], urcrnrlon=lon[-1], llcrnrlat=lat[0], urcrnrlat=lat[-1])
+    kwargs = dict(defaults, **kwargs)
   result = Map(plot, **kwargs)
   # Modify the parallels/meridians depending on the size of the map region,
   # and the type of projection.
@@ -247,5 +253,9 @@ def Map (plot, **kwargs):
 
   result.drawparallels(parallels, labels=parallels_labels)
   result.drawmeridians(meridians, labels=meridians_labels)
+
+  # Remove the x/y labels, since we have the parallels/meridians labelled
+  kwargs['xlabel'] = kwargs['ylabel'] = ''
+
   result.drawmapboundary()
   return result

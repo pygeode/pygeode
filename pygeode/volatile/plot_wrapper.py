@@ -104,7 +104,7 @@ class ContourType(PlotWrapper):
     # Z, N
     if len(inputs) == 2 and isinstance(inputs[1],int): return inputs
     # X, Y, Z, N
-    if len(inputs) == 4 and isinstance(inputs[3],int):
+    if len(inputs) == 4 and isinstance(inputs[3],(int,list,tuple)):
       X, Y, Z, N = inputs
       X, Y = meshgrid(X, Y)
       X, Y = transform(X, Y)
@@ -125,7 +125,7 @@ class Contour(ContourType):
 
 # Filled contour plot
 class Contourf(ContourType):
-  plotfnc = 'contourf'
+  plotfcn = 'contourf'
 
 
 # Pseudo-colour plot
