@@ -228,15 +228,39 @@ def quiver (u, v, **kwargs):
 # a PyGeode Var as input.
 # This is just a convenient shortcut for automatically drawing certain map
 # features (coastlines, meridians, etc.).
-def Map (plot, region=None, **kwargs):
+def Map (plot, **kwargs):
   from plot_wrapper import Map
   # Set some default kwargs - update the region of interest
-  if region is not None:
-    lon = region.lon
-    lat = region.lat
-    defaults = dict(llcrnrlon=lon[0], urcrnrlon=lon[-1], llcrnrlat=lat[0], urcrnrlat=lat[-1])
-    kwargs = dict(defaults, **kwargs)
+
+  # Some default args for things not overridden in kwargs
+  defaults = {}
+
+  # Do we have x/y limits already defined? use these for map limits
+  if 'xlim' in plot.axes_args:
+    xlim = plot.axes_args['xlim']
+    defaults['llcrnrlon'] = xlim[0]
+    defaults['urcrnrlon'] = xlim[1]
+  if 'ylim' in plot.axes_args:
+    ylim = plot.axes_args['ylim']
+    defaults['llcrnrlat'] = ylim[0]
+    defaults['urcrnrlat'] = ylim[1]
+
+  # No x/y labels, since we will have the parallels/meridians labelled
+  defaults['xlabel'] = defaults['ylabel'] = ''
+
+  # Remove map corners on circular-type projections
+  for prefix in 'aeqd', 'gnom', 'ortho', 'geos', 'nsper', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', 'spaeqd':
+    if kwargs.get('projection','cyl').startswith(prefix):
+      defaults.pop('llcrnrlon',None)
+      defaults.pop('urcrnrlon',None)
+      defaults.pop('llcrnrlat',None)
+      defaults.pop('urcrnrlat',None)
+
+  # Apply the defaults to the kwargs
+  kwargs = dict(defaults, **kwargs)
+
   result = Map(plot, **kwargs)
+
   # Modify the parallels/meridians depending on the size of the map region,
   # and the type of projection.
   # (TODO)
@@ -253,9 +277,6 @@ def Map (plot, region=None, **kwargs):
 
   result.drawparallels(parallels, labels=parallels_labels)
   result.drawmeridians(meridians, labels=meridians_labels)
-
-  # Remove the x/y labels, since we have the parallels/meridians labelled
-  kwargs['xlabel'] = kwargs['ylabel'] = ''
 
   result.drawmapboundary()
   return result

@@ -16,6 +16,15 @@ def split_axes_args (all_args):
       axes_args[argname] = argval
     else:
       other_args[argname] = argval
+
+  # Some extra tweaks
+  # Don't treat 'label' as an axes arg.
+  # Let it be a plot arg, so we get labels applied early enough that they
+  # can be picked up by a legend object.
+  # (If it was an axes arg, it won't get applied until the very end, when the
+  # axes get decorated - too late to be of use in a legend.)
+  if 'label' in axes_args:
+    other_args['label'] = axes_args.pop('label')
   return axes_args, other_args
 
 # The default coordinate transform
@@ -173,6 +182,8 @@ class Quiver(PlotWrapper):
       X, Y = meshgrid(X, Y)
       X, Y = transform(X, Y)
       return X, Y, U, V, C
+    warn("don't know what to do for the coordinate transformation")
+    return inputs
 
   def _doplot (self, figure, pl, axes, transform):
     # Coordinate transformation?
@@ -185,6 +196,7 @@ class QuiverKey(PlotWrapper):
     self.plot = plot
     self.plot_args = plot_args
     self.plot_kwargs = plot_kwargs
+    self.axes_args = plot.axes_args
   def _doplot (self, figure, pl, axes, transform):
     theplot = self.plot._doplot(figure,pl,axes,transform)
     # Ignore 'pl' argument, use matplotlib.pyplot exclusively
@@ -194,8 +206,7 @@ class QuiverKey(PlotWrapper):
 
 
 # Colorbar
-# Treated as a plot-type thing.
-# Use it in an overlay; will use the values from the plot 'underneath' it.
+# Wraps an existing plot, from which the data values will be retrieved.
 class Colorbar(PlotWrapper):
   def __init__ (self, plot, cax=None, ax=None, mappable=None, **kwargs):
     self.plot = plot
@@ -207,9 +218,20 @@ class Colorbar(PlotWrapper):
     return figure.colorbar (theplot, ax=axes, **self.cbar_kwargs)
 
 
+# A legend
+# (labels the lines of a line plot)
+class Legend(PlotWrapper):
+  def __init__ (self, plot, *args, **kwargs):
+    self.plot = plot
+    self.axes_args = plot.axes_args
+    self.legend_args = args
+    self.legend_kwargs = kwargs
+  def _doplot (self, figure, pl, axes, transform):
+    theplot = self.plot._doplot(figure,pl,axes,transform)
+    return axes.legend (*self.legend_args, **self.legend_kwargs)
+
 # Overlay object
-# Similar to Plot, but renders a bunch of things in order.
-# Plots must be pre-created
+# Defines a sequence of plots, drawn consecutively on top of each other.
 class Overlay(PlotWrapper):
   def __init__ (self, *plots, **axes_args):
     self.plots = plots
@@ -224,7 +246,17 @@ class Overlay(PlotWrapper):
     return p
 
 # Multiplot
-# (more than one plot in a figure)
+# Tiles a bunch of plots together in the same figure.
+# Plots are passed in a nested list, representing a 2D grid.
+# E.g., to tile plots A, B, C, D together so they look like
+#   A B
+#   C D
+# then you would do something like
+# myplot = Multiplot( [[A,B],[C,D]] )
+#
+# Note:
+#   This plot object can't be further wrapped (e.g. Overlay, Colorbar,...).
+#   It must be the outer-most (last) operation applied to the plots of a figure.
 class Multiplot (PlotWrapper):
   def __init__ (self, plots):
     self.plots = plots
@@ -244,10 +276,10 @@ class Multiplot (PlotWrapper):
         plot._apply_axes(axes)
 
   def _apply_axes (self, axes):
-    raise NotImplementedError,"Multiplot can't be embedded in other operations"
+    raise NotImplementedError,"Multiplot can't be embedded in other plot objects"
 
   def _doplot (self, figure, pl, axes, transform):
-    raise NotImplementedError,"Multiplot can't be embedded in other operations"
+    raise NotImplementedError,"Multiplot can't be embedded in other plot objects"
 
 
 
@@ -256,25 +288,21 @@ class Multiplot (PlotWrapper):
 # Takes a plot object, wraps it so it appears within a map projection
 class Map(PlotWrapper):
   def __init__ (self, plot, **kwargs):
+
     axes_args, basemap_args = split_axes_args(kwargs)
 
     self.plot = plot
-    self.basemap_args = basemap_args
 
     # Start with the axes decorators from the original plot
     axes_args = dict(plot.axes_args, **axes_args)
 
     # Remove some arguments which no longer make sense
-    del axes_args['xlim']
-    del axes_args['ylim']
-
-    # Remove axes labels on circular-type projections
-    for prefix in 'aeqd', 'gnom', 'ortho', 'geos', 'nsper', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', 'spaeqd':
-      if basemap_args.get('projection','cyl').startswith(prefix):
-        del axes_args['xlabel']
-        del axes_args['ylabel']
+    # These will cause basemap to choke
+    axes_args.pop('xlim',None)
+    axes_args.pop('ylim',None)
 
     self.axes_args = axes_args
+    self.basemap_args = basemap_args
 
     # Start with no extra map stuff
     self.map_stuff = []
@@ -293,7 +321,7 @@ class Map(PlotWrapper):
     except ImportError:
       warn ("Can't import Basemap", stacklevel=2)
       import matplotlib.pyplot as pl
-      transform = lambda x, y: (x, y)
+      transform = notransform
     # Apply the plot to this modified field
     return self.plot._doplot (figure=figure, axes=axes, pl=pl, transform=transform)
 

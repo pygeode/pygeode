@@ -1,3 +1,5 @@
+# Test quivers, pseudo-color plots, and a map projection.
+
 from plot_wrapper import Overlay, Multiplot, Colorbar, QuiverKey, load
 from plot_shortcuts import pcolor, contourf, quiver, Map
 
@@ -16,7 +18,7 @@ winds = QuiverKey (winds, 1.25, 0.9, 10, r'$10 \frac{m}{s}$')
 
 theplot = Overlay(temp, winds, title="Winds and Temperature")
 
-theplot = Map(theplot, projection='cyl', llcrnrlon=0, urcrnrlon=360, llcrnrlat=-90,urcrnrlat=90, xlabel='', ylabel='')
+theplot = Map(theplot, projection='cyl')
 
 
 # Save and re-load the plot
