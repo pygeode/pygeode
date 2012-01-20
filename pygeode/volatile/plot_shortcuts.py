@@ -104,7 +104,17 @@ def contourf (var, *args, **kwargs):
 def pcolor (var, **kwargs):
   from plot_wrapper import Pcolor
   X, Y, C = get_XYC(var)
-  return Pcolor (X, Y, C, **kwargs)
+
+  # Note: X and Y are the coordinates of the grid CENTRES.  We need the grid edges!
+  # Fudge this a bit - works for uniform grids, but will give inaccurate results for other grids.
+  dx = X[1] - X[0]
+  dy = Y[1] - Y[0]
+  Xbounds = list( (X[1:] + X[:-1])/2 )
+  Xbounds = [Xbounds[0] - dx] + Xbounds + [Xbounds[-1] + dx]
+  Ybounds = list( (Y[1:] + Y[:-1])/2 )
+  Ybounds = [Ybounds[0] - dy] + Ybounds + [Ybounds[-1] + dy]
+
+  return Pcolor (Xbounds, Ybounds, C, **kwargs)
 
 
 # Helper function

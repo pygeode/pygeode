@@ -53,7 +53,12 @@ class PlotWrapper:
 
   # Apply the axes stuff
   def _apply_axes (self, axes):
-    for k, v in self.axes_args.items():
+    args = dict(self.axes_args)
+    # Handle scaling first, because setting this screws up other custom attributes like ticks
+    if 'xscale' in args: axes.set_xscale(args.pop('xscale'))
+    if 'yscale' in args: axes.set_yscale(args.pop('yscale'))
+    # Apply the rest of the axes attributes
+    for k, v in args.items():
       getattr(axes,'set_'+k)(v)
 
   # Routine for doing the actual plot
