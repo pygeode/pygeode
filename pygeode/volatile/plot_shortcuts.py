@@ -17,24 +17,41 @@ def get_axes_args (var):
 
   # 1D stuff
   if var.naxes == 1:
-    xlabel = var.plotatts.get('xlabel',var.axes[0].name)
+    xaxis = var.axes[0]
+    xatts = xaxis.plotatts
+
+    xlabel = var.plotatts.get('xlabel',xaxis.name)
     ylabel = var.name
-    xlim = min(var.axes[0].values), max(var.axes[0].values)
-    xscale = var.axes[0].plotatts.get('plotscale','linear')
+    xlim = min(xaxis.values), max(xaxis.values)
+    xscale = xatts.get('plotscale','linear')
     yscale = var.plotatts.get('plotscale','linear')
-    plotorder = var.axes[0].plotatts.get('plotorder',1)
-    xlim = xlim[::plotorder]
-    del plotorder
+    xlim = xlim[::xatts.get('plotorder',1)]
+
+    del xaxis, xatts
 
   # 2D stuff
   if var.naxes == 2:
+
     # For 2D plots, the x/y need to be switched?
-    xlabel = var.plotatts.get('xlabel',var.axes[1].name)
-    ylabel = var.plotatts.get('ylabel',var.axes[0].name)
+    xaxis = var.axes[1]
+    yaxis = var.axes[0]
+    xatts = xaxis.plotatts
+    yatts = yaxis.plotatts
+
+    xlabel = xatts.get('plottitle','')
+    if xlabel == '': xlabel = var.axes[1].name
+    ylabel = yatts.get('plottitle','')
+    if ylabel == '': ylabel = var.axes[0].name
     xlim = min(var.axes[1].values), max(var.axes[1].values)
     ylim = min(var.axes[0].values), max(var.axes[0].values)
 
-    #TODO: linear/log scale, reversed order
+    # linear/log scale, reversed order
+    xscale = xatts.get('plotscale', 'linear')
+    yscale = yatts.get('plotscale', 'linear')
+    xlim = xlim[::xatts.get('plotorder', 1)]
+    ylim = ylim[::yatts.get('plotorder', 1)]
+
+    del xaxis, yaxis, xatts, yatts
 
   # Collect these local variables into a dictionary
   # (these will be keyword parameters for constructing an Axes)
