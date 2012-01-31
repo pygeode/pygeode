@@ -299,12 +299,17 @@ class Map(PlotWrapper):
     self.plot = plot
 
     # Start with the axes decorators from the original plot
-    axes_args = dict(plot.axes_args, **axes_args)
+    if plot is not None:
+      axes_args = dict(plot.axes_args, **axes_args)
+    else:
+      axes_args = dict()
 
     # Remove some arguments which no longer make sense
     # These will cause basemap to choke
     axes_args.pop('xlim',None)
     axes_args.pop('ylim',None)
+    axes_args.pop('xscale',None)
+    axes_args.pop('yscale',None)
 
     self.axes_args = axes_args
     self.basemap_args = basemap_args
@@ -328,7 +333,8 @@ class Map(PlotWrapper):
       import matplotlib.pyplot as pl
       transform = notransform
     # Apply the plot to this modified field
-    return self.plot._doplot (figure=figure, axes=axes, pl=pl, transform=transform)
+    if self.plot is not None:
+      return self.plot._doplot (figure=figure, axes=axes, pl=pl, transform=transform)
 
 
 # Impement the drawing of map elements (boundaries, meridians, etc.)
