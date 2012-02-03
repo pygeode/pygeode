@@ -437,13 +437,15 @@ def plotsigmask (var, ax, **kwargs):
 
   shi = kwargs.pop('majsig', 0.99)
   slo = kwargs.pop('minsig', 0.95)
-  alph = kwargs.pop('alpha', 0.2)
-  sigc = ['1.', '0.7', '0.', '0.7', '1.']
+  alph = kwargs.pop('alpha', 0.5)
+  alphm = kwargs.pop('alphamin', 0.5)
+  sigc = ['1.', '0.7', '0.4', '0.7', '1.']
+  #sigc = ['1.', '1.', '1.', '1.', '1.']
   #sigc = ['0.', '0.7', '1.', '0.7', '0.']
   sigl = [-1.1, -shi, -slo, slo, shi, 1.1]
   ct = ax.contourf(meshx, meshy, values, sigl, colors=sigc, hold=True, zorder=-1)
   setp([ct.collections[0], ct.collections[4]], visible=False)
-  setp([ct.collections[1], ct.collections[3]], alpha=alph, edgecolor='none')
+  setp([ct.collections[1], ct.collections[3]], alpha=alphm, edgecolor='none')
   setp(ct.collections[2], alpha=alph, edgecolor='none')
   ax.set_rasterization_zorder(0)
 
@@ -520,8 +522,7 @@ def plotquiver (vu, vv, **kwargs):
            can be invoked)
   '''
   from matplotlib.pyplot import figure, show, ion, ioff, draw, cm, clf, isinteractive
-  from matplotlib.numerix import ma
-  from numpy import meshgrid
+  from numpy import meshgrid, ma
   from matplotlib.pyplot import contourf, colorbar, xlim, ylim, xlabel, ylabel, gca
   from axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
   from numpy import isnan, isinf, where
