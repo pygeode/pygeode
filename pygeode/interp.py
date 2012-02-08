@@ -84,7 +84,13 @@ class Interp (Var):
     outaxes[-1] = outaxis
 
     # Validate the coordinate fields
-    assert all(invar.hasaxis(a) for a in inx.axes)
+#    assert all(invar.hasaxis(a) for a in inx.axes)
+    for a in inx.axes:
+      if not invar.hasaxis(a):
+        if invar.hasaxis(a.__class__):
+          raise ValueError, "mismatching '%s' axis between invar and inx"%a.name
+        else:
+          raise TypeError, "invar does not have '%s' axis specified by inx"%a.name
 #    assert all(invar.hasaxis(a) or a is outaxis for a in outx.axes)
     for a in outx.axes:
       if a is outaxis: continue
