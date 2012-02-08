@@ -97,6 +97,10 @@ class Plot(PlotWrapper):
   def _doplot (self, figure, pl, axes, transform):
     pl.plot (*self.plot_args, **self.plot_kwargs)
 
+# Errorbar plot
+class ErrorBar(PlotWrapper):
+  def _doplot (self, figure, pl, axes, transform):
+    pl.errorbar(*self.plot_args, **self.plot_kwargs)
 
 # Both contour-type plots (contour/contourf) use the same input argument
 # conventions, so only need to define the transformation method once.
