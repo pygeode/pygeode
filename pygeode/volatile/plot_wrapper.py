@@ -109,7 +109,7 @@ class ContourType(PlotWrapper):
   # Transformation of the coordinates
   @staticmethod
   def _transform(inputs, transform):
-    from numpy import meshgrid
+    from numpy import meshgrid, ndarray
     from warnings import warn
     # Z
     if len(inputs) == 1: return inputs
@@ -120,9 +120,9 @@ class ContourType(PlotWrapper):
       X, Y = transform(X, Y)
       return X, Y, Z
     # Z, N
-    if len(inputs) == 2 and isinstance(inputs[1],int): return inputs
+    if len(inputs) == 2 and isinstance(inputs[1],(int,list,tuple,ndarray)): return inputs
     # X, Y, Z, N
-    if len(inputs) == 4 and isinstance(inputs[3],(int,list,tuple)):
+    if len(inputs) == 4 and isinstance(inputs[3],(int,list,tuple,ndarray)):
       X, Y, Z, N = inputs
       X, Y = meshgrid(X, Y)
       X, Y = transform(X, Y)
