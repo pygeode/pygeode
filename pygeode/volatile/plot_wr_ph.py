@@ -1,23 +1,10 @@
 # Wrapper for matplotlib.pyplot
-import matplotlib.pyplot as pyl
+from matplotlib import pyplot as pyl
+import matplotlib as mpl
 
 # Allows plots to be constructed in a slightly more object-oriented way.
 # Also allows plot objects to be saved to / loaded from files, something which
 # normal matplotlib plots can't do.
-
-# Helper function
-# Given a dictionary of keyword parameters, extract those that need to go into
-# the call to pyl.figure()
-def split_fig_args (**kwargs):
-  fig_props = {}
-  fig_args = {}
-  for k, v in kwargs.items():
-    if k in ['num', 'figsize', 'dpi']:
-      fig_props[k] = v
-    else:
-      fig_args[k] = v
-
-  return fig_args, fig_props
 
 def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
 # {{{
@@ -68,31 +55,167 @@ def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotun
   return title
 # }}}
 
-# Module-level routine for loading a plot from file
-def load (filename):
-  import pickle
-  infile = open(filename,'ro')
-  theplot = pickle.load(infile)
-  infile.close()
-  return theplot
+def grid(axes, size = None):
+# {{{
+  # Expect a 2d grid; first index is the row, second the column
+  ny = len(axes)
+  nx = len(axes[0])
+  assert all([len(x) == nx for x in axes[1:]]), 'Each row must have the same number of axes'
+
+  rowh = [max([a.size[1] for a in row]) for row in axes]
+  colw = [max([axes[i][j].size[0] for i in range(ny)]) for j in range(nx)]
+
+  tsize = [sum(colw), sum(rowh)]
+  if size is None: size = tsize
+
+  Ax = AxesWrapper(size = size)
+
+  x, y = 0., 1.
+  for i in range(ny):
+    for j in range(nx):
+      ax = axes[i][j]
+      w = ax.size[0] / tsize[0]
+      px = (colw[j] - ax.size[0]) / tsize[0] / 2.
+
+      h = ax.size[1] / tsize[1]
+      py = (rowh[i] - ax.size[1]) / tsize[1] / 2.
+        
+      r = [x + px, y - h - py, x + w + px, y - py]
+      Ax.add_axis(ax, r)
+      x += colw[j] / tsize[0]
+    x = 0.
+    y -= rowh[i] / tsize[1]
+
+  return Ax
+# }}}
 
 # Interface for wrapping a matplotlib axes object
 class AxesWrapper:
-  def __init__(self, **kwargs):
-    self.axes_args = kwargs
+# {{{
+  def __init__(self, parent = None, rect = None, size = None, make_axis=False, **kwargs):
+# {{{
+    self.parent = parent
+
     self.nplots = 0
     self.plots = []
+    self.make_axis = make_axis
+
+    self.naxes = 0
+    self.axes = []
+    self.ax_boxes = []
+
+    if rect is None:
+      rect = [pyl.rcParams['figure.subplot.' + k] for k in ['left', 'bottom', 'right', 'top']]
+      rect[2] -= rect[0]
+      rect[3] -= rect[1]
+    self.rect = rect
+
+    if size is None: size = pyl.rcParams['figure.figsize']
+    self.size = (float(size[0]), float(size[1]))
+
+    self.axes_args = kwargs
     self._haxis = None
     self._vaxis = None
+# }}} 
+
+  def add_axis(self, axis, rect):
+# {{{
+    bb = mpl.transforms.Bbox.from_extents(rect)
+    assert all([s > 0. for s in bb.size]), 'Bounding box must not vanish'
+    axis.parent = self
+    self.axes.append(axis)
+    self.ax_boxes.append(bb)
+    self.naxes = len(self.axes)
+# }}}
 
   def add_plot(self, plot, order=None):
+# {{{
+    plot.axes = self
     if order is None:
       self.plots.append(plot)
     else:
       self.plots.insert(plot, order)
+    self.make_axis = True
     self.nplots = len(self.plots)
+# }}}
+
+  def render(self, fig = None, **kwargs):
+# {{{
+    pyl.ioff()
+
+    if not isinstance(fig, mpl.figure.Figure):
+      figparm = dict(figsize = self.size)
+      figparm.update(kwargs)
+      if not fig is None:
+        figparm['num'] = fig
+      fig = pyl.figure(**figparm)
+
+    fig.clf()
+
+    self._build_axes(fig)
+
+    self._do_plots(fig)
+
+    pyl.ion()
+    pyl.draw()
+    pyl.show()
+# }}}
+
+  def get_transform(self):
+# {{{
+    if self.parent is None:
+      return mpl.transforms.IdentityTransform()
+
+    ia = self.parent.axes.index(self)
+    box = self.parent.ax_boxes[ia]
+    t_self = mpl.transforms.BboxTransformTo(box)
+    t_parent = self.parent.get_transform()
+    return mpl.transforms.CompositeAffine2D(t_self, t_parent)
+# }}}
+
+  def _build_axes(self, fig):
+# {{{
+    if self.make_axis:
+      tfm = self.get_transform()
+      l, b = self.rect[0], self.rect[1]
+      r, t = self.rect[0] + self.rect[2], self.rect[1] + self.rect[3]
+      l, b = tfm.transform_point((l, b))
+      r, t = tfm.transform_point((r, t))
+      self.ax = fig.add_axes([l, b, r - l, t - b])
+
+    # Build children
+    for a in self.axes: a._build_axes(fig)
+# }}}
+
+  def _do_plots(self, fig):
+# {{{
+    # Plot children
+    for a in self.axes: a._do_plots(fig)
+
+    if self.nplots == 0: return
+
+    # Perform plotting operations
+    for p in self.plots:
+      p.render(self.ax)
+
+    # Handle scaling first, because setting this screws up other custom attributes like ticks
+    args = self.axes_args.copy()
+    if 'xscale' in args: self.ax.set_xscale(args.pop('xscale'))
+    if 'yscale' in args: self.ax.set_yscale(args.pop('yscale'))
+    if len(args) > 0: pyl.setp(self.ax, **args)
+
+    import pygeode as pyg
+    if isinstance(self._haxis, pyg.Axis):
+      self.ax.xaxis.set_major_formatter(self._haxis.formatter())
+      self._haxis.set_locator(axes.xaxis)
+
+    if isinstance(self._vaxis, pyg.Axis):
+      self.ax.yaxis.set_major_formatter(self._vaxis.formatter())
+      self._vaxis.set_locator(axes.yaxis)
+# }}}
 
   def set_haxis(self, axis):
+# {{{
     vals = axis.get()
     lims = min(vals), max(vals)
     ax_args = dict(
@@ -101,8 +224,10 @@ class AxesWrapper:
         xlim = lims[::axis.plotatts['plotorder']])
     self.axes_args.update(ax_args)
     self._haxis = axis
+# }}}
 
   def set_vaxis(self, axis):
+# {{{
     vals = axis.get()
     lims = min(vals), max(vals)
     ax_args = dict(
@@ -111,106 +236,134 @@ class AxesWrapper:
         ylim = lims[::axis.plotatts['plotorder']])
     self.axes_args.update(ax_args)
     self._vaxis = axis
+# }}}
 
   def set(self, **kwargs):
+# {{{
     self.axes_args.update(kwargs)
+# }}}
+# }}} 
 
-  def render(self, axes):
-    # Perform plotting operations
-    for p in self.plots:
-      p.render(axes)
-
-    # Handle scaling first, because setting this screws up other custom attributes like ticks
-    args = self.axes_args.copy()
-    if 'xscale' in args: axes.set_xscale(args.pop('xscale'))
-    if 'yscale' in args: axes.set_yscale(args.pop('yscale'))
-
-    import pygeode as pyg
-    if isinstance(self._haxis, pyg.Axis):
-      axes.xaxis.set_major_formatter(self._haxis.formatter())
-      self._haxis.set_locator(axes.xaxis)
-
-    if isinstance(self._vaxis, pyg.Axis):
-      axes.yaxis.set_major_formatter(self._vaxis.formatter())
-      self._vaxis.set_locator(axes.yaxis)
-
-    # Apply the rest of the axes attributes
-    pyl.setp(axes, **args)
-
-# Interface for wrapping a matplotlib figure
-class FigureWrapper:
-  def __init__(self, *args, **kwargs):
-    # Should extract anything that needs to go into the calling command
-    self.fig_args = args
-    self.fig_props = kwargs
-    self.naxes = 0
-    self.axes = []
-    self.axes_rects = []
-    self.axes_args = []
-
-  def add_axis(self, axis, rect, **kwargs):
-    self.axes.append(axis)
-    self.axes_rects.append(rect)
-    self.axes_args.append(kwargs)
-    self.naxes = len(self.axes)
-
-  def _do_layout(self):
-    axes = []
-    for r, a in zip(self.axes_rects, self.axes_args):
-      axes.append(self.fig.add_axes(r, **a))
-            
-    return axes
-
-  def render(self):
-    pyl.ioff()
-
-    self.fig = pyl.figure(*self.fig_args)
-    self.fig.clf()
-    pyl.setp(self.fig, **self.fig_props)
-
-    axes = self._do_layout()
-
-    for pl_ax, ax in zip(axes, self.axes):
-      ax.render(pl_ax)
-
-    pyl.ion()
-    pyl.draw()
-    pyl.show()
-
-  # Routine for saving this plot to a file
-  def save (self, filename):
-    import pickle
-    outfile = open(filename,'w')
-    pickle.dump(self, outfile)
-    outfile.close()
-
-
-class SingleFigure(FigureWrapper):
-  def __init__(self, *args, **kwargs):
-    FigureWrapper.__init__(self, *args, **kwargs)
-    self.axes = [AxesWrapper()]
-
-  def _do_layout(self):
-    axis = self.fig.add_subplot(111)
-    return [axis]
-    
 # Generic object for holding plot information
 class PlotWrapper:
+# {{{
   def __init__(self, *plot_args, **kwargs):
     self.plot_args = plot_args
     self.plot_kwargs = kwargs
+    self.axes = None
 
   # Draw the thing
   # This is pretty much the only public-facing method.
   def render (self, axes=None):
     pass
+# }}} 
 
 # 1D plot
 class Plot(PlotWrapper):
+# {{{
   def render (self, axes):
-    pyl.plot (*self.plot_args, **self.plot_kwargs)
+    axes.plot (*self.plot_args, **self.plot_kwargs)
+# }}}
 
 # Contour
 class Contour(PlotWrapper):
+# {{{
   def render (self, axes):
-    self._cnt = pyl.contour (*self.plot_args, **self.plot_kwargs)
+    self._cnt = axes.contour (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+# Filled Contour
+class Contourf(PlotWrapper):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.contourf (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+# Filled Contour
+class Colorbar(PlotWrapper):
+# {{{
+  def __init__(self, cnt, cax, *plot_args, **kwargs):
+    self.cnt = cnt
+    self.cax = cax
+    PlotWrapper.__init__(self, *plot_args, **kwargs)
+
+  def render (self, axes):
+    pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
+# }}}
+
+def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
+# {{{
+  orient = kwargs.get('orientation', 'vertical')
+  if cax is None:
+    if orient == 'horizontal': 
+      pos = kwargs.pop('pos', 'b')
+      height = kwargs.pop('height', 0.4)
+      size = axes.size[0], height
+
+      if rect is None:
+        l = kwargs.pop('rl', 0.05)
+        b = kwargs.pop('rb', 0.5)
+        r = kwargs.pop('rr', 0.9)
+        t = kwargs.pop('rt', 0.4)
+        rect = [l, b, r, t]
+    else: 
+      pos = kwargs.pop('pos', 'r')
+      width = kwargs.pop('width', 0.8)
+      size = width, axes.size[1]
+      if rect is None:
+        l = kwargs.pop('rl', 0.1)
+        b = kwargs.pop('rb', 0.05)
+        r = kwargs.pop('rr', 0.2)
+        t = kwargs.pop('rt', 0.9)
+        rect = [l, b, r, t]
+
+    cax = AxesWrapper(size=size, rect=rect, make_axis=True)
+
+    if pos == 'b': ret = grid([[axes], [cax]])
+    elif pos == 'l': ret = grid([[cax, axes]])
+    elif pos == 't': ret = grid([[cax], [axes]])
+    else: ret = grid([[axes, cax]])
+
+  else: ret = None
+
+  cnt.axes.add_plot(Colorbar(cnt, cax, *args, **kwargs))
+  return ret
+# }}}
+
+def make_plot_func(fclass):
+  def f(*args, **kwargs):
+    axes = kwargs.pop('axes', AxesWrapper())
+    axes.add_plot(fclass(*args, **kwargs))
+    return axes
+  return f
+
+def make_plot_member(f):
+  def g(self, *args, **kwargs): f(*args, axes = self, **kwargs)
+  return g
+
+plot = make_plot_func(Plot)
+contour = make_plot_func(Contour)
+contourf = make_plot_func(Contourf)
+
+AxesWrapper.plot = make_plot_member(plot)
+AxesWrapper.contour = make_plot_member(contour)
+AxesWrapper.contourf = make_plot_member(contourf)
+
+# Routine for saving this plot to a file
+def save (fig, filename):
+# {{{
+  import pickle
+  outfile = open(filename,'w')
+  pickle.dump(fig, outfile)
+  outfile.close()
+# }}}
+
+# Module-level routine for loading a plot from file
+def load (filename):
+# {{{
+  import pickle
+  infile = open(filename,'ro')
+  theplot = pickle.load(infile)
+  infile.close()
+  return theplot
+# }}}
