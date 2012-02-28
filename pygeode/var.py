@@ -579,6 +579,20 @@ class Var(object):
     copy_meta (self, var)
     return var
   # }}}
+
+  def formatter(self):
+  # {{{
+    ''' formatter(self) - returns a matplotlib axis Formatter object; by default returns None. '''
+    import pylab as pyl
+    return pyl.ScalarFormatter()
+  # }}}
+
+  def locator(self):
+  # {{{
+    ''' locator(self) - returns locator object (if any) specific to this axis. By default returns None. '''
+    import pylab as pyl
+    return pyl.AutoLocator()
+  # }}}
 # }}}
 
 # a function to copy metadata from one variable to another

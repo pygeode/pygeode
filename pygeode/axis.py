@@ -520,13 +520,6 @@ class Axis(Var):
     return FuncFormatter(lambda x, p: self.formatvalue(x, units=False))
   # }}}
 
-  def set_locator(self, mplax):
-  # {{{
-    ''' set_locator(self) - sets appropriate matplotlib locator object; by default does
-          nothing. '''
-    pass
-  # }}}
-
   # Concatenate multiple axes together
   # Use numpy arrays
   # Assume the segments are pre-sorted
@@ -624,6 +617,12 @@ class Lon (XAxis):
   plotatts = XAxis.plotatts.copy()
   plotatts['formatstr'] = '%d E'
   plotatts['plottitle'] = ''
+
+  def locator(self):
+  # {{{
+    import pylab as pyl
+    return pyl.MaxNLocator(nbins=9, steps=[1, 3, 6, 10])
+  # }}}
 
   @staticmethod
   def _val2str (val):

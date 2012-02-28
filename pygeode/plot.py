@@ -180,7 +180,8 @@ def plotvar (var, **kwargs):
       # coordinate axis
       ax.yaxis.set_major_formatter(xaxis.formatter())
       if lbly:
-        xaxis.set_locator(ax.yaxis)
+        loc = xaxis.locator()
+        if loc is not None: ax.yaxis.set_major_locator(loc)
         ax.set_ylabel(_buildaxistitle(**xaxis.plotatts))
 
       # value axis
@@ -203,7 +204,8 @@ def plotvar (var, **kwargs):
       ax.xaxis.set_major_formatter(xaxis.formatter())
       # coordinate axis
       if lblx:
-        xaxis.set_locator(ax.xaxis)
+        loc = xaxis.locator()
+        if loc is not None: ax.xaxis.set_major_locator(loc)
         ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))
 
       # value axis
@@ -380,13 +382,15 @@ def plotvar (var, **kwargs):
       if kwargs.pop('lblx', True):
         ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))
         ax.xaxis.set_major_formatter(xaxis.formatter())
-        xaxis.set_locator(ax.xaxis)
+        loc = xaxis.locator()
+        if loc is not None: ax.xaxis.set_major_locator(loc)
       else:
         ax.set_xticklabels('')      
       if kwargs.pop('lbly', True):
         ax.set_ylabel(_buildaxistitle(**yaxis.plotatts))
         ax.yaxis.set_major_formatter(yaxis.formatter())
-        yaxis.set_locator(ax.yaxis)
+        loc = yaxis.locator()
+        if loc is not None: ax.yaxis.set_major_locator(loc)
       else:
         ax.set_yticklabels('')
 
@@ -468,14 +472,16 @@ def plotsigmask (var, ax, **kwargs):
   if kwargs.pop('lblx', True):
     ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))      
     ax.xaxis.set_major_formatter(xaxis.formatter())
-    xaxis.set_locator(ax.xaxis)
+    loc = xaxis.locator()
+    if loc is not None: ax.xaxis.set_major_locator(loc)
   else:
     ax.set_xticklabels('')
 
   if kwargs.pop('lbly', True):
     ax.set_ylabel(_buildaxistitle(**yaxis.plotatts))      
     ax.yaxis.set_major_formatter(yaxis.formatter())
-    yaxis.set_locator(ax.yaxis)
+    loc = yaxis.locator()
+    if loc is not None: ax.yaxis.set_major_locator(loc)
   else:
     ax.set_yticklabels('')
 
@@ -625,12 +631,14 @@ def plotquiver (vu, vv, **kwargs):
     if lblx:
       ax.set_xlabel(_buildaxistitle(**xaxis.plotatts))      
       ax.xaxis.set_major_formatter(xaxis.formatter())
-      xaxis.set_locator(ax.xaxis)
+      loc = xaxis.locator()
+      if loc is not None: ax.xaxis.set_major_locator(loc)
 
     if lbly:
       ax.set_ylabel(_buildaxistitle(**yaxis.plotatts))      
       ax.yaxis.set_major_formatter(yaxis.formatter())
-      yaxis.set_locator(ax.yaxis)
+      loc = yaxis.locator()
+      if loc is not None: ax.yaxis.set_major_locator(loc)
 
 
   if wasint:

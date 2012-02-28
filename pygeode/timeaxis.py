@@ -137,12 +137,13 @@ class Time (TAxis):
     return TimeFormatter(self)
   # }}}
 
-  def set_locator(self, mplax):
+  def locator(self):
   # {{{
-    ''' set_locator() - Returns an AutoCalendarLocator object '''
+    ''' locator() - Returns an AutoCalendarLocator object '''
     from timeticker import AutoCalendarLocator
-    mplax.set_major_locator(AutoCalendarLocator(self))
+    return AutoCalendarLocator(self)
   # }}}
+
   # Comparison
   def __eq__ (self, other):
   # {{{
