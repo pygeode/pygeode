@@ -1,135 +1,142 @@
 # Shortcuts for plotting PyGeode vars
 # Extends plot_wrapper to automatically use information from the Pygeode Vars.
 
-# Set up arguments for axis
-def get_axes_args (var):
+def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
+# {{{
+  if name is None: name = ''
+  if plotname is None: plotname = ''
+  if plottitle is None: plottitle = ''
+  if plotunits is None: plotunits = ''
 
-  title = var.plotatts.get('plottitle', None)
-  if title is None: title = var.name
+  assert type(plotname) is str
+  assert type(plottitle) is str
+  assert type(plotunits) is str
+  assert type(name) is str
+  
+  if plotname is not '': title = plotname # plotname is shorter, hence more suitable for axes
+  elif plottitle is not '': title = plottitle
+  elif name is not '': title = name
+  else: title = ''
 
-  # Put degenerate PyGeode axis info into title,
-  # strip the degenerate axes out of the data.
-  for axis in var.axes:
-    if len(axis) == 1:
-      title += ", %s = %s" % (axis.name, axis.values[0])
-  var = var.squeeze()
-  del axis
+  if plotunits is not '': title += ' [%s]' % plotunits
 
-  # 1D stuff
-  if var.naxes == 1:
-    xaxis = var.axes[0]
-    xatts = xaxis.plotatts
+  return title
+# }}}
 
-    xlabel = var.plotatts.get('xlabel',xaxis.name)
-    ylabel = var.name
-    xlim = min(xaxis.values), max(xaxis.values)
-    xscale = xatts.get('plotscale','linear')
-    yscale = var.plotatts.get('plotscale','linear')
-    xlim = xlim[::xatts.get('plotorder',1)]
+def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
+# {{{
+  if name is None: name = ''
+  if plotname is None: plotname = ''
+  if plottitle is None: plottitle = ''
+  if plotunits is None: plotunits = ''
+  
+  assert type(plotname) is str
+  assert type(plottitle) is str
+  assert type(plotunits) is str
+  assert type(name) is str
 
-    del xaxis, xatts
+  if plottitle is not '': title = plottitle # plottitle is longer, hence more suitable for axes
+  elif plotname is not '': title = plotname
+  elif name is not '': title = name
+  else: title = 'Unnamed Var'
 
-  # 2D stuff
-  if var.naxes == 2:
+  if plotunits is not '': title += ' (%s)' % plotunits
+    
+  # Add information on degenerate axes to the title
+  if axes is not None:
+    for a in [a for a in axes if len(a) == 1]:
+      title += ', ' + a.formatvalue(a.values[0])
 
-    # For 2D plots, the x/y need to be switched?
-    xaxis = var.axes[1]
-    yaxis = var.axes[0]
-    xatts = xaxis.plotatts
-    yatts = yaxis.plotatts
+  return title
+# }}}
 
-    xlabel = xatts.get('plottitle','')
-    if xlabel == '': xlabel = var.axes[1].name
-    ylabel = yatts.get('plottitle','')
-    if ylabel == '': ylabel = var.axes[0].name
-    xlim = min(var.axes[1].values), max(var.axes[1].values)
-    ylim = min(var.axes[0].values), max(var.axes[0].values)
+def set_xaxis(axes, axis):
+# {{{
+  vals = axis.get()
+  lims = min(vals), max(vals)
+  axes.setp(
+      xscale = axis.plotatts.get('plotscale', 'linear'),
+      xlabel = _buildaxistitle(**axis.plotatts),
+      xlim = lims[::axis.plotatts['plotorder']])
+  axes.setp_xaxis(
+      major_formatter = axis.formatter(),
+      major_locator = axis.locator())
+# }}}
 
-    # linear/log scale, reversed order
-    xscale = xatts.get('plotscale', 'linear')
-    yscale = yatts.get('plotscale', 'linear')
-    xlim = xlim[::xatts.get('plotorder', 1)]
-    ylim = ylim[::yatts.get('plotorder', 1)]
-
-    del xaxis, yaxis, xatts, yatts
-
-  # Collect these local variables into a dictionary
-  # (these will be keyword parameters for constructing an Axes)
-  axes_args = dict(locals())
-  del axes_args['var']
-
-  return axes_args, var
+def set_yaxis(axes, axis):
+# {{{
+  vals = axis.get()
+  lims = min(vals), max(vals)
+  axes.setp(
+      yscale = axis.plotatts.get('plotscale', 'linear'),
+      ylabel = _buildaxistitle(**axis.plotatts),
+      ylim = lims[::axis.plotatts['plotorder']])
+  axes.setp_yaxis(
+      major_formatter = axis.formatter(),
+      major_locator = axis.locator())
+# }}}
 
 # Do a 1D line plot
-# Assumes the X coordinate is provided by the Var, not in the parameter list
-def plot (axis, var, fmt='', **kwargs):
-  from plot_wr_ph import Plot, _buildvartitle
-  render = False
+def plot (var, fmt='', axes=None, **kwargs):
+# {{{
+  import plot_wr_ph as pl
 
-  if axis is None:
-    from plot_wr_ph import SingleFigure
-    
-    # Build Figure object
-    fig = SingleFigure(1)
-    axis = fig.axes[0]
-    render = True
-
-  # Special case: have a vertical coordinate
-  # (transpose the plot)
   Y = var.squeeze()
+  assert Y.naxes == 1, 'Variable to plot must have exactly one non-degenerate axis.'
   X = Y.axes[0]
+
+  # If a vertical axis is present transpose the plot
   from pygeode.axis import ZAxis
   if isinstance(X, ZAxis):
     X, Y = Y, X
 
+  x = X.get()
+  y = Y.get()
+
+  axes = pl.plot(x, y, fmt, axes=axes, **kwargs)
+
   # Apply the custom axes args
-  axis.set_haxis(X)
-  axis.set_vaxis(Y)
-  axis.set(title = _buildvartitle(var.axes, var.name, **var.plotatts))
+  set_xaxis(axes, X)
+  set_yaxis(axes, Y)
+  axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
 
-  X = X.get()
-  Y = Y.get()
-
-  axis.add_plot(Plot(X, Y, fmt, **kwargs))
-
-  if render:
-    fig.render()
-
-  return fig
+  return axes
+# }}}
 
 # Do a 2D contour plot
-def contour (axis, var, *args, **kwargs):
-  from plot_wr_ph import Contour, _buildvartitle
-  render = False
-
-  if axis is None:
-    from plot_wr_ph import SingleFigure
-    
-    # Build Figure object
-    fig = SingleFigure(1)
-    axis = fig.axes[0]
-    render = True
+def contour (var, clevs=None, clines=None, axes=None, **kwargs):
+# {{{
+  import plot_wr_ph as pl
 
   Z = var.squeeze()
-  assert Z.naxes == 2, 'Variable to contour must have two dimensions'
-
+  assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
   Y, X = Z.axes
+
+  # If a vertical axis is present transpose the plot
   from pygeode.axis import ZAxis
   if isinstance(X, ZAxis):
     X, Y = Y, X
-
-  # Apply the custom axes args
-  axis.set_haxis(X)
-  axis.set_vaxis(Y)
-  axis.set(title = _buildvartitle(var.axes, var.name, **var.plotatts))
 
   x = X.get()
   y = Y.get()
   z = Z.transpose(Y, X).get()
 
-  axis.add_plot(Contour(x, y, z, *args, **kwargs))
+  if not clevs is None:
+     axes = pl.contourf(x, y, z, clevs, axes = axes, **kwargs)
+     # Special case; if plotting both filled and unfilled contours
+     # with a single call, set the color of the latter to black
+     kwargs['colors'] = 'k'
+  if not clines is None:
+     axes = pl.contour(x, y, z, clines, axes = axes, **kwargs)
 
-  if render:
-    fig.render()
+  if axes is None: 
+     # If both clevs and clines are None, use default
+     axes = pl.contourf(x, y, z, axes = axes, **kwargs)
 
-  return fig
+  # Apply the custom axes args
+  set_xaxis(axes, X)
+  set_yaxis(axes, Y)
+  axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
+
+  return axes
+# }}}

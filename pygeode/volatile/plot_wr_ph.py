@@ -6,55 +6,6 @@ import matplotlib as mpl
 # Also allows plot objects to be saved to / loaded from files, something which
 # normal matplotlib plots can't do.
 
-def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
-# {{{
-  if name is None: name = ''
-  if plotname is None: plotname = ''
-  if plottitle is None: plottitle = ''
-  if plotunits is None: plotunits = ''
-
-  assert type(plotname) is str
-  assert type(plottitle) is str
-  assert type(plotunits) is str
-  assert type(name) is str
-  
-  if plotname is not '': title = plotname # plotname is shorter, hence more suitable for axes
-  elif plottitle is not '': title = plottitle
-  elif name is not '': title = name
-  else: title = ''
-
-  if plotunits is not '': title += ' [%s]' % plotunits
-
-  return title
-# }}}
-
-def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
-# {{{
-  if name is None: name = ''
-  if plotname is None: plotname = ''
-  if plottitle is None: plottitle = ''
-  if plotunits is None: plotunits = ''
-  
-  assert type(plotname) is str
-  assert type(plottitle) is str
-  assert type(plotunits) is str
-  assert type(name) is str
-
-  if plottitle is not '': title = plottitle # plottitle is longer, hence more suitable for axes
-  elif plotname is not '': title = plotname
-  elif name is not '': title = name
-  else: title = 'Unnamed Var'
-
-  if plotunits is not '': title += ' (%s)' % plotunits
-    
-  # Add information on degenerate axes to the title
-  if axes is not None:
-    for a in [a for a in axes if len(a) == 1]:
-      title += ', ' + a.formatvalue(a.values[0])
-
-  return title
-# }}}
-
 def grid(axes, size = None):
 # {{{
   # Expect a 2d grid; first index is the row, second the column
@@ -114,8 +65,8 @@ class AxesWrapper:
     self.size = (float(size[0]), float(size[1]))
 
     self.axes_args = kwargs
-    self._haxis = None
-    self._vaxis = None
+    self.xaxis_args = {}
+    self.yaxis_args = {}
 # }}} 
 
   def add_axis(self, axis, rect):
@@ -124,7 +75,7 @@ class AxesWrapper:
     assert all([s > 0. for s in bb.size]), 'Bounding box must not vanish'
     axis.parent = self
     self.axes.append(axis)
-    self.ax_boxes.append(bb)
+    self.ax_boxes.append(rect)
     self.naxes = len(self.axes)
 # }}}
 
@@ -167,7 +118,8 @@ class AxesWrapper:
       return mpl.transforms.IdentityTransform()
 
     ia = self.parent.axes.index(self)
-    box = self.parent.ax_boxes[ia]
+    rect = self.parent.ax_boxes[ia]
+    box = mpl.transforms.Bbox.from_extents(rect)
     t_self = mpl.transforms.BboxTransformTo(box)
     t_parent = self.parent.get_transform()
     return mpl.transforms.CompositeAffine2D(t_self, t_parent)
@@ -204,43 +156,23 @@ class AxesWrapper:
     if 'yscale' in args: self.ax.set_yscale(args.pop('yscale'))
     if len(args) > 0: pyl.setp(self.ax, **args)
 
-    import pygeode as pyg
-    if isinstance(self._haxis, pyg.Axis):
-      self.ax.xaxis.set_major_formatter(self._haxis.formatter())
-      self._haxis.set_locator(axes.xaxis)
-
-    if isinstance(self._vaxis, pyg.Axis):
-      self.ax.yaxis.set_major_formatter(self._vaxis.formatter())
-      self._vaxis.set_locator(axes.yaxis)
+    if len(self.xaxis_args) > 0: pyl.setp(self.ax.xaxis, **self.xaxis_args)
+    if len(self.yaxis_args) > 0: pyl.setp(self.ax.yaxis, **self.yaxis_args)
 # }}}
 
-  def set_haxis(self, axis):
-# {{{
-    vals = axis.get()
-    lims = min(vals), max(vals)
-    ax_args = dict(
-        xscale = axis.plotatts.get('plotscale', 'linear'),
-        xlabel = _buildaxistitle(**axis.plotatts),
-        xlim = lims[::axis.plotatts['plotorder']])
-    self.axes_args.update(ax_args)
-    self._haxis = axis
-# }}}
-
-  def set_vaxis(self, axis):
-# {{{
-    vals = axis.get()
-    lims = min(vals), max(vals)
-    ax_args = dict(
-        yscale = axis.plotatts.get('plotscale', 'linear'),
-        ylabel = _buildaxistitle(**axis.plotatts),
-        ylim = lims[::axis.plotatts['plotorder']])
-    self.axes_args.update(ax_args)
-    self._vaxis = axis
-# }}}
-
-  def set(self, **kwargs):
+  def setp(self, **kwargs):
 # {{{
     self.axes_args.update(kwargs)
+# }}}
+
+  def setp_xaxis(self, **kwargs):
+# {{{
+    self.xaxis_args.update(kwargs)
+# }}}
+
+  def setp_yaxis(self, **kwargs):
+# {{{
+    self.yaxis_args.update(kwargs)
 # }}}
 # }}} 
 
@@ -293,10 +225,13 @@ class Colorbar(PlotWrapper):
 
 def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
 # {{{
-  orient = kwargs.get('orientation', 'vertical')
   if cax is None:
+    pos = kwargs.pop('pos', 'r')
+    if pos in ['r', 'l']: orient = kwargs.get('orientation', 'vertical')
+    if pos in ['b', 't']: orient = kwargs.get('orientation', 'horizontal')
+    kwargs['orientation'] = orient
+
     if orient == 'horizontal': 
-      pos = kwargs.pop('pos', 'b')
       height = kwargs.pop('height', 0.4)
       size = axes.size[0], height
 
@@ -307,7 +242,6 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
         t = kwargs.pop('rt', 0.4)
         rect = [l, b, r, t]
     else: 
-      pos = kwargs.pop('pos', 'r')
       width = kwargs.pop('width', 0.8)
       size = width, axes.size[1]
       if rect is None:
@@ -332,7 +266,8 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
 
 def make_plot_func(fclass):
   def f(*args, **kwargs):
-    axes = kwargs.pop('axes', AxesWrapper())
+    axes = kwargs.pop('axes', None)
+    if axes is None: axes = AxesWrapper()
     axes.add_plot(fclass(*args, **kwargs))
     return axes
   return f
