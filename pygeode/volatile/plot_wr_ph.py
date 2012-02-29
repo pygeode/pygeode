@@ -108,8 +108,8 @@ class AxesWrapper:
     self._do_plots(fig)
 
     pyl.ion()
-    pyl.draw()
     pyl.show()
+    pyl.draw()
 # }}}
 
   def get_transform(self):
@@ -302,3 +302,32 @@ def load (filename):
   infile.close()
   return theplot
 # }}}
+
+try:
+  from mpl_toolkits.basemap import Basemap
+  class BasemapAxes(AxesWrapper):
+    def __init__(self, parent = None, rect = None, size = None, make_axis=False, **kwargs):
+# {{{
+      AxesWrapper.__init__(self, parent, rect, size, make_axes, **kwargs)
+      self.bm = Basemap(**kwargs)
+# }}}
+
+    def transform(x, y, inverse = False):
+      return self.bm(x, y, inverse)
+
+    def _build_axes(self, fig):
+# {{{
+      AxesWrapper._build_axes()
+      self.bmplot = Basemap(ax = self.ax, **kwargs)
+# }}}
+
+  # Contour
+  class BMContour(PlotWrapper):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.contour (*self.plot_args, **self.plot_kwargs)
+# }}}
+except Import Error:
+   from warnings import warn
+   warn ("Can't import Basemap; mapping functionality will not be available.", stacklevel=2)
+

@@ -1,6 +1,13 @@
 
 # Python functions for handling geophysical data
 
+# These are dynamically generated objects, because we need to wrap the
+# appropriate 'self' at init-time (here) to abuse the [] notation.
+#TODO - something more pythonic?
+class SL:
+  def __init__(self, v): self.v = v
+  def __getitem__ (self, slices):  return self.v._getitem_asvar(slices)
+
 #TODO: make Vars truly immutable (i.e. use 'slots' or something?).  Then:
 #TODO: get rid of dynamic references to axes (__getattr__) - causes too many headaches!
 #NOTE: keep the name mutable, since it's something that will commonly be changed
@@ -146,12 +153,7 @@ class Var(object):
     self.size = reduce(lambda x,y: x*y, self.shape, 1)
 
     # Slicing notation
-    # These are dynamically generated objects, because we need to wrap the
-    # appropriate 'self' at init-time (here) to abuse the [] notation.
-    #TODO - something more pythonic?
-    class SL:
-      def __getitem__ (fakeself, slices):  return self._getitem_asvar(slices)
-    self.slice = SL()
+    self.slice = SL(self)
 
     # If this is a Var (and not a subclass), then it is safe to lock
     # the attributes now, and prevent furthur changes.

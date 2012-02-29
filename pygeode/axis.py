@@ -5,6 +5,55 @@
 
 from pygeode.var import Var
 
+import pylab as pyl
+class AxisFormatter(pyl.Formatter):
+# {{{
+  def __init__(self, plotatts, units):
+    self.plotatts = plotatts
+    self.units = units
+
+  def format(self, val, units=False):
+    val = val*self.plotatts['scalefactor'] + self.plotatts['offset'] # apply scalefactor and offset 
+    strval = self.plotatts['formatstr'] % val # convert to string
+    if units:
+      if self.plotatts['plotunits']: strval += self.plotatts['plotunits'] # properly formatted units
+      elif self.plotatts['scalefactor']==1 and self.plotatts['offset']==0: strval += self.units # fallback option
+      else: pass # warn('no unit specified') # should I have a warning here?
+    return strval
+
+  def __call__(self, x, pos=None):
+    return self.format(x, units=False)
+# }}}
+
+class LatFormatter(AxisFormatter):
+# {{{
+  def format(self, val, units=False):
+    if val > 0: return self.plotatts['formatstr'] % val + ' N'
+    elif val < 0: return self.plotatts['formatstr'] % -val + ' S'
+    else: return 'EQ' 
+# }}}
+
+class LonFormatter(AxisFormatter):
+# {{{
+  def format(self, val, units=False):
+    v = (val + 180.) % 360. - 180.
+    if v >= 0: return self.plotatts['formatstr'] % v + ' E'
+    elif v < 0: return self.plotatts['formatstr'] % -v + ' W'
+# }}}
+
+class PresFormatter(AxisFormatter):
+# {{{
+  def format(self, val, units=False):
+    su = ''
+    if units: 
+      if self.plotatts.has_key('plotunits'): su = ' ' + self.plotatts['plotunits']
+      elif self.units != '': su = ' ' + self.units
+
+    if val >= 10: return '%d ' % val + su
+    #elif val >= 1: return '%.1g ' % val + su
+    else: return '%.1g ' % val + su
+# }}}
+
 # Axis parent class
 class Axis(Var):
 # {{{
@@ -36,6 +85,8 @@ class Axis(Var):
   auxarrays = {}
   # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
   auxatts = {}  
+
+  _formatter = AxisFormatter
     
   def __init__(self, values, name=None, atts=None, plotatts=None, **kwargs):
 # {{{ 
@@ -82,9 +133,6 @@ class Axis(Var):
 
 
 # }}}
-
-
-
 
   # Determine if one axis object is from a base class (or same class) of another axis
   @classmethod
@@ -501,23 +549,16 @@ class Axis(Var):
   # {{{
     ''' formatvalue(val)
         Returns an appropriately formatted string representation of val in the axis space. '''    
-    val = val*self.plotatts['scalefactor'] + self.plotatts['offset'] # apply scalefactor and offset 
-    strval = self.plotatts['formatstr'] % val # convert to string
-    if units:
-      if self.plotatts['plotunits']: strval += self.plotatts['plotunits'] # properly formatted units
-      elif self.plotatts['scalefactor']==1 and self.plotatts['offset']==0: strval += self.units # fallback option
-      else: pass # warn('no unit specified') # should I have a warning here?
-    return strval
+    fmt = self._formatter(self.plotatts, self.units)
+    return fmt.format(val, units)
   # }}}
 
   # Returns a matplotlib axis Formatter object
   # By default, it uses self.plotatts['formatstr'] to format the value
   def formatter(self):
   # {{{
-    '''
-        Returns a matplotlib axis Formatter object; by default a FuncFormatter which calls formatvalue(). '''
-    from pylab import FuncFormatter
-    return FuncFormatter(lambda x, p: self.formatvalue(x, units=False))
+    ''' Returns a matplotlib axis Formatter object; by default a FuncFormatter which calls formatvalue(). '''
+    return self._formatter(self.plotatts, self.units)
   # }}}
 
   # Concatenate multiple axes together
@@ -577,7 +618,6 @@ class Axis(Var):
 
 # }}}
 
-
 # Useful axis subclasses
 
 # Named axis
@@ -612,11 +652,15 @@ class NamedAxis (Axis):
 # }}}
 
 class XAxis (Axis): pass
+class YAxis (Axis): pass
+
 class Lon (XAxis): 
+# {{{
   name = 'lon'
   plotatts = XAxis.plotatts.copy()
-  plotatts['formatstr'] = '%d E'
+  plotatts['formatstr'] = '%d'
   plotatts['plottitle'] = ''
+  _formatter = LonFormatter
 
   def locator(self):
   # {{{
@@ -627,14 +671,15 @@ class Lon (XAxis):
   @staticmethod
   def _val2str (val):
     return '%g '%val + ('W' if val<0 else 'E')
+# }}}
 
-class YAxis (Axis): pass
 class Lat (YAxis):
 # {{{
   name = 'lat'
   plotatts = YAxis.plotatts.copy() 
   plotatts['formatstr'] = '%d'
   plotatts['plottitle'] = ''
+  _formatter = LatFormatter
 
   # Make sure we get some weights
   def __init__(self, values, weights=None, **kwargs):
@@ -650,14 +695,9 @@ class Lat (YAxis):
     Axis.__init__(self, values, weights=weights, **kwargs)
   # }}}
 
-  def formatvalue(self, val, units=False):
-  # {{{
-    if val > 0: return self.plotatts['formatstr'] % val + ' N'
-    elif val < 0: return self.plotatts['formatstr'] % -val + ' S'
-    else: return 'EQ' 
-
   @staticmethod
   def _val2str (val):
+  # {{{
     return '%g N'%val if val>0 else '%g S'%-val if val<0 else 'EQ'
   # }}}
 # }}}
@@ -693,9 +733,11 @@ class SpectralN(XAxis): name = 'n'
 
 # Vertical axes
 class ZAxis (Axis): 
+# {{{
   name = 'lev'
   plotatts = Axis.plotatts.copy()
   plotatts['formatstr'] = '%3g'
+# }}}
 
 # Geometric height
 #TODO: weights
@@ -748,16 +790,7 @@ class Pres (ZAxis):
   plotatts['plotunits'] = 'hPa'
   plotatts['plotscale'] = 'log'
   plotatts['plotorder'] = -1
-
-  def formatvalue(self, val, units=True):
-    su = ''
-    if units: 
-      if self.plotatts.has_key('plotunits'): su = ' ' + self.plotatts['plotunits']
-      elif self.units != '': su = ' ' + self.units
-
-    if val >= 10: return '%d ' % val + su
-    #elif val >= 1: return '%.1g ' % val + su
-    else: return '%.1g ' % val + su
+  _formatter = PresFormatter
 
   def logPAxis(self, p0=1000., H=7.1):
     '''logPAxis(p0, H) - returns a pygeode axis with log pressure heights
