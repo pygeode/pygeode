@@ -64,6 +64,7 @@ class AxesWrapper:
     if size is None: size = pyl.rcParams['figure.figsize']
     self.size = (float(size[0]), float(size[1]))
 
+    self.args = {}
     self.axes_args = kwargs
     self.xaxis_args = {}
     self.yaxis_args = {}
@@ -151,7 +152,7 @@ class AxesWrapper:
       p.render(self.ax)
 
     # Handle scaling first, because setting this screws up other custom attributes like ticks
-    args = self.axes_args.copy()
+    args = self.args.copy()
     if 'xscale' in args: self.ax.set_xscale(args.pop('xscale'))
     if 'yscale' in args: self.ax.set_yscale(args.pop('yscale'))
     if len(args) > 0: pyl.setp(self.ax, **args)
@@ -162,7 +163,7 @@ class AxesWrapper:
 
   def setp(self, **kwargs):
 # {{{
-    self.axes_args.update(kwargs)
+    self.args.update(kwargs)
 # }}}
 
   def setp_xaxis(self, **kwargs):
@@ -306,28 +307,91 @@ def load (filename):
 try:
   from mpl_toolkits.basemap import Basemap
   class BasemapAxes(AxesWrapper):
-    def __init__(self, parent = None, rect = None, size = None, make_axis=False, **kwargs):
-# {{{
-      AxesWrapper.__init__(self, parent, rect, size, make_axes, **kwargs)
-      self.bm = Basemap(**kwargs)
-# }}}
-
-    def transform(x, y, inverse = False):
-      return self.bm(x, y, inverse)
-
     def _build_axes(self, fig):
 # {{{
-      AxesWrapper._build_axes()
-      self.bmplot = Basemap(ax = self.ax, **kwargs)
+      AxesWrapper._build_axes(self, fig)
+
+      proj = {'projection':'cyl', 'resolution':'l'}
+      proj.update(self.axes_args)
+      print proj
+      self.bm = Basemap(ax = self.ax, **proj)
 # }}}
 
   # Contour
   class BMContour(PlotWrapper):
 # {{{
-  def render (self, axes):
-    self._cnt = axes.contour (*self.plot_args, **self.plot_kwargs)
+    @staticmethod
+    def transform(bm, args):
+      from numpy import meshgrid, ndarray
+      from warnings import warn
+      # Z
+      if len(args) == 1: return args
+      # X, Y, Z
+      if len(args) == 3:
+        X, Y, Z = args
+        X, Y = meshgrid(X, Y)
+        X, Y = bm(X, Y)
+        return X, Y, Z
+      # Z, N
+      if len(args) == 2 and isinstance(args[1],(int,list,tuple,ndarray)): return args
+      # X, Y, Z, N
+      if len(args) == 4 and isinstance(args[3],(int,list,tuple,ndarray)):
+        X, Y, Z, N = args
+        X, Y = meshgrid(X, Y)
+        X, Y = bm(X, Y)
+        return X, Y, Z, N
+      #TODO: finish the rest of the cases
+      warn("Don't know what to do for the coordinate transformation")
+      return args
+
+    def render (self, axes):
+      bm = self.axes.bm
+      args = BMContour.transform(bm, self.plot_args)
+      self._cnt = bm.contour (*args, **self.plot_kwargs)
 # }}}
-except Import Error:
+
+  class BMContourf(PlotWrapper):
+# {{{
+    def render (self, axes):
+      bm = self.axes.bm
+      args = BMContour.transform(bm, self.plot_args)
+      self._cnt = bm.contourf (*args, **self.plot_kwargs)
+# }}}
+
+  class BMDrawCoast(PlotWrapper):
+# {{{
+    def render (self, axes):
+      bm = self.axes.bm
+      bm.drawcoastlines(*self.plot_args, ax = axes, **self.plot_kwargs)
+# }}}
+
+  class BMDrawMeridians(PlotWrapper):
+# {{{
+    def render (self, axes):
+      bm = self.axes.bm
+      bm.drawmeridians(*self.plot_args, ax = axes, **self.plot_kwargs)
+# }}}
+
+  class BMDrawParallels(PlotWrapper):
+# {{{
+    def render (self, axes):
+      bm = self.axes.bm
+      bm.drawparallels(*self.plot_args, ax = axes, **self.plot_kwargs)
+# }}}
+
+  bmcontour = make_plot_func(BMContour)
+  bmcontourf = make_plot_func(BMContourf)
+  drawcoastlines = make_plot_func(BMDrawCoast)
+  drawmeridians = make_plot_func(BMDrawMeridians)
+  drawparallels = make_plot_func(BMDrawParallels)
+
+  BasemapAxes.contour = make_plot_member(bmcontour)
+  BasemapAxes.contourf = make_plot_member(bmcontourf)
+  BasemapAxes.drawcoastlines = make_plot_member(drawcoastlines)
+  BasemapAxes.drawmeridians = make_plot_member(drawmeridians)
+  BasemapAxes.drawparallels = make_plot_member(drawparallels)
+
+except ImportError:
    from warnings import warn
    warn ("Can't import Basemap; mapping functionality will not be available.", stacklevel=2)
 

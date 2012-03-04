@@ -113,7 +113,7 @@ def contour (var, clevs=None, clines=None, axes=None, **kwargs):
   Y, X = Z.axes
 
   # If a vertical axis is present transpose the plot
-  from pygeode.axis import ZAxis
+  from pygeode.axis import ZAxis, Lat, Lon
   if isinstance(X, ZAxis):
     X, Y = Y, X
 
@@ -121,17 +121,24 @@ def contour (var, clevs=None, clines=None, axes=None, **kwargs):
   y = Y.get()
   z = Z.transpose(Y, X).get()
 
+  print X, Y
+  if axes is None: 
+    if isinstance(X, Lon) and isinstance(Y, Lat):
+      axes = pl.BasemapAxes()
+    else:
+      axes = pl.AxesWrapper()
+
+  if clevs is None and clines is None: 
+     # If both clevs and clines are None, use default
+     axes.contourf(x, y, z, **kwargs)
+
   if not clevs is None:
-     axes = pl.contourf(x, y, z, clevs, axes = axes, **kwargs)
+     axes.contourf(x, y, z, clevs, **kwargs)
      # Special case; if plotting both filled and unfilled contours
      # with a single call, set the color of the latter to black
      kwargs['colors'] = 'k'
   if not clines is None:
-     axes = pl.contour(x, y, z, clines, axes = axes, **kwargs)
-
-  if axes is None: 
-     # If both clevs and clines are None, use default
-     axes = pl.contourf(x, y, z, axes = axes, **kwargs)
+     axes.contour(x, y, z, clines, **kwargs)
 
   # Apply the custom axes args
   set_xaxis(axes, X)
