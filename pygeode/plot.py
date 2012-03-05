@@ -274,14 +274,15 @@ def plotvar (var, **kwargs):
     #
     # Map?
     Basemap = None
-    # New toolkit path
-    try:
-      from mpl_toolkits.basemap import Basemap
-    except ImportError: pass
-    # Old toolkit path
-    try:
-      from matplotlib.toolkits.basemap import Basemap
-    except ImportError: pass
+    if kwargs.pop('map', True):
+      # New toolkit path
+      try:
+        from mpl_toolkits.basemap import Basemap
+      except ImportError: pass
+      # Old toolkit path
+      try:
+        from matplotlib.toolkits.basemap import Basemap
+      except ImportError: pass
 
     if isinstance(xaxis,Lon) and isinstance(yaxis,Lat) and Basemap is not None:
       from numpy import arange

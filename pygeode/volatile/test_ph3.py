@@ -15,7 +15,7 @@ x = x.rename('Ts')
 Ax1 = pygpl.plot(x)
 lv = np.arange(240, 310, 2)
 ln = np.arange(240, 310, 10)
-Ax2 = pygpl.contour(t1.Temp, lv, ln)
+Ax2 = pygpl.contour(t1.Temp, lv, ln, axes=pl.AxesWrapper())
 Axc = pl.colorbar(Ax2, Ax2.plots[0], pos='b')
 
 Ax = pl.grid([[Ax1, Axc]])

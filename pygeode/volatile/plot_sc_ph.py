@@ -121,7 +121,6 @@ def contour (var, clevs=None, clines=None, axes=None, **kwargs):
   y = Y.get()
   z = Z.transpose(Y, X).get()
 
-  print X, Y
   if axes is None: 
     if isinstance(X, Lon) and isinstance(Y, Lat):
       axes = pl.BasemapAxes()

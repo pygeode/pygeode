@@ -18,6 +18,7 @@ Ax3.setp(title='Ax 3', xlim=(-1, 11), xlabel='sin')
 Ax4 = pl.AxesWrapper(size=(3,4))
 Ax4.plot(range(10), -np.sin(np.arange(10)))
 Ax4.setp(title='Ax 4', xlim=(-1, 11), xlabel='bob')
+Ax4.render(2)
 
 AxG = pl.grid([[Ax, Ax2], [Ax3, Ax4]])
 AxG.render(4)

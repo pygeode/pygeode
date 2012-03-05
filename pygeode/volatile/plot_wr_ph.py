@@ -311,10 +311,26 @@ try:
 # {{{
       AxesWrapper._build_axes(self, fig)
 
-      proj = {'projection':'cyl', 'resolution':'l'}
+      proj = {'projection':'cyl', 'resolution':'c'}
       proj.update(self.axes_args)
-      print proj
       self.bm = Basemap(ax = self.ax, **proj)
+# }}}
+    def setp(self, **kwargs):
+# {{{
+      proj = self.axes_args.get('projection', 'cyl')
+      if proj in ['cyl', 'merc', 'mill', 'gall']:
+        bnds = {}
+        if kwargs.has_key('xlim'):
+          x0, x1 = kwargs.pop('xlim')
+          bnds['llcrnrlon'] = x0
+          bnds['urcrnrlon'] = x1
+        if kwargs.has_key('ylim'):
+          y0, y1 = kwargs.pop('ylim')
+          bnds['llcrnrlat'] = y0
+          bnds['urcrnrlat'] = y1
+        self.axes_args.update(bnds)
+
+      self.args.update(kwargs)
 # }}}
 
   # Contour
