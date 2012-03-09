@@ -9,7 +9,7 @@ import matplotlib as mpl
 # Interface for wrapping a matplotlib axes object
 class AxesWrapper:
 # {{{
-  def __init__(self, parent = None, rect = None, size = None, make_axis=False, **kwargs):
+  def __init__(self, parent=None, rect=None, size=None, pad=None, make_axis=False, **kwargs):
 # {{{
     self.parent = parent
 
@@ -26,6 +26,7 @@ class AxesWrapper:
       rect[2] -= rect[0]
       rect[3] -= rect[1]
     self.rect = rect
+    self.pad = pad
 
     if size is None: size = pyl.rcParams['figure.figsize']
     self.size = (float(size[0]), float(size[1]))
@@ -34,7 +35,7 @@ class AxesWrapper:
     self.axes_args = kwargs
     self.xaxis_args = {}
     self.yaxis_args = {}
-# }}} 
+# }}}  
 
   def add_axis(self, axis, rect):
 # {{{
@@ -70,7 +71,7 @@ class AxesWrapper:
 
     fig.clf()
 
-    self._build_axes(fig)
+    self._build_axes(fig, self)
 
     self._do_plots(fig)
 
@@ -79,9 +80,9 @@ class AxesWrapper:
     pyl.draw()
 # }}}
 
-  def get_transform(self):
-# {{{
-    if self.parent is None:
+  def get_transform(self, root = None):
+ # {{{
+    if self is root or self.parent is None:
       return mpl.transforms.IdentityTransform()
 
     ia = self.parent.axes.index(self)
@@ -92,18 +93,40 @@ class AxesWrapper:
     return mpl.transforms.CompositeAffine2D(t_self, t_parent)
 # }}}
 
-  def _build_axes(self, fig):
+  def _build_axes(self, fig, root):
 # {{{
     if self.make_axis:
-      tfm = self.get_transform()
-      l, b = self.rect[0], self.rect[1]
-      r, t = self.rect[0] + self.rect[2], self.rect[1] + self.rect[3]
-      l, b = tfm.transform_point((l, b))
-      r, t = tfm.transform_point((r, t))
-      self.ax = fig.add_axes([l, b, r - l, t - b])
+      tfm = self.get_transform(root)
+      if self.pad is not None:
+         l, b = tfm.transform_point((0., 0.))
+         r, t = tfm.transform_point((1., 1.))
+         print l, b, r, t
+         fsize = fig.get_size_inches()
+         l += self.pad[0] / fsize[0]
+         b += self.pad[1] / fsize[1]
+         w = r - l - self.pad[2] / fsize[0]
+         h = t - b - self.pad[3] / fsize[1]
+      else:
+         l, b = self.rect[0], self.rect[1]
+         r, t = self.rect[0] + self.rect[2], self.rect[1] + self.rect[3]
+         l, b = tfm.transform_point((l, b))
+         r, t = tfm.transform_point((r, t))
+         w = r - l
+         h = t - b
+
+      self.ax = fig.add_axes([l, b, w, h])
 
     # Build children
-    for a in self.axes: a._build_axes(fig)
+    for a in self.axes: a._build_axes(fig, root)
+
+    #Draw bounding boxes of children for debugging purposes
+    #if root is self:
+      #ax = pyl.gca()
+      #for b in self.ax_boxes:
+        #xy = b[0], b[1]
+        #w = b[2] - b[0]
+        #h = b[3] - b[1]
+        #ax.add_patch(pyl.Rectangle(xy, w, h, lw=2., fill=False, transform=fig.transFigure, clip_on=False))
 # }}}
 
   def _do_plots(self, fig):
