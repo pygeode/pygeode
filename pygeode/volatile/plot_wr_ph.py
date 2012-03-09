@@ -6,40 +6,6 @@ import matplotlib as mpl
 # Also allows plot objects to be saved to / loaded from files, something which
 # normal matplotlib plots can't do.
 
-def grid(axes, size = None):
-# {{{
-  # Expect a 2d grid; first index is the row, second the column
-  ny = len(axes)
-  nx = len(axes[0])
-  assert all([len(x) == nx for x in axes[1:]]), 'Each row must have the same number of axes'
-
-  rowh = [max([a.size[1] for a in row]) for row in axes]
-  colw = [max([axes[i][j].size[0] for i in range(ny)]) for j in range(nx)]
-
-  tsize = [sum(colw), sum(rowh)]
-  if size is None: size = tsize
-
-  Ax = AxesWrapper(size = size)
-
-  x, y = 0., 1.
-  for i in range(ny):
-    for j in range(nx):
-      ax = axes[i][j]
-      w = ax.size[0] / tsize[0]
-      px = (colw[j] - ax.size[0]) / tsize[0] / 2.
-
-      h = ax.size[1] / tsize[1]
-      py = (rowh[i] - ax.size[1]) / tsize[1] / 2.
-        
-      r = [x + px, y - h - py, x + w + px, y - py]
-      Ax.add_axis(ax, r)
-      x += colw[j] / tsize[0]
-    x = 0.
-    y -= rowh[i] / tsize[1]
-
-  return Ax
-# }}}
-
 # Interface for wrapping a matplotlib axes object
 class AxesWrapper:
 # {{{
@@ -178,7 +144,7 @@ class AxesWrapper:
 # }}} 
 
 # Generic object for holding plot information
-class PlotWrapper:
+class PlotOp:
 # {{{
   def __init__(self, *plot_args, **kwargs):
     self.plot_args = plot_args
@@ -192,33 +158,45 @@ class PlotWrapper:
 # }}} 
 
 # 1D plot
-class Plot(PlotWrapper):
+class Plot(PlotOp):
 # {{{
   def render (self, axes):
     axes.plot (*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class Legend(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.legend (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class Text(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.text (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 # Contour
-class Contour(PlotWrapper):
+class Contour(PlotOp):
 # {{{
   def render (self, axes):
     self._cnt = axes.contour (*self.plot_args, **self.plot_kwargs)
 # }}}
 
 # Filled Contour
-class Contourf(PlotWrapper):
+class Contourf(PlotOp):
 # {{{
   def render (self, axes):
     self._cnt = axes.contourf (*self.plot_args, **self.plot_kwargs)
 # }}}
 
 # Filled Contour
-class Colorbar(PlotWrapper):
+class Colorbar(PlotOp):
 # {{{
   def __init__(self, cnt, cax, *plot_args, **kwargs):
     self.cnt = cnt
     self.cax = cax
-    PlotWrapper.__init__(self, *plot_args, **kwargs)
+    PlotOp.__init__(self, *plot_args, **kwargs)
 
   def render (self, axes):
     pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
@@ -278,10 +256,14 @@ def make_plot_member(f):
   return g
 
 plot = make_plot_func(Plot)
+legend = make_plot_func(Legend)
+text = make_plot_func(Text)
 contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 
 AxesWrapper.plot = make_plot_member(plot)
+AxesWrapper.legend = make_plot_member(legend)
+AxesWrapper.text = make_plot_member(text)
 AxesWrapper.contour = make_plot_member(contour)
 AxesWrapper.contourf = make_plot_member(contourf)
 
@@ -304,110 +286,42 @@ def load (filename):
   return theplot
 # }}}
 
+def grid(axes, size = None):
+# {{{
+  # Expect a 2d grid; first index is the row, second the column
+  ny = len(axes)
+  nx = len(axes[0])
+  assert all([len(x) == nx for x in axes[1:]]), 'Each row must have the same number of axes'
+
+  rowh = [max([a.size[1] for a in row]) for row in axes]
+  colw = [max([axes[i][j].size[0] for i in range(ny)]) for j in range(nx)]
+
+  tsize = [sum(colw), sum(rowh)]
+  if size is None: size = tsize
+
+  Ax = AxesWrapper(size = size)
+
+  x, y = 0., 1.
+  for i in range(ny):
+    for j in range(nx):
+      ax = axes[i][j]
+      w = ax.size[0] / tsize[0]
+      px = (colw[j] - ax.size[0]) / tsize[0] / 2.
+
+      h = ax.size[1] / tsize[1]
+      py = (rowh[i] - ax.size[1]) / tsize[1] / 2.
+        
+      r = [x + px, y - h - py, x + w + px, y - py]
+      Ax.add_axis(ax, r)
+      x += colw[j] / tsize[0]
+    x = 0.
+    y -= rowh[i] / tsize[1]
+
+  return Ax
+# }}}
+
 try:
-  from mpl_toolkits.basemap import Basemap
-  class BasemapAxes(AxesWrapper):
-    def _build_axes(self, fig):
-# {{{
-      AxesWrapper._build_axes(self, fig)
-
-      proj = {'projection':'cyl', 'resolution':'c'}
-      proj.update(self.axes_args)
-      self.bm = Basemap(ax = self.ax, **proj)
-# }}}
-    def setp(self, **kwargs):
-# {{{
-      proj = self.axes_args.get('projection', 'cyl')
-      if proj in ['cyl', 'merc', 'mill', 'gall']:
-        bnds = {}
-        if kwargs.has_key('xlim'):
-          x0, x1 = kwargs.pop('xlim')
-          bnds['llcrnrlon'] = x0
-          bnds['urcrnrlon'] = x1
-        if kwargs.has_key('ylim'):
-          y0, y1 = kwargs.pop('ylim')
-          bnds['llcrnrlat'] = y0
-          bnds['urcrnrlat'] = y1
-        self.axes_args.update(bnds)
-
-      self.args.update(kwargs)
-# }}}
-
-  # Contour
-  class BMContour(PlotWrapper):
-# {{{
-    @staticmethod
-    def transform(bm, args):
-      from numpy import meshgrid, ndarray
-      from warnings import warn
-      # Z
-      if len(args) == 1: return args
-      # X, Y, Z
-      if len(args) == 3:
-        X, Y, Z = args
-        X, Y = meshgrid(X, Y)
-        X, Y = bm(X, Y)
-        return X, Y, Z
-      # Z, N
-      if len(args) == 2 and isinstance(args[1],(int,list,tuple,ndarray)): return args
-      # X, Y, Z, N
-      if len(args) == 4 and isinstance(args[3],(int,list,tuple,ndarray)):
-        X, Y, Z, N = args
-        X, Y = meshgrid(X, Y)
-        X, Y = bm(X, Y)
-        return X, Y, Z, N
-      #TODO: finish the rest of the cases
-      warn("Don't know what to do for the coordinate transformation")
-      return args
-
-    def render (self, axes):
-      bm = self.axes.bm
-      args = BMContour.transform(bm, self.plot_args)
-      self._cnt = bm.contour (*args, **self.plot_kwargs)
-# }}}
-
-  class BMContourf(PlotWrapper):
-# {{{
-    def render (self, axes):
-      bm = self.axes.bm
-      args = BMContour.transform(bm, self.plot_args)
-      self._cnt = bm.contourf (*args, **self.plot_kwargs)
-# }}}
-
-  class BMDrawCoast(PlotWrapper):
-# {{{
-    def render (self, axes):
-      bm = self.axes.bm
-      bm.drawcoastlines(*self.plot_args, ax = axes, **self.plot_kwargs)
-# }}}
-
-  class BMDrawMeridians(PlotWrapper):
-# {{{
-    def render (self, axes):
-      bm = self.axes.bm
-      bm.drawmeridians(*self.plot_args, ax = axes, **self.plot_kwargs)
-# }}}
-
-  class BMDrawParallels(PlotWrapper):
-# {{{
-    def render (self, axes):
-      bm = self.axes.bm
-      bm.drawparallels(*self.plot_args, ax = axes, **self.plot_kwargs)
-# }}}
-
-  bmcontour = make_plot_func(BMContour)
-  bmcontourf = make_plot_func(BMContourf)
-  drawcoastlines = make_plot_func(BMDrawCoast)
-  drawmeridians = make_plot_func(BMDrawMeridians)
-  drawparallels = make_plot_func(BMDrawParallels)
-
-  BasemapAxes.contour = make_plot_member(bmcontour)
-  BasemapAxes.contourf = make_plot_member(bmcontourf)
-  BasemapAxes.drawcoastlines = make_plot_member(drawcoastlines)
-  BasemapAxes.drawmeridians = make_plot_member(drawmeridians)
-  BasemapAxes.drawparallels = make_plot_member(drawparallels)
-
+   from plot_bm_ph import *
 except ImportError:
-   from warnings import warn
-   warn ("Can't import Basemap; mapping functionality will not be available.", stacklevel=2)
-
+   import warnings
+   warnings.warn('Basemap functionality is unavailable.')
