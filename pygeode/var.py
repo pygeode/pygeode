@@ -593,7 +593,9 @@ class Var(object):
   # {{{
     ''' locator(self) - returns locator object (if any) specific to this axis. By default returns None. '''
     import pylab as pyl
-    return pyl.AutoLocator()
+    scl = self.plotatts.get('plotscale', 'linear')
+    if scl == 'log': return pyl.LogLocator()
+    else: return pyl.AutoLocator()
   # }}}
 # }}}
 
