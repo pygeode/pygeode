@@ -444,8 +444,8 @@ def plotsigmask (var, ax, **kwargs):
   slo = kwargs.pop('minsig', 0.95)
   alph = kwargs.pop('alpha', 0.5)
   alphm = kwargs.pop('alphamin', 0.5)
-  sigc = ['1.', '0.7', '0.4', '0.7', '1.']
-  #sigc = ['1.', '1.', '1.', '1.', '1.']
+  #sigc = ['1.', '0.7', '0.4', '0.7', '1.']
+  sigc = ['1.', '1.', '1.', '1.', '1.']
   #sigc = ['0.', '0.7', '1.', '0.7', '0.']
   sigl = [-1.1, -shi, -slo, slo, shi, 1.1]
   ct = ax.contourf(meshx, meshy, values, sigl, colors=sigc, hold=True, zorder=-1)
