@@ -11,32 +11,39 @@
 
 # Change criteria for updating the bar to: once a second
 # Also, don't show a bar for tasks of a short duration (10 seconds)
-def _need_update(self):
-  import time
-  # Force this to be updated independant of the need_update decision
-  # (this is normally computed in update(), but is skipped if we don't need to display anything)
-  if not self.start_time:
-      self.start_time = time.time()
-  self.seconds_elapsed = time.time() - self.start_time
+try:
+  from progressbar import ProgressBar, Percentage, Bar, ETA
+  _NOSHOWTIME = 10.
+  class PygProgressBar(ProgressBar):
+    __slots__ = ProgressBar.__slots__ + ('first_update_time', 'prev_update_time', 'message', 'printed_message')
+    
+    def __init__(self, **kwargs):
+      ProgressBar.__init__(self, **kwargs)
+      self.first_update_time = None
+      self.prev_update_time = None
+      self.message = None
+      self.printed_message = False
 
-  current_time = time.time()
+    def _need_update(self):
+      import time
+      # Force this to be updated independant of the need_update decision
+      # (this is normally computed in update(), but is skipped if we don't need to display anything)
+      if not self.start_time:
+        raise RuntimeError('You must call "start" before calling "update"')
+      self.seconds_elapsed = time.time() - self.start_time
+      if self.seconds_elapsed < _NOSHOWTIME: return False
+      return ProgressBar._need_update(self)
 
-  #TODO: used seconds_elapsed instead of whatever we're using here.
-  # Also, recycle the logic from the wrapped need_update? (update only on every percentage)?
-  if not hasattr(self,'first_update_time'):
-    self.first_update_time = current_time
-    self.prev_update_time = current_time
-    return False
-  if current_time - self.first_update_time < 10: return False
-  if current_time - self.prev_update_time > 1 or self.currval == self.maxval:
-    self.prev_update_time = current_time
-    if self.message is not None and not hasattr(self,'printed_message'):
-      print self.message
-      self.printed_message = True
-    return True
-  return False
-###  return int(self.percentage()) != int(self.prev_percentage)
+    def finish(self): # Overloaded to fix unneccesary newlines when not displayed
+      if self.finished: return
+      else: self.finished = True
+      self.update(self.maxval)
+      if self.seconds_elapsed < _NOSHOWTIME: self.fd.write('\n')
 
+except ImportError:
+  from warnings import warn
+  warn ("progressbar module not found; progress bars will not be displayed.")
+  PygProgressBar = None
 
 class PBar:
   def __init__ (self, pbar=None, lower=0, upper=100, message=None):
@@ -47,16 +54,12 @@ class PBar:
       self.pbar = pbar
       return
 
-    try:
-      from progressbar import ProgressBar, Percentage, Bar, ETA
-      ProgressBar._need_update = _need_update
-      pbar = ProgressBar(widgets=[Percentage(), ' ', Bar(), ' ', ETA()])
+    if PygProgressBar is not None:
+      pbar = PygProgressBar(widgets=[Percentage(), ' ', Bar(), ' ', ETA()])
       self.pbar = pbar.start()
       self.pbar.message = message  # staple a title message to the progress bar
                                    # (to be used in _need_update)
-    except ImportError:
-      from warnings import warn
-      warn ("progressbar module not found; no progress will be displayed.")
+    else:
       self.pbar = None
 
   def update(self, x):
@@ -68,7 +71,7 @@ class PBar:
     y = min(y,100)
     if self.pbar is not None:
       self.pbar.update(y)
-      if y == 100: self.pbar.finish()
+      if y == 100 and not self.pbar.finished: self.pbar.finish()
 
   def subset(self, L, U):
     lower = self.lower
