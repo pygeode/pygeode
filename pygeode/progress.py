@@ -15,7 +15,8 @@ try:
   from progressbar import ProgressBar, Percentage, Bar, ETA
   _NOSHOWTIME = 10.
   class PygProgressBar(ProgressBar):
-    __slots__ = ProgressBar.__slots__ + ('first_update_time', 'prev_update_time', 'message', 'printed_message')
+    if hasattr(ProgressBar, '__slots__'):
+       __slots__ = ProgressBar.__slots__ + ('first_update_time', 'prev_update_time', 'message', 'printed_message')
     
     def __init__(self, **kwargs):
       ProgressBar.__init__(self, **kwargs)
@@ -28,8 +29,7 @@ try:
       import time
       # Force this to be updated independant of the need_update decision
       # (this is normally computed in update(), but is skipped if we don't need to display anything)
-      if not self.start_time:
-        raise RuntimeError('You must call "start" before calling "update"')
+      if not self.start_time: self.start_time = time.time()
       self.seconds_elapsed = time.time() - self.start_time
       if self.seconds_elapsed < _NOSHOWTIME: return False
       return ProgressBar._need_update(self)
@@ -38,7 +38,7 @@ try:
       if self.finished: return
       else: self.finished = True
       self.update(self.maxval)
-      if self.seconds_elapsed < _NOSHOWTIME: self.fd.write('\n')
+      #if self.seconds_elapsed < _NOSHOWTIME: self.fd.write('\n')
 
 except ImportError:
   from warnings import warn
