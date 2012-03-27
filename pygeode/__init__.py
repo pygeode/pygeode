@@ -2,6 +2,7 @@ import os
 from os.path import sep
 
 libpath = os.getenv('PYGEODELIBPATH', os.path.dirname(__file__))
+__path__.append(libpath)
 
 pluginpath = os.getenv('PYGEODEPLUGINS', libpath+sep+'plugins')
 __path__.append(pluginpath)
