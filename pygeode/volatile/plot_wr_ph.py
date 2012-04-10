@@ -100,7 +100,7 @@ class AxesWrapper:
       if self.pad is not None:
          l, b = tfm.transform_point((0., 0.))
          r, t = tfm.transform_point((1., 1.))
-         print l, b, r, t
+         #print l, b, r, t
          fsize = fig.get_size_inches()
          l += self.pad[0] / fsize[0]
          b += self.pad[1] / fsize[1]

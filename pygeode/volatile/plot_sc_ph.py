@@ -50,34 +50,59 @@ def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotun
   return title
 # }}}
 
-def set_xaxis(axes, axis):
+def scalevalues(var):
 # {{{
-  vals = axis.get()
-  lims = min(vals), max(vals)
-  axes.setp(
-      xscale = axis.plotatts.get('plotscale', 'linear'),
-      xlabel = _buildaxistitle(**axis.plotatts),
-      xlim = lims[::axis.plotatts['plotorder']])
-  axes.setp_xaxis(
-      major_formatter = axis.formatter(),
-      major_locator = axis.locator())
+   sf = var.plotatts.get('scalefactor', None)
+   of = var.plotatts.get('offset', None)
+   v = var.get().copy()
+   if sf is not None: v *= sf
+   if of is not None: v += of
+   return v
 # }}}
 
-def set_yaxis(axes, axis):
+def axes_parm(axis):
 # {{{
-  vals = axis.get()
+  vals = scalevalues(axis)
   lims = min(vals), max(vals)
-  axes.setp(
-      yscale = axis.plotatts.get('plotscale', 'linear'),
-      ylabel = _buildaxistitle(**axis.plotatts),
-      ylim = lims[::axis.plotatts['plotorder']])
-  axes.setp_yaxis(
-      major_formatter = axis.formatter(),
-      major_locator = axis.locator())
+  return axis.plotatts.get('plotscale', 'linear'), \
+         _buildaxistitle(**axis.plotatts), \
+         lims[::axis.plotatts.get('plotorder', 1)], \
+         axis.formatter(), \
+         axis.locator()
+# }}}
+
+def set_xaxis(axes, axis, lbl):
+# {{{
+  scale, label, lim, form, loc = axes_parm(axis)
+  pl, pb, pr, pt = axes.pad
+  if lbl:
+     axes.setp(xscale = scale, xlabel = label, xlim = lim)
+     axes.setp_xaxis(
+         major_formatter = form,
+         major_locator = loc)
+     axes.pad = pl, 0.25, pr, 0.25
+  else:
+     axes.setp(xscale = scale, xlim = lim, xticklabels=[])
+     axes.pad = pl, 0.1, pr, 0.25
+# }}}
+
+def set_yaxis(axes, axis, lbl):
+# {{{
+  scale, label, lim, form, loc = axes_parm(axis)
+  pl, pb, pr, pt = axes.pad
+  if lbl:
+     axes.setp(yscale = scale, ylabel = label, ylim = lim)
+     axes.setp_yaxis(
+         major_formatter = form,
+         major_locator = loc)
+     axes.pad = 0.8, pb, 0.1, pt
+  else:
+     axes.setp(yscale = scale, ylim = lim, yticklabels=[])
+     axes.pad = 0.1, pb, 0.1, pt
 # }}}
 
 # Do a 1D line plot
-def plot (var, fmt='', axes=None, **kwargs):
+def plot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
   import plot_wr_ph as pl
 
@@ -90,21 +115,22 @@ def plot (var, fmt='', axes=None, **kwargs):
   if isinstance(X, ZAxis):
     X, Y = Y, X
 
-  x = X.get()
-  y = Y.get()
+  x = scalevalues(X)
+  y = scalevalues(Y)
 
   axes = pl.plot(x, y, fmt, axes=axes, **kwargs)
 
   # Apply the custom axes args
-  set_xaxis(axes, X)
-  set_yaxis(axes, Y)
+  axes.pad = (0.1, 0.1, 0.1, 0.1)
+  set_xaxis(axes, X, lblx)
+  set_yaxis(axes, Y, lbly)
   axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
 
   return axes
 # }}}
 
 # Do a 2D contour plot
-def contour (var, clevs=None, clines=None, axes=None, **kwargs):
+def contour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
   import plot_wr_ph as pl
 
@@ -117,9 +143,9 @@ def contour (var, clevs=None, clines=None, axes=None, **kwargs):
   if isinstance(X, ZAxis):
     X, Y = Y, X
 
-  x = X.get()
-  y = Y.get()
-  z = Z.transpose(Y, X).get()
+  x = scalevalues(X)
+  y = scalevalues(Y)
+  z = scalevalues(Z.transpose(Y, X))
 
   if axes is None: 
     if isinstance(X, Lon) and isinstance(Y, Lat):
@@ -136,12 +162,14 @@ def contour (var, clevs=None, clines=None, axes=None, **kwargs):
      # Special case; if plotting both filled and unfilled contours
      # with a single call, set the color of the latter to black
      kwargs['colors'] = 'k'
+     kwargs['cmap'] = None
   if not clines is None:
      axes.contour(x, y, z, clines, **kwargs)
 
   # Apply the custom axes args
-  set_xaxis(axes, X)
-  set_yaxis(axes, Y)
+  axes.pad = (0.1, 0.1, 0.1, 0.1)
+  set_xaxis(axes, X, lblx)
+  set_yaxis(axes, Y, lbly)
   axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
 
   return axes
