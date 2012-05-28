@@ -74,6 +74,7 @@ def encode_cf (dataset):
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from pygeode.axis import NamedAxis
   from pygeode.var import Var
+  from pygeode.timeutils import reltime
   dataset = asdataset(dataset)
   varlist = list(dataset)
   axisdict = dataset.axisdict.copy()
@@ -140,7 +141,7 @@ def encode_cf (dataset):
     #TODO: check 'units' attribute of the time axis, use that in the 'units' of the netcdf metadata
     if isinstance(a, Time):
       #TODO: cast into an integer array if possible
-      axisdict[name] = NamedAxis(values=a.reltime(), name=name, atts=atts, plotatts=plotatts)
+      axisdict[name] = NamedAxis(values=reltime(a), name=name, atts=atts, plotatts=plotatts)
       continue
 
     # Add associated arrays as new variables
