@@ -151,7 +151,7 @@ def plotvar (var, **kwargs):
 
   # 1D case:
   if nd == 1:
-    from axis import ZAxis, Pres, Hybrid
+    from pygeode.axis import ZAxis, Pres, Hybrid
     xaxis = [a for a in axes if len(a)>1][0]
     
     # adjust axis scaling
@@ -216,7 +216,7 @@ def plotvar (var, **kwargs):
   elif nd == 2:
     from numpy import meshgrid, concatenate, log10
     from matplotlib.pyplot import contourf, colorbar, xlim, ylim, xlabel, ylabel, gca
-    from axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
+    from pygeode.axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
     yaxis, xaxis = [a for a in axes if len(a) > 1]
     
     # adjust x-axis scaling
@@ -416,7 +416,7 @@ def plotsigmask (var, ax, **kwargs):
   from matplotlib.pyplot import figure, show, ion, ioff, draw, cm, clf, isinteractive, setp
   from numpy import meshgrid
   from matplotlib.pyplot import contourf, xlim, ylim, xlabel, ylabel, gca
-  from axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
+  from pygeode.axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
 
   # Get # of dimensions - can only do 1D or 2D
   nd = len([s for s in var.shape if s > 1])
@@ -445,14 +445,14 @@ def plotsigmask (var, ax, **kwargs):
   alph = kwargs.pop('alpha', 0.5)
   alphm = kwargs.pop('alphamin', 0.5)
   #sigc = ['1.', '0.7', '0.4', '0.7', '1.']
-  sigc = ['1.', '1.', '1.', '1.', '1.']
-  #sigc = ['0.', '0.7', '1.', '0.7', '0.']
+  #sigc = ['1.', '1.', '1.', '1.', '1.']
+  sigc = ['0.', '0.7', '1.', '0.7', '0.']
   sigl = [-1.1, -shi, -slo, slo, shi, 1.1]
   ct = ax.contourf(meshx, meshy, values, sigl, colors=sigc, hold=True, zorder=-1)
   setp([ct.collections[0], ct.collections[4]], visible=False)
   setp([ct.collections[1], ct.collections[3]], alpha=alphm, edgecolor='none')
   setp(ct.collections[2], alpha=alph, edgecolor='none')
-  ax.set_rasterization_zorder(0)
+  #ax.set_rasterization_zorder(0)
 
   # Set the axis limits
   # Pressure / eta -> log scale, reversed
@@ -531,7 +531,7 @@ def plotquiver (vu, vv, **kwargs):
   from matplotlib.pyplot import figure, show, ion, ioff, draw, cm, clf, isinteractive
   from numpy import meshgrid, ma
   from matplotlib.pyplot import contourf, colorbar, xlim, ylim, xlabel, ylabel, gca
-  from axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
+  from pygeode.axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
   from numpy import isnan, isinf, where
 
   # Get # of dimensions - can only do 1D or 2D
