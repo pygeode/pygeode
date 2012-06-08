@@ -58,6 +58,12 @@ class AxesWrapper:
     self.nplots = len(self.plots)
 # }}}
 
+  def pop_plot(self, order=-1):
+# {{{
+    self.plots.pop(order)
+    self.nplots = len(self.plots)
+# }}}
+
   def render(self, fig = None, **kwargs):
 # {{{
     pyl.ioff()
@@ -199,6 +205,18 @@ class Text(PlotOp):
     axes.text (*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class AxHLine(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.axhline (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class AxVLine(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.axvline (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 # Contour
 class Contour(PlotOp):
 # {{{
@@ -279,12 +297,16 @@ def make_plot_member(f):
   return g
 
 plot = make_plot_func(Plot)
+axhline = make_plot_func(AxHLine)
+axvline = make_plot_func(AxVLine)
 legend = make_plot_func(Legend)
 text = make_plot_func(Text)
 contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 
 AxesWrapper.plot = make_plot_member(plot)
+AxesWrapper.axhline = make_plot_member(axhline)
+AxesWrapper.axvline = make_plot_member(axvline)
 AxesWrapper.legend = make_plot_member(legend)
 AxesWrapper.text = make_plot_member(text)
 AxesWrapper.contour = make_plot_member(contour)
@@ -319,7 +341,7 @@ def grid(axes, size = None):
   rowh = [max([a.size[1] for a in row]) for row in axes]
   colw = [max([axes[i][j].size[0] for i in range(ny)]) for j in range(nx)]
 
-  tsize = [sum(colw), sum(rowh)]
+  tsize = [float(sum(colw)), float(sum(rowh))]
   if size is None: size = tsize
 
   Ax = AxesWrapper(size = size)

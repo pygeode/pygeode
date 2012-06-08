@@ -1,3 +1,4 @@
+from pygeode import timeutils as tu
 
 class TickGenerator:
 # {{{
@@ -125,7 +126,7 @@ class MonthTickGen(TickGenerator):
     yr = dt.get('year', 1)
     mn = dt.get('month', 1)
     if val > self._taxis.date_as_val({'year':yr, 'month':mn}): 
-      dt = self._taxis.wrapdate({'year':yr, 'month':mn+1}, allfields=True)
+      dt = tu.wrapdate(self._taxis, {'year':yr, 'month':mn+1}, allfields=True)
       yr = dt.get('year', 1)
       mn = dt.get('month', 1)
 
@@ -133,7 +134,7 @@ class MonthTickGen(TickGenerator):
     from numpy import floor_divide
     mn = floor_divide(mn - 2, self.mult) * self.mult + 1
 
-    return self._taxis.wrapdate({'year':yr, 'month':mn}, allfields=True)
+    return tu.wrapdate(self._taxis, {'year':yr, 'month':mn}, allfields=True)
   # }}}
 
   def next_tick(self, val):
@@ -176,7 +177,7 @@ class SeasonTickGen(TickGenerator):
     yr = dt.get('year', 1)
     sn = dt.get('season', 1)
     if val > self._taxis.date_as_val({'year':yr, 'season':sn}): 
-      dt = self._taxis.wrapdate({'year':yr, 'month':sn+1}, allfields=True)
+      dt = tu.wrapdate(self._taxis, {'year':yr, 'month':sn+1}, allfields=True)
       yr = dt.get('year', 1)
       sn = dt.get('season', 1)
 
@@ -184,7 +185,7 @@ class SeasonTickGen(TickGenerator):
     from numpy import floor_divide
     sn = floor_divide(sn - 2, self.mult) * self.mult + 1
 
-    return self._taxis.wrapdate({'year':yr, 'season':sn}, allfields=True)
+    return tu.wrapdate(self._taxis, {'year':yr, 'season':sn}, allfields=True)
   # }}}
 
   def next_tick(self, val):
@@ -231,17 +232,17 @@ class DayOfMonthTickGen(TickGenerator):
     yr, mn, dy = unpack(dt)
 
     if val > self._taxis.date_as_val({'year':yr, 'month':mn, 'day':dy}): 
-      yr, mn, dy = unpack(self._taxis.wrapdate({'year':yr, 'month':mn, 'day':dy+1}, allfields=True))
+      yr, mn, dy = unpack(tu.wrapdate(self._taxis, {'year':yr, 'month':mn, 'day':dy+1}, allfields=True))
 
     # Find first day on given multiple prior to the given day
     from numpy import floor_divide
     dy = floor_divide(dy - 2, self.mult) * self.mult + 1
 
     # If we've wrapped, decrement the year
-    d = self._taxis.wrapdate({'year':yr, 'month':mn, 'day':dy}, allfields=True)
-    d1 = self._taxis.wrapdate({'year':yr, 'month':mn + 1, 'day':1}, allfields=True)
+    d = tu.wrapdate(self._taxis, {'year':yr, 'month':mn, 'day':dy}, allfields=True)
+    d1 = tu.wrapdate(self._taxis, {'year':yr, 'month':mn + 1, 'day':1}, allfields=True)
 
-    if self._taxis.date_diff(d, d1, 'days') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'days') < self.mult / 2:
       return d1
     else:
       return d
@@ -253,7 +254,7 @@ class DayOfMonthTickGen(TickGenerator):
     d1 = d.copy()
     d['day'] += self.mult
     d1['month'] += 1; d1['day'] = 1
-    if self._taxis.date_diff(d, d1, 'days') < self.mult / 2.:
+    if tu.date_diff(self._taxis, d, d1, 'days') < self.mult / 2.:
       return self._taxis.date_as_val(d1)
     else:
       return self._taxis.date_as_val(d)
@@ -339,7 +340,7 @@ class HourTickGen(TickGenerator):
     d1 = self.get_tick_prior(vmin)
     d2 = self.get_tick_prior(vmax)
 
-    return self._taxis.date_diff(d1, d2, units='hours') / mult
+    return tu.date_diff(self._taxis, d1, d2, units='hours') / mult
   # }}}
 
   def get_tick_prior(self, val):
@@ -355,17 +356,17 @@ class HourTickGen(TickGenerator):
     yr, mn, dy, hr = unpack(dt)
 
     if val > self._taxis.date_as_val(pack(yr, mn, dy, hr)): 
-      yr, mn, dy, hr = unpack(self._taxis.wrapdate(pack(yr, mn, dy, hr+1), allfields=True))
+      yr, mn, dy, hr = unpack(tu.wrapdate(self._taxis, pack(yr, mn, dy, hr+1), allfields=True))
 
     # Find first hour on given multiple prior to the given hour
     from numpy import floor_divide
     hr = floor_divide(hr - 1, self.mult) * self.mult
 
     # If we've wrapped, decrement the year
-    d = self._taxis.wrapdate(pack(yr, mn, dy, hr), allfields=True)
-    d1 = self._taxis.wrapdate(pack(yr, mn, dy+1, 0), allfields=True)
+    d = tu.wrapdate(self._taxis, pack(yr, mn, dy, hr), allfields=True)
+    d1 = tu.wrapdate(self._taxis, pack(yr, mn, dy+1, 0), allfields=True)
 
-    if self._taxis.date_diff(d, d1, 'hours') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'hours') < self.mult / 2:
       return d1
     else:
       return d
@@ -377,7 +378,7 @@ class HourTickGen(TickGenerator):
     d1 = d.copy()
     d['hour'] += self.mult
     d1['day'] += 1; d1['hour'] = 0
-    if self._taxis.date_diff(d, d1, 'hours') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'hours') < self.mult / 2:
       return self._taxis.date_as_val(d1)
     else:
       return self._taxis.date_as_val(d)
@@ -399,7 +400,7 @@ class MinuteTickGen(TickGenerator):
     d1 = self.get_tick_prior(vmin)
     d2 = self.get_tick_prior(vmax)
 
-    return self._taxis.date_diff(d1, d2, units='minutes') / mult
+    return tu.date_diff(self._taxis, d1, d2, units='minutes') / mult
   # }}}
 
   def get_tick_prior(self, val):
@@ -415,17 +416,17 @@ class MinuteTickGen(TickGenerator):
     yr, mn, dy, hr, mi = unpack(dt)
 
     if val > self._taxis.date_as_val(pack(yr, mn, dy, hr, mi)): 
-      yr, mn, dy, hr, mi = unpack(self._taxis.wrapdate(pack(yr, mn, dy, hr, mi+1), allfields=True))
+      yr, mn, dy, hr, mi = unpack(tu.wrapdate(self._taxis, pack(yr, mn, dy, hr, mi+1), allfields=True))
 
     # Find first hour on given multiple prior to the given hour
     from numpy import floor_divide
     mi = floor_divide(mi - 1, self.mult) * self.mult
 
     # If we've wrapped, decrement the year
-    d = self._taxis.wrapdate(pack(yr, mn, dy, hr, mi), allfields=True)
-    d1 = self._taxis.wrapdate(pack(yr, mn, dy, hr+1, 0), allfields=True)
+    d = tu.wrapdate(self._taxis, pack(yr, mn, dy, hr, mi), allfields=True)
+    d1 = tu.wrapdate(self._taxis, pack(yr, mn, dy, hr+1, 0), allfields=True)
 
-    if self._taxis.date_diff(d, d1, 'minutes') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'minutes') < self.mult / 2:
       return d1
     else:
       return d
@@ -437,7 +438,7 @@ class MinuteTickGen(TickGenerator):
     d1 = d.copy()
     d['minute'] += self.mult
     d1['hour'] += 1; d1['minute'] = 0
-    if self._taxis.date_diff(d, d1, 'minutes') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'minutes') < self.mult / 2:
       return self._taxis.date_as_val(d1)
     else:
       return self._taxis.date_as_val(d)
@@ -459,7 +460,7 @@ class SecondTickGen(TickGenerator):
     d1 = self.get_tick_prior(vmin)
     d2 = self.get_tick_prior(vmax)
 
-    nt = self._taxis.date_diff(d1, d2, units='seconds') / mult
+    nt = tu.date_diff(self._taxis, d1, d2, units='seconds') / mult
     return nt
   # }}}
 
@@ -476,17 +477,17 @@ class SecondTickGen(TickGenerator):
     yr, mn, dy, hr, mi, sc = unpack(dt)
 
     if val > self._taxis.date_as_val(pack(yr, mn, dy, hr, mi, sc)): 
-      yr, mn, dy, hr, mi, sc = unpack(self._taxis.wrapdate(pack(yr, mn, dy, hr, mi, sc+1), allfields=True))
+      yr, mn, dy, hr, mi, sc = unpack(tu.wrapdate(self._taxis, pack(yr, mn, dy, hr, mi, sc+1), allfields=True))
 
     # Find first hour on given multiple prior to the given hour
     from numpy import floor_divide
     sc = floor_divide(sc - 1, self.mult) * self.mult
 
     # If we've wrapped, decrement the year
-    d = self._taxis.wrapdate(pack(yr, mn, dy, hr, mi, sc), allfields=True)
-    d1 = self._taxis.wrapdate(pack(yr, mn, dy, hr, mi+1, 0), allfields=True)
+    d = tu.wrapdate(self._taxis, pack(yr, mn, dy, hr, mi, sc), allfields=True)
+    d1 = tu.wrapdate(self._taxis, pack(yr, mn, dy, hr, mi+1, 0), allfields=True)
 
-    if self._taxis.date_diff(d, d1, 'seconds') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'seconds') < self.mult / 2:
       return d1
     else:
       return d
@@ -498,7 +499,7 @@ class SecondTickGen(TickGenerator):
     d1 = d.copy()
     d['second'] += self.mult
     d1['minute'] += 1; d1['second'] = 0
-    if self._taxis.date_diff(d, d1, 'seconds') < self.mult / 2:
+    if tu.date_diff(self._taxis, d, d1, 'seconds') < self.mult / 2:
       return self._taxis.date_as_val(d1)
     else:
       return self._taxis.date_as_val(d)

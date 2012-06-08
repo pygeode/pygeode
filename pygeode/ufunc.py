@@ -154,6 +154,8 @@ def chain (*f):
 import numpy as np
 
 
+abs  = wrap_unary(np.abs,    "Absolute value")
+absolute  = wrap_unary(np.abs,    "Absolute value")
 sign  = wrap_unary(np.sign,  "Sign (+1 = *positive*, -1 = *negative*)")
 exp   = wrap_unary(np.exp,   "Natural exponent")
 log   = wrap_unary(np.log,   "Natural logarithm")
@@ -228,7 +230,7 @@ vsum = wrap_npfunc(-1, vsum, "Adds an arbitrary number of variables together")
 
 del np
 
-unary_flist = (sign, exp, log, log10, cos, sin, tan, cosd, sind, tand,
+unary_flist = (abs, sign, exp, log, log10, cos, sin, tan, cosd, sind, tand,
     cosh, sinh, tanh, arccos, arcsin, arctan,
     arccosd, arcsind, arctand, arccosh, arcsinh, arctanh,
     sqrt, nan_to_num, real, imag, angle

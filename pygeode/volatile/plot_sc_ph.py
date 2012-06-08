@@ -80,10 +80,10 @@ def set_xaxis(axes, axis, lbl):
      axes.setp_xaxis(
          major_formatter = form,
          major_locator = loc)
-     axes.pad = pl, 0.25, pr, 0.25
+     axes.pad = [pl, 0.25, pr, 0.3]
   else:
      axes.setp(xscale = scale, xlim = lim, xticklabels=[])
-     axes.pad = pl, 0.1, pr, 0.25
+     axes.pad = [pl, 0.1, pr, 0.3]
 # }}}
 
 def set_yaxis(axes, axis, lbl):
@@ -95,10 +95,10 @@ def set_yaxis(axes, axis, lbl):
      axes.setp_yaxis(
          major_formatter = form,
          major_locator = loc)
-     axes.pad = 0.8, pb, 0.1, pt
+     axes.pad = [0.8, pb, 0.1, pt]
   else:
      axes.setp(yscale = scale, ylim = lim, yticklabels=[])
-     axes.pad = 0.1, pb, 0.1, pt
+     axes.pad = [0.1, pb, 0.1, pt]
 # }}}
 
 # Do a 1D line plot

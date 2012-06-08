@@ -74,7 +74,7 @@ class SmoothVar (Var):
 
     # Mirror boundaries, if necessary
     if mright_len > 0:
-      ssli[saxis] = slice(-mright_len-2,-2*mright_len-2,-1)
+      ssli[saxis] = slice(-mright_len,-2*mright_len,-1)
       sslo[saxis] = slice(-mright_len, None)
       src[sslo] = src[ssli]
 
