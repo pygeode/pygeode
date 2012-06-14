@@ -14,7 +14,7 @@ class UfuncVar (Var):
 # {{{
     from pygeode.var import Var
     for arg in args:
-      if not isinstance(arg,(int,long,float,Var)):
+      if not isinstance(arg,(int,long,float,complex,Var)):
         return NotImplemented
     return object.__new__(self)
 # }}}
@@ -37,7 +37,7 @@ class UfuncVar (Var):
 
 #    dtype = common_dtype(args)
     # create some dummy scalar args to test the dtype
-    dummy_dtypes = ['int64' if isinstance(a,(int, long)) else 'float64' if isinstance(a,float) else a.dtype for a in args]
+    dummy_dtypes = ['int64' if isinstance(a,(int, long)) else 'float64' if isinstance(a,float) else 'complex128' if isinstance(a,complex) else a.dtype for a in args]
     dummy_args = [np.array(1,dtype=d) for d in dummy_dtypes]
     dtype = self.op(*dummy_args).dtype
 
