@@ -5,7 +5,7 @@ from distutils.core import setup
 # PyGeode installation script
 
 setup (	name="pygeode",
-	version="0.6.1",
+	version="0.6.2",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="",
         url="http://sparc01.atmosp.physics.utoronto.ca/pygeode/docs",
