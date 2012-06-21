@@ -7,10 +7,11 @@ from var import Var
 
 
 class ConcatVar(Var):
-  def __init__(self, vars):
+  def __init__(self, vars, iaxis=None):
     import pygeode.axis
     from pygeode.tools import common_dtype
     from pygeode.var import combine_meta
+    import numpy as np
 
     # Use first var segment for the axes
     axes = list(vars[0].axes)
@@ -19,22 +20,30 @@ class ConcatVar(Var):
     assert all(v.naxes == naxes for v in vars)
     for i in range(naxes):
       assert all(axes[i].isparentof(v.axes[i]) for v in vars)
-    iaxis = set(i for v in vars for i in range(naxes) if v.axes[i] not in axes)
 
-    assert len(iaxis) <= 1, "more than one varying axis id=%s for %s; can't concatenate"%(iaxis,repr(vars[0]))
+    if iaxis is None:
+      iaxis = set(i for v in vars for i in range(naxes) if v.axes[i] not in axes)
+  
+      assert len(iaxis) <= 1, "more than one varying axis id=%s for %s; can't concatenate"%(iaxis,repr(vars[0]))
+  
+      # Degenerate case: all segments have identical axes
+      if len(iaxis) == 0:
+        from warnings import warn
+        warn ('all axes are identical.  Creating a fake "concat" axis', stacklevel=2)
+        iaxis = naxes
+        axes.append(pygeode.axis.NamedAxis(len(vars), name='concat'))
+  
+      # Standard case: exactly one concatenation axis
+      else:
+        iaxis = iaxis.pop()
 
-    # Degenerate case: all segments have identical axes
-    if len(iaxis) == 0:
-      from warnings import warn
-      warn ('all axes are identical.  Creating a fake "concat" axis', stacklevel=2)
-      iaxis = naxes
-      axes.append(pygeode.axis.NamedAxis(len(vars), name='concat'))
+    # Get a numerical dimension number
+    iaxis = vars[0].whichaxis(iaxis)
 
-    # Standard case: exactly one concatenation axis
-    else:
-      iaxis = iaxis.pop()
-      # Update the list of axes with the concatenated axis included
-      axes[iaxis] = pygeode.axis.concat([v.axes[iaxis] for v in vars])
+    # Update the list of axes with the concatenated axis included
+    values = [v.axes[iaxis].values for v in vars]
+    values = np.concatenate(values)
+    axes[iaxis] = axes[iaxis].withnewvalues(values)
 
     # Get the data type
     dtype = common_dtype(vars)
@@ -74,7 +83,7 @@ class ConcatVar(Var):
     pbar.update(100)  # can't really use this here, since we don't know which var segments are actually used
     return np.concatenate(chunks, axis=self.iaxis)
 
-def concat (*vars):
+def concat (*vars, **kwargs):
   from pygeode.var import Var
   # Already passed a list?
   if len(vars) == 1 and isinstance(vars[0], (list,tuple)):
@@ -84,16 +93,5 @@ def concat (*vars):
   # Make sure we have vars
   assert all(isinstance(v,Var) for v in vars), "can only concatenate Var objects in this routine"
 
-  # Check for presence of varying axis
-  axes = vars[0].axes
-  naxes = len(axes)
-  iaxis = set([i for v in vars for i in range(naxes) if v.axes[i] not in axes])
-  if len(iaxis) == 0: 
-    # If all axes are identical, return an ensemble var
-    from pygeode.ensemble import EnsembleVar
-    return EnsembleVar(vars) 
-    
-  assert len(iaxis) == 1, "more than one varying axis"
-
-  return ConcatVar(vars)
+  return ConcatVar(vars, **kwargs)
 
