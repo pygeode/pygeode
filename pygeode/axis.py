@@ -124,14 +124,6 @@ class Axis(Var):
     if self.name == '': self.name = self.__class__.__name__.lower()
     if self.plotatts['plottitle'] is None: self.plotatts['plottitle'] = self.name
 
-    # Make sure the axis values are unique.  Otherwise, using this axis may give unpredictable results.
-    if np.unique(self.values).shape != self.values.shape:
-      from warnings import warn
-      warn ("Non-unique values provided for the axis.\n%s? %s <-> %s\nshapes: %s <-> %s"%(self.name, np.unique(self.values), self.values, np.unique(self.values).shape, self.values.shape), stacklevel=2)
-#      warn ("values of %s are not unique \n%s\n%s\nchanging to a simple integer count"%(self.name, self.values, np.where(np.diff(self.values)==0)), stacklevel=2)
-#      self.values = np.arange(len(self.values), dtype=self.dtype)
-
-
 # }}}
 
   # Determine if one axis object is from a base class (or same class) of another axis
