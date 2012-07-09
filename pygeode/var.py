@@ -293,6 +293,11 @@ class Var(object):
   def __iter__ (self):
     raise Exception ("Vars cannot be iterated over")
 
+  # Include axes names
+  def __dir__(self):
+    l = self.__dict__.keys() + dir(self.__class__)
+    return l + [a.name for a in self.axes]
+
   # Shortcuts to axes
   # (handled dynamically, in case some fudging is done to the var)
   def __getattr__(self, name):

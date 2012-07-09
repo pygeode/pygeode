@@ -21,6 +21,10 @@ class Dataset(object):
     if name in self: return self[name]
     raise AttributeError (name)
 
+  def __dir__(self):
+    l = self.__dict__.keys() + dir(self.__class__)
+    return l + self.vardict.keys() + self.axisdict.keys()
+
   # Iterate over the variables
   def __iter__(self): return iter(self.vars)
 
