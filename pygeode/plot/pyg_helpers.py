@@ -104,7 +104,7 @@ def set_yaxis(axes, axis, lbl):
 # Do a 1D line plot
 def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
-  import plot_wr_ph as pl
+  import wrappers as wr
 
   Y = var.squeeze()
   assert Y.naxes == 1, 'Variable to plot must have exactly one non-degenerate axis.'
@@ -118,7 +118,7 @@ def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
   x = scalevalues(X)
   y = scalevalues(Y)
 
-  axes = pl.plot(x, y, fmt, axes=axes, **kwargs)
+  axes = wr.plot(x, y, fmt, axes=axes, **kwargs)
 
   # Apply the custom axes args
   axes.pad = (0.1, 0.1, 0.1, 0.1)
@@ -132,7 +132,7 @@ def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # Do a 2D contour plot
 def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
-  import plot_wr_ph as pl
+  import wrappers as wr
 
   Z = var.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
@@ -149,9 +149,9 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **k
 
   if axes is None: 
     if isinstance(X, Lon) and isinstance(Y, Lat):
-      axes = pl.BasemapAxes()
+      axes = wr.BasemapAxes()
     else:
-      axes = pl.AxesWrapper()
+      axes = wr.AxesWrapper()
 
   if clevs is None and clines is None: 
      # If both clevs and clines are None, use default
