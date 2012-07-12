@@ -201,7 +201,11 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
     The type of interpolation. One of 'linear', 'polynomial', 'cspline',
     'cspline_periodic', 'akima', 'akima_periodic'.
     Default is 'cspline' (cubic spline interpolation)
-
+  d_below : float (optional)
+    The slope for linearly extrapolating below the input data.
+  d_above : float (optional)
+    The slope for linearly extrapolating above the input data.
+    By default, no extrapolation is done.
 
   Returns
   -------

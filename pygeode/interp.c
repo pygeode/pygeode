@@ -18,6 +18,8 @@
   loop_xin: does xin change for each array? (0=no, 1=yes)
   loop_xout: does xout change for each array? (0=no, 1=yes)
   type: type of interpolation (i.e., gsl_interp_cspline)
+  d_below: slope of extrapolation below the input field
+  d_above: slope of extrapolation above the input field
 
 */
 int interpgsl_nan (int narrays, int nxin, int nxout,
