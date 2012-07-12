@@ -22,7 +22,7 @@
   d_above: slope of extrapolation above the input field
 
 */
-int interpgsl_nan (int narrays, int nxin, int nxout,
+int interpgsl (int narrays, int nxin, int nxout,
                double *xin, double *yin, double *xout, double *yout,
                int loop_xin, int loop_xout,
                double d_below, double d_above,

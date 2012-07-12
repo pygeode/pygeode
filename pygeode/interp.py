@@ -160,7 +160,7 @@ class Interp (Var):
     interp_type = interp_types[self.interp_type]
 
     # Do the interpolation
-    ret = interp.interpgsl_nan (narrays, ninx, noutx,
+    ret = interp.interpgsl (narrays, ninx, noutx,
             point(inx_data), point(indata), point(outx_data), point(outdata),
             loop_inx, loop_outx,
             c_double(self.d_below), c_double(self.d_above),
