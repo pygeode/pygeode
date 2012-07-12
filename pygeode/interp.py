@@ -173,7 +173,7 @@ class Interp (Var):
 # }}}
 
 def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
-                d_below = 0., d_above = 0.):
+                d_below = float('nan'), d_above = float('nan')):
 # {{{
   """
   Interpolates a variable along a single dimension.
