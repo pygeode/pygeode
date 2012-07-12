@@ -52,8 +52,8 @@ def sorted (var, iaxis, reverse=False):
 # Interpolation Var
 class Interp (Var):
 # {{{
-  def __init__ (self, invar, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
-                d_below=0., d_above=0.):
+  def __init__ (self, invar, inaxis, outaxis, inx, outx, interp_type, \
+                d_below, d_above):
 # {{{
     from pygeode.var import Var
     from pygeode.axis import Axis
