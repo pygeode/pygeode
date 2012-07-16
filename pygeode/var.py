@@ -120,7 +120,7 @@ class Var(object):
     # Determine the type, if we're supplied the values...
     if dtype is None:
       if values is not None:
-        dtype = values.dtype
+        dtype = self.values.dtype
       else:
         raise TypeError("Can't determine dtype")
 
