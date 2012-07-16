@@ -43,6 +43,13 @@ class TestInterp(unittest.TestCase):
     self.x5 = XAxis(values=[1.4])
     self.y5 = YAxis(values=[2.2])
 
+    # 2D interpolation
+    xfield = np.array([[-1,0,1],[0,1,2],[1,2,3],[0,1,2]])
+    yfield = np.array([[-1,0,1,2],[0,1,2,3],[1,2,3,4]]).transpose()
+    self.xfield = Var(axes=[y,x], values=xfield)
+    self.yfield = Var(axes=[y,x], values=yfield)
+    self.x6 = XAxis(values=[-1,0,1,2,3])
+
     #TODO: interpolation via 2D coordinate field
 
   # Trivial case (no interpolation)
@@ -96,6 +103,15 @@ class TestInterp(unittest.TestCase):
         self.assertTrue(np.all(output[0,:] == input[0,:] - 0.5*slope), output)
         self.assertTrue(np.all(output[-1,:] == input[-1,:] + 0.5*slope), output)
 
-  #TODO: Test interpolation via 2D coordinate field
+  # Test interpolation via 2D coordinate field
+  def test_2d_interp(self):
+    input = self.var.get()
+
+    output = interpolate(self.var, inaxis=self.x, outaxis=self.x6, inx=self.xfield, interp_type='linear').transpose(YAxis,XAxis).get()
+
+    nan = float('nan')
+
+    expected = np.array([[1,2,3,nan,nan],[nan,4,5,6,nan],[nan,nan,7,8,9],[nan,10,11,12,nan]])
+    self.assertTrue(alleq(output,expected), output)
 
 if __name__ == '__main__': unittest.main()
