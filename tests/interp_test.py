@@ -70,6 +70,7 @@ class TestInterp(unittest.TestCase):
   def test_interp (self):
     input = self.var.get()
 
+    # Interpolation along X axis
     for slope in (float('nan'),0,1,2):
       output = interpolate(self.var, inaxis=self.x, outaxis=self.x2, interp_type='linear', d_above=slope, d_below=slope).transpose(YAxis,XAxis).get()
       if np.isnan(slope):
@@ -81,6 +82,19 @@ class TestInterp(unittest.TestCase):
         # Check extrapolation (out of range by half a coordinate unit)
         self.assertTrue(np.all(output[:,0] == input[:,0] - 0.5*slope), output)
         self.assertTrue(np.all(output[:,-1] == input[:,-1] + 0.5*slope), output)
+
+    # Interpolation along Y axis
+    for slope in (float('nan'),0,1,2):
+      output = interpolate(self.var, inaxis=self.y, outaxis=self.y2, interp_type='linear', d_above=slope, d_below=slope).transpose(YAxis,XAxis).get()
+      if np.isnan(slope):
+        self.assertTrue(np.all(np.isnan(output[0,:])), output)
+        self.assertTrue(np.all(np.isnan(output[-1,:])), output)
+        self.assertTrue(np.all(np.isfinite(output[1:-1,:])), output)
+      else:
+        self.assertTrue(np.all(np.isfinite(output)), output)
+        # Check extrapolation (out of range by half a coordinate unit)
+        self.assertTrue(np.all(output[0,:] == input[0,:] - 0.5*slope), output)
+        self.assertTrue(np.all(output[-1,:] == input[-1,:] + 0.5*slope), output)
 
   #TODO: Test interpolation via 2D coordinate field
 
