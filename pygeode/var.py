@@ -101,25 +101,32 @@ class Var(object):
     # If we're given a Var as the input data, then we need to grab the data.
     if isinstance(values,Var): values = values.get()
 
+    # Values stored in memory?
+    if values is not None:
+      self.values = np.asarray(values,dtype=dtype)
+      # Make values read-only (or at least difficult to change accidentally)
+      self.values.flags.writeable = False
+
+    # Get the shape of the variable
+    # Have to do this after setting self.values, otherwise this crashes
+    # when initializing Axis objects (which call this init)
+    self.shape = tuple(len(a) for a in axes)
+
+    # Check the shape of the value array
+    if values is not None:
+      assert self.values.ndim == self.naxes, "ndim=%d, naxes=%d?"%(self.values.ndim, self.naxes)
+      assert self.values.shape == self.shape, "array shape does not match the given axes"
+
     # Determine the type, if we're supplied the values...
     if dtype is None:
       if values is not None:
-        values = np.asarray(values)
-        dtype = values.dtype
+        dtype = self.values.dtype
       else:
         raise TypeError("Can't determine dtype")
 
     # Convert dtype shortcuts like 'd' to a standard name
     dtype = np.dtype(dtype)
     self.dtype = dtype
-
-    # Values stored in memory?
-    if values is not None:
-      self.values = np.asarray(values,dtype)
-      assert self.values.ndim == self.naxes, "ndim=%d, naxes=%d?"%(self.values.ndim, self.naxes)
-      assert self.values.shape == tuple(len(a) for a in axes)
-      # Make values read-only (or at least difficult to change accidentally)
-      self.values.flags.writeable = False
 
     # handle meta data (create unique copy of each dictionary for each instance)
     if name is not None: self.name = name
@@ -146,8 +153,6 @@ class Var(object):
 #        setattr(self,name,a)
 # note: this is currently done dynamically, to allow some fudging of the axes
 
-    # Get the shape of the var
-    self.shape = tuple([len(a) for a in axes])
     # Get the size of the var
 #    self.size = np.prod(self.shape)
     self.size = reduce(lambda x,y: x*y, self.shape, 1)

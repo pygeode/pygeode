@@ -217,6 +217,10 @@ def plotvar (var, **kwargs):
     from numpy import meshgrid, concatenate, log10
     from matplotlib.pyplot import contourf, colorbar, xlim, ylim, xlabel, ylabel, gca
     from pygeode.axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
+
+    # Patch for some versions of matplotlib, which leave gaps between polygons
+    kwargs.setdefault('antialiased',False)
+
     yaxis, xaxis = [a for a in axes if len(a) > 1]
     
     # adjust x-axis scaling

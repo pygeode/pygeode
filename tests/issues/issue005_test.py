@@ -8,6 +8,7 @@ def test_issue005():
   import numpy as np
   from pygeode.var import Var
   from pygeode.formats import netcdf as nc
+  from pygeode import timeutils
 
   # Make a time axis starting at year 0
   startdate = dict(year=0,month=1,day=1)
@@ -37,7 +38,7 @@ def test_issue005():
 
 
   # For good measure, test that climatologies are still produced
-  taxis = taxis.modify(exclude='year',uniquify=True)
+  taxis = timeutils.modify(taxis,exclude='year',uniquify=True)
   values = np.random.randn(len(taxis))
   var = Var(axes=[taxis], values=values, name='c')
 
