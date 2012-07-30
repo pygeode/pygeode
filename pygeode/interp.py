@@ -52,8 +52,8 @@ def sorted (var, iaxis, reverse=False):
 # Interpolation Var
 class Interp (Var):
 # {{{
-  def __init__ (self, invar, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
-                d_below=0., d_above=0.):
+  def __init__ (self, invar, inaxis, outaxis, inx, outx, interp_type, \
+                d_below, d_above):
 # {{{
     from pygeode.var import Var
     from pygeode.axis import Axis
@@ -160,7 +160,7 @@ class Interp (Var):
     interp_type = interp_types[self.interp_type]
 
     # Do the interpolation
-    ret = interp.interpgsl_nan (narrays, ninx, noutx,
+    ret = interp.interpgsl (narrays, ninx, noutx,
             point(inx_data), point(indata), point(outx_data), point(outdata),
             loop_inx, loop_outx,
             c_double(self.d_below), c_double(self.d_above),
@@ -173,7 +173,7 @@ class Interp (Var):
 # }}}
 
 def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
-                d_below = 0., d_above = 0.):
+                d_below = float('nan'), d_above = float('nan')):
 # {{{
   """
   Interpolates a variable along a single dimension.
@@ -201,7 +201,11 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
     The type of interpolation. One of 'linear', 'polynomial', 'cspline',
     'cspline_periodic', 'akima', 'akima_periodic'.
     Default is 'cspline' (cubic spline interpolation)
-
+  d_below : float (optional)
+    The slope for linearly extrapolating below the input data.
+  d_above : float (optional)
+    The slope for linearly extrapolating above the input data.
+    By default, no extrapolation is done.
 
   Returns
   -------
