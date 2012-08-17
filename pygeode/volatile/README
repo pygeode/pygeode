@@ -1,4 +1,0 @@
-The code in this directory is sandbox / testing stuff, that is not part of
-the official PyGeode release.  It can be useful for development purposes, but
-should not be imported into scripts that will need to keep working for the long
-term.
