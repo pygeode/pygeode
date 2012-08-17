@@ -1,3 +1,81 @@
+0.7.0 - 2012/08/17
+
+  Updates to Var and Axis classes:
+  - Vars now have a 'units' attribute
+  - Vars and Axes now have a 'plotatts' dictionary, which contains all plotting 
+    parameters.  Some possible keys are:
+      plottitle   - The title to use for plots of this variable (or the axis
+                    label, if this is an Axis)
+      plotname    - A shorter title, used for axis labels.
+      plotunits   - The units of the variable (overrides the 'units' attribute
+                    of the variable).
+      plotscale   - The type of scaling to apply to the values, either 'linear'
+                    or 'log'.
+      plotorder   - The direction to plot the axis coordinates.  1 = away from
+                    origin, -1 = towards origin.
+      formatstr   - A special string for formatting the values on axis ticks
+                    and plot titles.
+      scalefactor - unit conversion, to get values in the plotunits
+      offset      - unit conversion, to get values in the plotunits
+  - Auto-completion of axis & variable members of Var and Dataset objects
+    (works in ipython).  These members are also listed in dir() calls now.
+
+  Updates to the plot module:
+  - Added 'every' keyword to plotquiver() to thin the vector field, implemented 
+    lblx, lbly kwargs.
+  - In plotsigmask(), added "alpha" kwarg to control alpha value of mask
+  - Keyword arguments "scaleAx", "scaleX", "scaleY" control scaling the values
+    by one of the axis coordinates.  This preserves integrals under a
+    logarithmic axis.
+  - added log10-scaling of 2D field values with new kwarg 'logVal'
+  - apply scalefactor and offset from plotatts, if they're defined.  Only
+    triggers if var.plotatts['plotunits'] is different from var.units.
+  - disable anti-aliasing in 2D plots.  In some versions of matplotlib (e.g.
+    the one shipped with Ubuntu 11.10), antialiasing causes annoying gaps
+    between polygons in various plots (contourf, pcolor, etc.).
+  - Created a more modularized set of plotting routines.  This gives greater
+    control over the construction of the plots, e.g. for publication.  The old
+    'plotvar' routine is still available for cases where the automatic
+    formatting is good enough.
+
+  Updates to the stats module:
+  - Added some t test code:
+      difference(X, Y) - Calculates difference between the mean values of X
+                         and Y averaged over the dimensions specified by axes.
+                         Returns X - Y, p values, confidence intervals, and
+                         degrees of freedom.
+      isnonzero(X)     - Determines if X is non-zero, assuming X is normally
+                         distributed.  Returns mean of X along axes, p value,
+                         and confidence interval.
+  - Updated regress() to work on arbitrary axes
+  - can now specify which axes to correlate()
+  - correlate() now works with NaN values.
+
+  Updates to the timeutils module:
+  - Lag variable for lagged correlations
+  - Moved _uniquify, modify, reltime, delta, wrapdate, and date_diff from
+    timeaxis module to timeutils module.
+  - New operator removeleapyears() to convert a standard time axis to a 365-day
+    axis.
+  - New operator splittimeaxis() to split a time axis into 2 dimensions (e.g.
+    year, day-of-year).
+  - New function conform_values() to make 2 time axes have the same units and
+    start date.
+  - New operator jointimeaxes() to convert a 2D time representation (e.g. year,
+    day-of-year) to a single time axis.
+
+  Other updates:
+  - Interpolation now is nan-aware and can extrapolate linearly.  By default,
+    no extrapolation is done (gives NaNs outside the data range).
+  - Improved compatibility with newer versions of the progressbar package.
+  - In concat module, allow the concatenation axis to be specified by the user,
+    so it doesn't have to be guessed.
+  - Added argmax() operator (works on one dimension)
+  - In composite operator, events that extend past the edge of the data now are
+    filled with NaNs
+  - Improved handling of endpoints in the 'smooth' operator.
+
+
 0.6.3 - 2012/08/16
   - Fix bug with NaN-friendly reductions (nansum,nanmean,nanmin,nanmax).  They
     were crashing when doing a full reduction to a scalar.
@@ -11,7 +89,8 @@
 0.6.1 - 2011/11/23
   - Fix issue 23 (http://code.google.com/p/pygeode/issues/detail?id=23)
   - Fix issue 25 (http://code.google.com/p/pygeode/issues/detail?id=25)
-  - Don't abort on missing 'A' and 'B' coefficients when loading netcdf files with hybrid vertical coordinates.
+  - Don't abort on missing 'A' and 'B' coefficients when loading netcdf files
+    with hybrid vertical coordinates.
 
 0.6.0 - 2011/08/11
   - Initial stable release
