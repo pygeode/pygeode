@@ -47,14 +47,14 @@ class AxesWrapper:
     self.naxes = len(self.axes)
 # }}}
 
-  def add_plot(self, plot, order=None):
+  def add_plot(self, plot, order=None, make_axes=True):
 # {{{
     plot.axes = self
     if order is None:
       self.plots.append(plot)
     else:
       self.plots.insert(plot, order)
-    self.make_axis = True
+    if make_axes: self.make_axis = True
     self.nplots = len(self.plots)
 # }}}
 
@@ -64,7 +64,7 @@ class AxesWrapper:
     self.nplots = len(self.plots)
 # }}}
 
-  def render(self, fig = None, **kwargs):
+  def render(self, fig = None, show = True, **kwargs):
 # {{{
     pyl.ioff()
 
@@ -82,8 +82,12 @@ class AxesWrapper:
     self._do_plots(fig)
 
     pyl.ion()
-    pyl.show()
-    pyl.draw()
+
+    if show:
+      pyl.show()
+      pyl.draw()
+
+    return fig
 # }}}
 
   def get_transform(self, root = None):
@@ -121,6 +125,8 @@ class AxesWrapper:
          h = t - b
 
       self.ax = fig.add_axes([l, b, w, h])
+    else:
+      self.ax = None
 
     # Build children
     for a in self.axes: a._build_axes(fig, root)
@@ -170,6 +176,14 @@ class AxesWrapper:
 # {{{
     self.yaxis_args.update(kwargs)
 # }}}
+
+  def find_plot(self, cl):
+  # {{{
+    ''' Returns last instance of plot class cl in this axes plots. '''
+    for p in reversed(self.plots):
+      if isinstance(p, cl): return p
+    return None
+  # }}}
 # }}} 
 
 # Generic object for holding plot information
@@ -202,7 +216,12 @@ class Legend(PlotOp):
 class Text(PlotOp):
 # {{{
   def render (self, axes):
-    axes.text (*self.plot_args, **self.plot_kwargs)
+    if self.plot_kwargs.has_key('transform'):
+       tr = self.plot_kwargs.pop('transform')
+       #if tr == 'Ax': self.plot_kwargs['transform'] = axes.transAxes
+       #if tr == 'Data': self.plot_kwargs['transform'] = axes.transData
+       
+    pyl.figtext (*self.plot_args, **self.plot_kwargs)
 # }}}
 
 class AxHLine(PlotOp):
@@ -284,11 +303,11 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
   return ret
 # }}}
 
-def make_plot_func(fclass):
+def make_plot_func(fclass, make_axes=True):
   def f(*args, **kwargs):
     axes = kwargs.pop('axes', None)
     if axes is None: axes = AxesWrapper()
-    axes.add_plot(fclass(*args, **kwargs))
+    axes.add_plot(fclass(*args, **kwargs), make_axes=make_axes)
     return axes
   return f
 
@@ -300,7 +319,7 @@ plot = make_plot_func(Plot)
 axhline = make_plot_func(AxHLine)
 axvline = make_plot_func(AxVLine)
 legend = make_plot_func(Legend)
-text = make_plot_func(Text)
+text = make_plot_func(Text, make_axes=False)
 contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 
@@ -367,12 +386,31 @@ def grid(axes, size = None):
   return Ax
 # }}}
 
+def annotate(axes, text, pos='b'):
+# {{{
+   size = axes.size[0], axes.size[1] + 0.5
+   Ax = AxesWrapper(size=size)
+   r = (0, 0.5 / float(size[1]), 1., 1.)
+   Ax.add_axis(axes, r)
+   Ax.text(0.5, 0., text, ha='center', va='bottom')#, transform='Ax')
+   return Ax
+# }}}
 __all__.extend(['save', 'load', 'grid'])
 
 try:
-   from basemap import *
-   from basemap import __all__ as bm_all
-   __all__.extend(bm_all)
+  from basemap import *
+  from basemap import __all__ as bm_all
+  __all__.extend(bm_all)
+
+  def isbasemapaxis(axes):
+  # {{{
+    return isinstance(axes, BasemapAxes)
+  # }}}
 except ImportError:
-   import warnings
-   warnings.warn('Basemap functionality is unavailable.')
+  import warnings
+  warnings.warn('Basemap functionality is unavailable.')
+
+  def isbasemapaxis(axes):
+  # {{{
+    return False
+  # }}}
