@@ -1,6 +1,8 @@
 # Shortcuts for plotting PyGeode vars
 # Extends wrapper.py to automatically use information from the Pygeode Vars.
 
+import wrappers as wr
+
 def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
 # {{{
   if name is None: name = ''
@@ -77,9 +79,7 @@ def set_xaxis(axes, axis, lbl):
   pl, pb, pr, pt = axes.pad
   if lbl:
      axes.setp(xscale = scale, xlabel = label, xlim = lim)
-     axes.setp_xaxis(
-         major_formatter = form,
-         major_locator = loc)
+     axes.setp_xaxis(major_formatter = form, major_locator = loc)
      axes.pad = [pl, 0.25, pr, 0.3]
   else:
      axes.setp(xscale = scale, xlim = lim, xticklabels=[])
@@ -91,20 +91,73 @@ def set_yaxis(axes, axis, lbl):
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
   if lbl:
-     axes.setp(yscale = scale, ylabel = label, ylim = lim)
-     axes.setp_yaxis(
-         major_formatter = form,
-         major_locator = loc)
+     #axes.setp(yscale = scale, ylabel = label, ylim = lim)
+     axes.setp_yaxis(major_formatter = form, major_locator = loc)
      axes.pad = [0.8, pb, 0.1, pt]
   else:
      axes.setp(yscale = scale, ylim = lim, yticklabels=[])
      axes.pad = [0.1, pb, 0.1, pt]
 # }}}
 
+def build_basemap(lons, lats, **kwargs):
+# {{{
+  prd = dict(projection = 'cyl', resolution = 'c')
+  prd.update(kwargs.pop('map', {}))
+  proj = prd['projection']
+  bnds = {}
+
+  if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', 'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq']:
+    bnds = {'llcrnrlat':lats.min(), 
+            'urcrnrlat':lats.max(),
+            'llcrnrlon':lons.min(),
+            'urcrnrlon':lons.max()}
+
+  if proj == 'npstere':
+    bnds = {'boundinglat':20, 'lon_0':0}
+
+  if proj == 'spstere':
+    bnds = {'boundinglat':-20, 'lon_0':0}
+
+  bnds.update(prd)
+  prd.update(bnds)
+  
+  return wr.BasemapAxes(**prd)
+# }}}
+
+def decorate_basemap(axes, **kwargs):
+# {{{
+  # Add coastlines, meridians, parallels
+  cld = {}
+  merd = dict(meridians=[-180,-90,0,90,180,270,360],
+              labels=[1,0,0,1])
+  pard = dict(circles=[-90,-60,-30,0,30,60,90],
+              labels=[1,0,0,1])
+
+  cld.update(kwargs.pop('coastlines', {}))
+  merd.update(kwargs.pop('meridians', {}))
+  pard.update(kwargs.pop('parallels', {}))
+
+  axes.drawcoastlines(**cld)
+  axes.drawmeridians(**merd)
+  axes.drawparallels(**pard)
+# }}}
+
 # Do a 1D line plot
 def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
-  import wrappers as wr
+  ''' 
+  Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+
+  Parameters
+  ----------
+  var :  :class:`Var`
+     The variable to plot. Should have either 1 or 2 non-degenerate axes.
+
+  Notes
+  -----
+  This function is intended as the simplest way to display the contents of a variable,
+  choosing appropriate parameter values as automatically as possible.
+  '''
 
   Y = var.squeeze()
   assert Y.naxes == 1, 'Variable to plot must have exactly one non-degenerate axis.'
@@ -132,8 +185,6 @@ def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # Do a 2D contour plot
 def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
-  import wrappers as wr
-
   Z = var.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
   Y, X = Z.axes
@@ -142,6 +193,8 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **k
   from pygeode.axis import ZAxis, Lat, Lon
   if isinstance(X, ZAxis):
     X, Y = Y, X
+  if isinstance(X, Lat) and isinstance(Y, Lon):
+    X, Y = Y, X
 
   x = scalevalues(X)
   y = scalevalues(Y)
@@ -149,22 +202,26 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **k
 
   if axes is None: 
     if isinstance(X, Lon) and isinstance(Y, Lat):
-      axes = wr.BasemapAxes()
+      axes = build_basemap(x, y, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
   if clevs is None and clines is None: 
-     # If both clevs and clines are None, use default
-     axes.contourf(x, y, z, **kwargs)
+    # If both clevs and clines are None, use default
+    axes.contourf(x, y, z, **kwargs)
 
   if not clevs is None:
-     axes.contourf(x, y, z, clevs, **kwargs)
-     # Special case; if plotting both filled and unfilled contours
-     # with a single call, set the color of the latter to black
-     kwargs['colors'] = 'k'
-     kwargs['cmap'] = None
+    axes.contourf(x, y, z, clevs, **kwargs)
+    # Special case; if plotting both filled and unfilled contours
+    # with a single call, set the color of the latter to black
+    kwargs['colors'] = 'k'
+    kwargs['cmap'] = None
+
   if not clines is None:
-     axes.contour(x, y, z, clines, **kwargs)
+    axes.contour(x, y, z, clines, **kwargs)
+
+  if isinstance(axes, wr.BasemapAxes):
+    decorate_basemap(axes, **kwargs)
 
   # Apply the custom axes args
   axes.pad = (0.1, 0.1, 0.1, 0.1)
@@ -175,4 +232,112 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **k
   return axes
 # }}}
 
-__all__ = ['vplot', 'vcontour']
+# Generic catch all interface (plotvar replacement)
+def showvar(var, **kwargs):
+# {{{
+  ''' 
+  Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+
+  Parameters
+  ----------
+  var :  :class:`Var`
+     The variable to plot. Should have either 1 or 2 non-degenerate axes.
+
+  Notes
+  -----
+  This function is intended as the simplest way to display the contents of a variable,
+  choosing appropriate parameter values as automatically as possible.
+  '''
+
+  Z = var.squeeze()
+  assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
+
+  if Z.naxes == 1:
+    ax = vplot(var, **kwargs)
+
+  elif Z.naxes == 2:
+    ax = vcontour(var, **kwargs)
+
+    cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
+    cf = ax.find_plot(wr.Contourf)
+    if cbar and cf is not None:
+      ax = wr.colorbar(ax, cf, **cbar)
+
+  fig = kwargs.pop('fig', None)
+  ax.render(fig)
+  return ax
+# }}}
+
+def showgrid(v, **kwargs):
+# {{{
+  ''' 
+  Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+
+  Parameters
+  ----------
+  v :  list of lists of :class:`Var`
+     The variables to plot. Should have either 1 or 2 non-degenerate axes.
+
+  Notes
+  -----
+  This function is intended as the simplest way to display the contents of a variable,
+  choosing appropriate parameter values as automatically as possible.
+  '''
+  for l in v:
+    Z = v.squeeze()
+    assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
+
+  if Z.naxes == 1:
+    ax = vplot(var, **kwargs)
+
+  elif Z.naxes == 2:
+    ax = vcontour(var, **kwargs)
+
+    cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
+    cf = ax.find_plot(wr.Contourf)
+    if cbar and cf is not None:
+      ax = wr.colorbar(ax, cf, **cbar)
+
+  fig = kwargs.pop('fig', None)
+  ax.render(fig)
+  return ax
+# }}}
+
+def savepages(figs, fn):
+# {{{
+  pwidth = 8.3
+  pheight = 11.7
+  hmarg = 0.5
+  wmarg = 0.5
+  psize = (pwidth, pheight)
+
+  fwidth = pwidth - 2*hmarg
+  fheight = pheight - 2*wmarg
+
+  y = 1. - hmarg / pheight
+  x = wmarg / pwidth
+
+  ax = wr.AxesWrapper(size=psize)
+  from matplotlib.backends.backend_pdf import PdfPages
+  pp = PdfPages(fn)
+
+  for f in figs:
+    w = f.size[0] / pwidth
+    h = f.size[1] / pheight
+
+    if y - h < hmarg:
+      fig = ax.render(show=False)
+      pp.savefig(fig)
+      ax = wr.AxesWrapper(size=psize)
+      y = 1. - hmarg / pwidth
+
+    r = [x, y - h, x + w, y]
+    ax.add_axis(f, r)
+    y -= h
+
+  fig = ax.render(show=False)
+  pp.savefig(fig)
+  pp.close()
+# }}}
+
+__all__ = ['showvar', 'vplot', 'vcontour', 'savepages']
