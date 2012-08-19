@@ -1,15 +1,16 @@
-from wrappers import AxesWrapper, PlotOp, make_plot_func, make_plot_member
+from wrappers import AxesWrapper, PlotOp, Contour, Contourf, make_plot_func, make_plot_member
 
 from mpl_toolkits.basemap import Basemap
 class BasemapAxes(AxesWrapper):
-  def _build_axes(self, fig):
+  def _build_axes(self, fig, root):
 # {{{
-    AxesWrapper._build_axes(self, fig)
+    AxesWrapper._build_axes(self, fig, root)
 
     proj = {'projection':'cyl', 'resolution':'c'}
     proj.update(self.axes_args)
     self.bm = Basemap(ax = self.ax, **proj)
 # }}}
+
   def setp(self, **kwargs):
 # {{{
     proj = self.axes_args.get('projection', 'cyl')
@@ -25,11 +26,32 @@ class BasemapAxes(AxesWrapper):
         bnds['urcrnrlat'] = y1
       self.axes_args.update(bnds)
 
+    kwargs.pop('xscale', None)
+    kwargs.pop('yscale', None)
+
     self.args.update(kwargs)
 # }}}
 
+  def setp_xaxis(self, **kwargs):
+# {{{
+    kwargs.pop('major_locator', None)
+    kwargs.pop('minor_locator', None)
+    kwargs.pop('major_formatter', None)
+    kwargs.pop('minor_formatter', None)
+    AxesWrapper.setp_xaxis(self, **kwargs)
+# }}}
+
+  def setp_yaxis(self, **kwargs):
+# {{{
+    kwargs.pop('major_locator', None)
+    kwargs.pop('minor_locator', None)
+    kwargs.pop('major_formatter', None)
+    kwargs.pop('minor_formatter', None)
+    AxesWrapper.setp_yaxis(self, **kwargs)
+# }}}
+
 # Contour
-class BMContour(PlotOp):
+class BMContour(Contour):
 # {{{
   @staticmethod
   def transform(bm, args):
@@ -61,7 +83,7 @@ class BMContour(PlotOp):
     self._cnt = bm.contour (*args, **self.plot_kwargs)
 # }}}
 
-class BMContourf(PlotOp):
+class BMContourf(Contourf):
 # {{{
   def render (self, axes):
     bm = self.axes.bm
@@ -102,4 +124,4 @@ BasemapAxes.drawcoastlines = make_plot_member(drawcoastlines)
 BasemapAxes.drawmeridians = make_plot_member(drawmeridians)
 BasemapAxes.drawparallels = make_plot_member(drawparallels)
 
-__all__ = ['bmcontour', 'bmcontourf', 'drawcoastlines', 'drawmeridians', 'drawparallels']
+__all__ = ['BasemapAxes', 'bmcontour', 'bmcontourf', 'drawcoastlines', 'drawmeridians', 'drawparallels']
