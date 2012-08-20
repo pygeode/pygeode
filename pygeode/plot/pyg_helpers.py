@@ -2,6 +2,7 @@
 # Extends wrapper.py to automatically use information from the Pygeode Vars.
 
 import wrappers as wr
+import numpy as np
 
 def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
 # {{{
@@ -268,7 +269,7 @@ def showvar(var, **kwargs):
   return ax
 # }}}
 
-def showgrid(v, **kwargs):
+def showcol(vs, size=(5,2), **kwargs):
 # {{{
   ''' 
   Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
@@ -283,24 +284,49 @@ def showgrid(v, **kwargs):
   This function is intended as the simplest way to display the contents of a variable,
   choosing appropriate parameter values as automatically as possible.
   '''
-  for l in v:
-    Z = v.squeeze()
-    assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
 
-  if Z.naxes == 1:
-    ax = vplot(var, **kwargs)
+  Z = [v.squeeze() for v in vs]
 
-  elif Z.naxes == 2:
-    ax = vcontour(var, **kwargs)
+  assert Z[0].naxes in [1, 2], 'Variables %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
 
-    cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
-    cf = ax.find_plot(wr.Contourf)
-    if cbar and cf is not None:
-      ax = wr.colorbar(ax, cf, **cbar)
+  for z in Z[1:]:
+    assert Z[0].naxes == z.naxes, 'All variables must have the same number of non-generate dimensions'
+    assert all([a == b for a, b in zip(Z[0].axes, z.axes)])
 
   fig = kwargs.pop('fig', None)
-  ax.render(fig)
-  return ax
+
+  if Z[0].naxes == 1:
+    axs = []
+    ydat = []
+    for v in vs:
+      lblx = (v is vs[-1])
+      ax = vplot(v, lblx = lblx, **kwargs)
+      ax.size = size
+      axs.append([ax])
+      ydat.append(ax.find_plot(wr.Plot).plot_args[1])
+
+    Ax = wr.grid(axs)
+    ylim = (np.min([np.min(y) for y in ydat]), np.max([np.max(y) for y in ydat]))
+    Ax.setp(ylim = ylim, children=True)
+
+  elif Z[0].naxes == 2:
+    axs = []
+    for v in vs:
+      lblx = (v is v[-1])
+      ax = vcontour(v, lblx = lblx, **kwargs)
+      ax.size = size
+      axs.append([ax])
+
+    Ax = wr.grid(axs)
+
+    cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
+    cf = Ax.axes[0].find_plot(wr.Contourf)
+    print cf
+    if cbar and cf is not None:
+      Ax = wr.colorbar(Ax, cf, **cbar)
+
+  Ax.render(fig)
+  return Ax
 # }}}
 
 def savepages(figs, fn):
@@ -340,4 +366,4 @@ def savepages(figs, fn):
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'vplot', 'vcontour', 'savepages']
+__all__ = ['showvar', 'showcol', 'vplot', 'vcontour', 'savepages']
