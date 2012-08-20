@@ -162,9 +162,11 @@ class AxesWrapper:
     if len(self.yaxis_args) > 0: pyl.setp(self.ax.yaxis, **self.yaxis_args)
 # }}}
 
-  def setp(self, **kwargs):
+  def setp(self, children=False, **kwargs):
 # {{{
     self.args.update(kwargs)
+    if children:
+      for a in self.axes: a.setp(children, **kwargs)
 # }}}
 
   def setp_xaxis(self, **kwargs):
