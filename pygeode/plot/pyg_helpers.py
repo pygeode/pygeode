@@ -84,6 +84,7 @@ def set_xaxis(axes, axis, lbl):
      axes.pad = [pl, 0.25, pr, 0.3]
   else:
      axes.setp(xscale = scale, xlim = lim, xticklabels=[])
+     axes.setp_xaxis(major_locator = loc)
      axes.pad = [pl, 0.1, pr, 0.3]
 # }}}
 
@@ -92,7 +93,7 @@ def set_yaxis(axes, axis, lbl):
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
   if lbl:
-     #axes.setp(yscale = scale, ylabel = label, ylim = lim)
+     axes.setp(yscale = scale, ylabel = label, ylim = lim)
      axes.setp_yaxis(major_formatter = form, major_locator = loc)
      axes.pad = [0.8, pb, 0.1, pt]
   else:
@@ -178,23 +179,27 @@ def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
   axes.pad = (0.1, 0.1, 0.1, 0.1)
   set_xaxis(axes, X, lblx)
   set_yaxis(axes, Y, lbly)
-  axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
+  lbl = _buildvartitle(var.axes, var.name, **var.plotatts)
+  axes.setp(title=lbl, label=lbl)
 
   return axes
 # }}}
 
 # Do a 2D contour plot
-def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **kwargs):
+def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
 # {{{
   Z = var.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
-  Y, X = Z.axes
+  X, Y = Z.axes
 
   # If a vertical axis is present transpose the plot
   from pygeode.axis import ZAxis, Lat, Lon
-  if isinstance(X, ZAxis):
-    X, Y = Y, X
-  if isinstance(X, Lat) and isinstance(Y, Lon):
+  if transpose is None:
+    if isinstance(X, ZAxis):
+      X, Y = Y, X
+    if isinstance(X, Lat) and isinstance(Y, Lon):
+      X, Y = Y, X
+  elif transpose:
     X, Y = Y, X
 
   x = scalevalues(X)
@@ -225,10 +230,11 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, **k
     decorate_basemap(axes, **kwargs)
 
   # Apply the custom axes args
-  axes.pad = (0.1, 0.1, 0.1, 0.1)
-  set_xaxis(axes, X, lblx)
-  set_yaxis(axes, Y, lbly)
-  axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
+  if label:
+    axes.pad = (0.1, 0.1, 0.1, 0.1)
+    set_xaxis(axes, X, lblx)
+    set_yaxis(axes, Y, lbly)
+    axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
 
   return axes
 # }}}
@@ -253,6 +259,8 @@ def showvar(var, **kwargs):
   Z = var.squeeze()
   assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
 
+  fig = kwargs.pop('fig', None)
+
   if Z.naxes == 1:
     ax = vplot(var, **kwargs)
 
@@ -264,12 +272,13 @@ def showvar(var, **kwargs):
     if cbar and cf is not None:
       ax = wr.colorbar(ax, cf, **cbar)
 
-  fig = kwargs.pop('fig', None)
-  ax.render(fig)
+  import pylab as pyl
+  if pyl.isinteractive():
+    ax.render(fig)
   return ax
 # }}}
 
-def showcol(vs, size=(5,2), **kwargs):
+def showcol(vs, size=(4.1,2), **kwargs):
 # {{{
   ''' 
   Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
@@ -287,11 +296,11 @@ def showcol(vs, size=(5,2), **kwargs):
 
   Z = [v.squeeze() for v in vs]
 
-  assert Z[0].naxes in [1, 2], 'Variables %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
+  assert Z[0].naxes in [1, 2], 'Variables %s has %d non-generate axes; must have 1 or 2.' % (Z.name, Z.ndim)
 
   for z in Z[1:]:
     assert Z[0].naxes == z.naxes, 'All variables must have the same number of non-generate dimensions'
-    assert all([a == b for a, b in zip(Z[0].axes, z.axes)])
+    #assert all([a == b for a, b in zip(Z[0].axes, z.axes)])
 
   fig = kwargs.pop('fig', None)
 
@@ -312,7 +321,7 @@ def showcol(vs, size=(5,2), **kwargs):
   elif Z[0].naxes == 2:
     axs = []
     for v in vs:
-      lblx = (v is v[-1])
+      lblx = (v is vs[-1])
       ax = vcontour(v, lblx = lblx, **kwargs)
       ax.size = size
       axs.append([ax])
@@ -321,49 +330,179 @@ def showcol(vs, size=(5,2), **kwargs):
 
     cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
     cf = Ax.axes[0].find_plot(wr.Contourf)
-    print cf
     if cbar and cf is not None:
       Ax = wr.colorbar(Ax, cf, **cbar)
 
-  Ax.render(fig)
+  import pylab as pyl
+  if pyl.isinteractive(): Ax.render(fig)
   return Ax
 # }}}
 
-def savepages(figs, fn):
+def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), **kwargs):
 # {{{
-  pwidth = 8.3
-  pheight = 11.7
-  hmarg = 0.5
-  wmarg = 0.5
+  ''' 
+  Plot contours
+
+  Parameters
+  ----------
+  v :  list of lists of :class:`Var`
+     The variables to plot. Should have either 1 or 2 non-degenerate axes.
+
+  Notes
+  -----
+  This function is intended as the simplest way to display the contents of a variable,
+  choosing appropriate parameter values as automatically as possible.
+  '''
+
+  from pygeode import Var
+  if isinstance(vf, Var): vf = [vf]
+  if isinstance(vl, Var): vl = [vl]
+
+  assert all([v.squeeze().naxes == 2 for v in vf]), 'Variables (vf) should have 2 degenerate axes.'
+  nVf = len(vf)
+
+  assert all([v.squeeze().naxes == 2 for v in vl]), 'Variables (vl) should have 2 degenerate axes.'
+  nVl = len(vl)
+  if nVf > 1 and nVl > 1: assert nVl == nVf, 'Must have the same number of filled and contour-line variables.'
+    
+  fig = kwargs.pop('fig', None)
+  cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
+  xpad = 0.
+  ypad = 0.
+
+  kwlines = {}
+  if nVl > 0:
+    kwlines['colors'] = kwargs.pop('colors', 'k')
+    kwlines['clines'] = kwargs.pop('clines', 11)
+    for k in ['linewidths', 'linestyles']:
+      if kwargs.has_key(k): kwlines[k] = kwargs.pop(k)
+
+  kwfill = {}
+  if nVf > 0:
+    kwfill['clevs'] = kwargs.pop('clevs', 31)
+    kwfill['cmap'] = kwargs.pop('cmap', None)
+    kwlines['label'] = False
+    if cbar: 
+      if cbar.get('orientation', 'vertical') == 'vertical':
+        ypad = cbar.get('width', 0.8)
+      else:
+        xpad = cbar.get('height', 0.4)
+
+  
+  kwcb = {}
+
+  nV = max(nVl, nVf)
+  nrow = np.ceil(nV / float(ncol))
+
+  axpad = 0.2
+  axpadl = 0.9
+  aypad = 0.4
+  aypadl = 0.55
+  axw, axh = size
+  ypad = ypad + aypadl + aypad * (nrow-1)
+  xpad = xpad + axpadl + axpad * (ncol-1)
+
+  axs = []
+  row = []
+  for i in range(nV):
+    lblx = (i / ncol == nrow - 1)
+    lbly = (i % ncol == 0)
+    ax = None
+    if nVf > 0: 
+      v = vf[i % nVf]
+      kwfill.update(kwargs)
+      ax = vcontour(v, axes=ax, lblx = lblx, lbly = lbly, **kwfill)
+    if nVl > 0:
+      v = vl[i % nVl]
+      kwlines.update(kwargs)
+      ax = vcontour(v, axes=ax, lblx = lblx, lbly = lbly, **kwlines)
+
+    if lblx: h = axh + aypadl
+    else: h = axh + aypad
+    if lbly: w = axw + axpadl
+    else: w = axw + axpad
+
+    ax.size = (w, h)
+    row.append(ax)
+    if i % ncol == ncol - 1:
+      axs.append(row)
+      row = []
+
+  if len(row) > 0: axs.append(row)
+
+  Ax = wr.grid(axs)
+
+  cf = Ax.axes[0].find_plot(wr.Contourf)
+  if cbar and cf is not None:
+    Ax = wr.colorbar(Ax, cf, **cbar)
+
+  import pylab as pyl
+  if pyl.isinteractive(): Ax.render(fig)
+  return Ax
+# }}}
+
+def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
+# {{{
+  sizes = dict(A4 = (8.3, 11.7),
+              A4l = (11.7, 8.3))
+  if sizes.has_key(psize):
+    pwidth, pheight = sizes[psize]
+  else:
+    pwidth, pheight = psize
+
+  hmarg = marg
+  wmarg = marg
   psize = (pwidth, pheight)
 
-  fwidth = pwidth - 2*hmarg
-  fheight = pheight - 2*wmarg
+  fwidth = pwidth - 2*wmarg
+  fheight = pheight - 2*hmarg
 
-  y = 1. - hmarg / pheight
-  x = wmarg / pwidth
+  ymarg = hmarg/pheight
+  xmarg = wmarg/pwidth
+
+  y = 1. - ymarg
+  x = xmarg
 
   ax = wr.AxesWrapper(size=psize)
   from matplotlib.backends.backend_pdf import PdfPages
   pp = PdfPages(fn)
 
+  page = 1
+  nfigs = 0
+  hlast = 0
   for f in figs:
-    w = f.size[0] / pwidth
-    h = f.size[1] / pheight
+    w = f.size[0] / pwidth * scl
+    h = f.size[1] / pheight * scl
 
-    if y - h < hmarg:
-      fig = ax.render(show=False)
-      pp.savefig(fig)
-      ax = wr.AxesWrapper(size=psize)
-      y = 1. - hmarg / pwidth
+    if x + w < 1. - xmarg:
+      r = [x, y - h, x + w, y]
+      ax.add_axis(f, r)
+      x += w
+      hlast = max(h, hlast)
+      nfigs += 1
+    else:
+      x = xmarg
+      y = y - hlast
 
-    r = [x, y - h, x + w, y]
-    ax.add_axis(f, r)
-    y -= h
+      if nfigs > 0 and y - h < ymarg:
+        fig = ax.render('page%d' % page)
+        pp.savefig(fig)
+        ax = wr.AxesWrapper(size=psize)
+        y = 1. - ymarg
+        print 'Page %d, %d figures.' % (page, nfigs)
+        page += 1
+        nfigs = 0
 
-  fig = ax.render(show=False)
+      r = [x, y - h, x + w, y]
+      ax.add_axis(f, r)
+      x = x + w
+      hlast = h
+      nfigs += 1
+
+  print 'Page %d, %d figures.' % (page, nfigs)
+  fig = ax.render('page%d'%page, show=False)
   pp.savefig(fig)
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'showcol', 'vplot', 'vcontour', 'savepages']
+__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vcontour', 'savepages']
