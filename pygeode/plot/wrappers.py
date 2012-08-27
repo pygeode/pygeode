@@ -9,7 +9,7 @@ import matplotlib as mpl
 # Interface for wrapping a matplotlib axes object
 class AxesWrapper:
 # {{{
-  def __init__(self, parent=None, rect=None, size=None, pad=None, make_axis=False, **kwargs):
+  def __init__(self, parent=None, rect=None, size=None, pad=None, make_axis=False, name='', **kwargs):
 # {{{
     self.parent = parent
 
@@ -35,6 +35,8 @@ class AxesWrapper:
     self.axes_args = kwargs
     self.xaxis_args = {}
     self.yaxis_args = {}
+
+    self.name = name
 # }}}  
 
   def add_axis(self, axis, rect):
@@ -162,21 +164,25 @@ class AxesWrapper:
     if len(self.yaxis_args) > 0: pyl.setp(self.ax.yaxis, **self.yaxis_args)
 # }}}
 
-  def setp(self, children=False, **kwargs):
+  def setp(self, children=True, **kwargs):
 # {{{
     self.args.update(kwargs)
     if children:
       for a in self.axes: a.setp(children, **kwargs)
 # }}}
 
-  def setp_xaxis(self, **kwargs):
+  def setp_xaxis(self, children=True, **kwargs):
 # {{{
     self.xaxis_args.update(kwargs)
+    if children:
+      for a in self.axes: a.setp_xaxis(children, **kwargs)
 # }}}
 
-  def setp_yaxis(self, **kwargs):
+  def setp_yaxis(self, children=True, **kwargs):
 # {{{
     self.yaxis_args.update(kwargs)
+    if children:
+      for a in self.axes: a.setp_yaxis(children, **kwargs)
 # }}}
 
   def find_plot(self, cl):
@@ -325,7 +331,7 @@ text = make_plot_func(Text, make_axes=False)
 contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 
-__all__ = ['plot', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf']
+__all__ = ['plot', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'colorbar']
 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.axhline = make_plot_member(axhline)
