@@ -418,6 +418,7 @@ def plotsigmask (var, ax, **kwargs):
   '''
 
   from matplotlib.pyplot import figure, show, ion, ioff, draw, cm, clf, isinteractive, setp
+  from matplotlib.patches import PathPatch
   from numpy import meshgrid
   from matplotlib.pyplot import contourf, xlim, ylim, xlabel, ylabel, gca
   from pygeode.axis import Lat, Lon, ZAxis, Pres, Hybrid, SpectralM, SpectralN
@@ -455,7 +456,13 @@ def plotsigmask (var, ax, **kwargs):
   ct = ax.contourf(meshx, meshy, values, sigl, colors=sigc, hold=True, zorder=-1)
   setp([ct.collections[0], ct.collections[4]], visible=False)
   setp([ct.collections[1], ct.collections[3]], alpha=alphm, edgecolor='none')
+  for c in [ct.collections[1], ct.collections[3]]:
+    for p in c.get_paths(): 
+      ax.add_patch(PathPatch(p, hatch='xx', fc='none', ec='0.5', lw=0., zorder=-1))#, clip_path=(p, ax.transAxes)))
+
   setp(ct.collections[2], alpha=alph, edgecolor='none')
+  for p in ct.collections[2].get_paths(): 
+    ax.add_patch(PathPatch(p, hatch='xx', fc='none', ec='0.5', lw=0., zorder=-1))#, clip_path=(p, ax.transAxes)))
   #ax.set_rasterization_zorder(0)
 
   # Set the axis limits
