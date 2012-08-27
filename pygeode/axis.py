@@ -771,6 +771,13 @@ class Hybrid (ZAxis):
     if not allclose(self.B, other.B): return False
     return True
   # }}}
+
+  def locator(self):
+    import pylab as pyl, numpy as np
+    ndecs = np.log10(np.max(self.values) / np.min(self.values))
+    if ndecs < 1.2: return pyl.LogLocator(subs=[1., 2., 4., 7.])
+    elif ndecs < 3.: return pyl.LogLocator(subs=[1., 3.])
+    else: return pyl.LogLocator()
 # }}}
 
 class Pres (ZAxis): 
@@ -791,6 +798,14 @@ class Pres (ZAxis):
     z = ZAxis(H * np.log(p0 / self.values))
     z.plotatts['plottitle'] = 'Log-p Height (km)'
     return z
+
+  def locator(self):
+    import pylab as pyl, numpy as np
+    ndecs = np.log10(np.max(self.values) / np.min(self.values))
+    if ndecs < 1.2: return pyl.LogLocator(subs=[1., 2., 4., 7.])
+    elif ndecs < 3.: return pyl.LogLocator(subs=[1., 3.])
+    else: return pyl.LogLocator()
+
 # }}}
 
 class TAxis(Axis): pass
