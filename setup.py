@@ -13,6 +13,6 @@ setup (	name="pygeode",
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
-	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"]
+	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins", "pygeode.plot"]
 )
 
