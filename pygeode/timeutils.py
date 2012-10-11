@@ -186,7 +186,7 @@ def removeleapyears(data):
   return data
 
 class LagVar(Var):
-  def __init__(self, var, iaxis, lags):
+  def __init__(self, var, iaxis, lags, reverse=False):
   # {{{
     import numpy as np
     from pygeode import Var
@@ -195,7 +195,10 @@ class LagVar(Var):
     self.iaxis = var.whichaxis(iaxis)
     taxis = var.axes[self.iaxis]
     assert isinstance(taxis, Time), 'must specify a Time axis'
-    delt = taxis.delta()
+    delt = (taxis.values[1] - taxis.values[0])
+    if reverse: 
+      delt = -delt
+      lags = lags[::-1]
     
     self.lags = np.array(lags).astype('i')
     lag = Lag(values = delt*self.lags, units=taxis.units, startdate={'day':0})
@@ -213,7 +216,9 @@ class LagVar(Var):
 
     tind = view.integer_indices[self.iaxis]
     tmin, tmax = np.min(tind), np.max(tind)
-    tsl = slice(max(tmin + loff, 0), min(tmax + roff, self.shape[self.iaxis]))
+
+    tsl = slice(max(tmin + loff, 0), min(tmax + roff + 1, self.shape[self.iaxis]))
+    imin = tsl.start
     inview = view.remove(self.iaxis+1).modify_slice(self.iaxis, tsl)
     src = inview.get(self.var, pbar=pbar)
 
@@ -221,9 +226,9 @@ class LagVar(Var):
     outsl = [0 if i == self.iaxis + 1 else slice(None) for i in range(self.naxes)]
     insl = [slice(None) for i in range(self.naxes-1)]
     for i, l in enumerate(lind):
-      valid = (tind + l >= 0) & (tind + l < src.shape[self.iaxis])
+      valid = (tind + l >= 0) & (tind + l < self.shape[self.iaxis])
       ivalid = np.where(valid)[0]
-      insl[self.iaxis] = tind[ivalid] + l
+      insl[self.iaxis] = tind[ivalid] + l - imin
       outsl[self.iaxis] = ivalid
       outsl[self.iaxis+1] = i
       out[outsl] = src[insl]
