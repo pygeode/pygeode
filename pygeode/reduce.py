@@ -116,6 +116,35 @@ class ArgMaxVar(ReducedVar):
       out[outsl] = np.argmax(indata, index)
     return out
 # }}}
+class ArgMinVar(ReducedVar):
+# {{{
+  def __init__(self, var, index):
+  # {{{
+    from pygeode.var import Var
+    import numpy as np
+    axes = var.axes
+    index = var.whichaxis(index)
+
+    self.N = len(axes[index])
+    self.var = var
+    self.indices = [index]
+    self.in_axes = axes
+
+    # Remove the reduction axis from the output variable
+    axes = [a for i,a in enumerate(axes) if i != index]
+
+    Var.__init__(self, axes, dtype='i', name=var.name, atts=var.atts, plotatts=var.plotatts)
+  # }}}
+
+  def getview (self, view, pbar):
+    import numpy as np
+    from pygeode.tools import loopover, npmax
+    out = np.empty(view.shape, self.dtype)
+    index = self.indices[0]
+    for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
+      out[outsl] = np.argmin(indata, index)
+    return out
+# }}}
 
 class SumVar(ReducedVar):
 # {{{
@@ -361,6 +390,7 @@ class NANSDVar(NANVarianceVar):
 def min (var, *axes): return MinVar(var, axes)
 def max (var, *axes): return MaxVar(var, axes)
 def argmax (var, axis): return ArgMaxVar(var, axis)
+def argmin (var, axis): return ArgMinVar(var, axis)
 
 def sum (var, *axes, **kwargs): 
 # {{{
@@ -523,6 +553,6 @@ def stdev (var, *axes): return SDVar (var, axes)
 def nanvariance (var, *axes): return NANVarianceVar(var, axes)
 def nanstdev (var, *axes): return NANSDVar (var, axes)
 
-class_flist = [min, max, argmax, sum, mean, variance, stdev, nansum, nanmean, nanvariance, nanstdev]
+class_flist = [min, max, argmax, argmin, sum, mean, variance, stdev, nansum, nanmean, nanvariance, nanstdev]
 
 del Var
