@@ -258,7 +258,21 @@ class Contourf(PlotOp):
     self._cnt = axes.contourf (*self.plot_args, **self.plot_kwargs)
 # }}}
 
-# Filled Contour
+# Op to modify contours
+class ModifyContours(PlotOp):
+# {{{
+  def __init__(self, cnt, ind=None, **kwargs):
+    self.cnt = cnt
+    self.ind = ind
+    PlotOp.__init__(self, **kwargs)
+
+  def render (self, axes):
+    coll = self.cnt._cnt.collections
+    if self.ind is None: pyl.setp(coll, **self.plot_kwargs)
+    else: pyl.setp([coll[i] for i in self.ind], **self.plot_kwargs)
+# }}}
+
+# Colorbar
 class Colorbar(PlotOp):
 # {{{
   def __init__(self, cnt, cax, *plot_args, **kwargs):
@@ -330,6 +344,7 @@ legend = make_plot_func(Legend)
 text = make_plot_func(Text, make_axes=False)
 contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
+modifycontours = make_plot_func(ModifyContours)
 
 __all__ = ['plot', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'colorbar']
 
@@ -340,6 +355,7 @@ AxesWrapper.legend = make_plot_member(legend)
 AxesWrapper.text = make_plot_member(text)
 AxesWrapper.contour = make_plot_member(contour)
 AxesWrapper.contourf = make_plot_member(contourf)
+AxesWrapper.modifycontours = make_plot_member(modifycontours)
 
 # Routine for saving this plot to a file
 def save (fig, filename):
@@ -367,8 +383,8 @@ def grid(axes, size = None):
   nx = len(axes[0])
   assert all([len(x) == nx for x in axes[1:]]), 'Each row must have the same number of axes'
 
-  rowh = [max([a.size[1] for a in row]) for row in axes]
-  colw = [max([axes[i][j].size[0] for i in range(ny)]) for j in range(nx)]
+  rowh = [max([a.size[1] for a in row if a is not None]) for row in axes]
+  colw = [max([axes[i][j].size[0] for i in range(ny) if axes[i][j] is not None]) for j in range(nx)]
 
   tsize = [float(sum(colw)), float(sum(rowh))]
   if size is None: size = tsize
@@ -379,14 +395,15 @@ def grid(axes, size = None):
   for i in range(ny):
     for j in range(nx):
       ax = axes[i][j]
-      w = ax.size[0] / tsize[0]
-      px = (colw[j] - ax.size[0]) / tsize[0] / 2.
+      if ax is not None:
+        w = ax.size[0] / tsize[0]
+        px = (colw[j] - ax.size[0]) / tsize[0] / 2.
 
-      h = ax.size[1] / tsize[1]
-      py = (rowh[i] - ax.size[1]) / tsize[1] / 2.
-        
-      r = [x + px, y - h - py, x + w + px, y - py]
-      Ax.add_axis(ax, r)
+        h = ax.size[1] / tsize[1]
+        py = (rowh[i] - ax.size[1]) / tsize[1] / 2.
+          
+        r = [x + px, y - h - py, x + w + px, y - py]
+        Ax.add_axis(ax, r)
       x += colw[j] / tsize[0]
     x = 0.
     y -= rowh[i] / tsize[1]
