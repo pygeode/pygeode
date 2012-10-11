@@ -77,6 +77,10 @@ from pygeode.stats import *
 from pygeode.stats import __all__ as stats_all
 __all__.append(stats_all)
 
+from pygeode.spectral import *
+from pygeode.spectral import __all__ as spectral_all
+__all__.extend(spectral_all)
+
 #from pygeode.composite import composite
 
 #### Dynamic shortcuts to plugins ####
