@@ -468,6 +468,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   import numpy as np
   from pygeode.progress import PBar, FakePBar
   from pygeode.formats import cfmeta as cf
+  from pygeode.dataset import asdataset
 
   assert isinstance(filename,str)
 
@@ -479,7 +480,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   if cfmeta is True:
     dataset = cf.encode_cf(in_dataset)
   else:
-    dataset = in_dataset
+    dataset = asdataset(in_dataset)
 
   fileid = c_int()
 
