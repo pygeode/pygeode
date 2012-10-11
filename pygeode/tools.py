@@ -265,13 +265,15 @@ def shared_axes(axes, sets):
 def map_to (a, b, rtol=1e-5):
 # {{{
   import numpy as np
-  from ctypes import c_int, c_double, byref
+  from ctypes import c_int, c_double, byref, c_void_p
   A = np.ascontiguousarray(a, 'd')
   NA = c_int(len(A))
   B = np.ascontiguousarray(b, 'd')
   NB = c_int(len(B))
   ind = np.zeros(len(B), 'int32')
+#  print hex(ind.ctypes.data)
 #  nind = c_int(0)
+  libmisc.map_to.argtypes = [c_int, c_void_p, c_int, c_void_p, c_void_p, c_double]
   ret = libmisc.map_to(NA, A.ctypes.data, NB, B.ctypes.data, ind.ctypes.data, c_double(rtol))
 #  print A, "map_to", B, "=>", ind
   # Filter out any unmatched indices
