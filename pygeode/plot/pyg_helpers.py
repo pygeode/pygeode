@@ -145,7 +145,7 @@ def decorate_basemap(axes, **kwargs):
 # }}}
 
 # Do a 1D line plot
-def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
+def vplot(var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
   ''' 
   Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
@@ -186,7 +186,7 @@ def vplot (var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
 # }}}
 
 # Do a 2D contour plot
-def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
+def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
 # {{{
   Z = var.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
@@ -214,7 +214,7 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, lab
 
   if clevs is None and clines is None: 
     # If both clevs and clines are None, use default
-    axes.contourf(x, y, z, **kwargs)
+    axes.contourf(x, y, z, 21, **kwargs)
 
   if not clevs is None:
     axes.contourf(x, y, z, clevs, **kwargs)
@@ -239,6 +239,46 @@ def vcontour (var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, lab
   return axes
 # }}}
 
+# Do a 2D contour plot
+def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9', mnalpha=1., transpose=None):
+# {{{
+  Z = var.squeeze()
+  assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
+  X, Y = Z.axes
+
+  # If a vertical axis is present transpose the plot
+  from pygeode.axis import ZAxis, Lat, Lon
+  if transpose is None:
+    if isinstance(X, ZAxis):
+      X, Y = Y, X
+    if isinstance(X, Lat) and isinstance(Y, Lon):
+      X, Y = Y, X
+  elif transpose:
+    X, Y = Y, X
+
+  x = scalevalues(X)
+  y = scalevalues(Y)
+  z = scalevalues(Z.transpose(Y, X))
+
+  if mnsig is None:
+    cl = [-1.1, -mjsig, mjsig, 1.1]
+    clr = ['w', mjc, 'w']
+    axes.contourf(x, y, z, cl, colors=clr, zorder=-1)
+    cnt = axes.plots[-1]
+    axes.modifycontours(cnt, ind=[0, 2], visible=False)
+    axes.modifycontours(cnt, ind=[1], edgecolor='none', alpha=mjalpha)
+  else:
+    cl = [-1.1, -mnsig,-mjsig, mjsig, mnsig, 1.1]
+    clr = ['w', mnc, mjc, mnc, 'w']
+    axes.contourf(x, y, z, cl, colors=clr, zorder=-1)
+    cnt = axes.plots[-1]
+    axes.modifycontours(cnt, ind=[0,4], visible=False)
+    axes.modifycontours(cnt, ind=[1,3], edgecolor='none', alpha=mnalpha)
+    axes.modifycontours(cnt, ind=[2], edgecolor='none', alpha=mjalpha)
+
+  return axes
+# }}}
+
 # Generic catch all interface (plotvar replacement)
 def showvar(var, **kwargs):
 # {{{
@@ -257,7 +297,7 @@ def showvar(var, **kwargs):
   '''
 
   Z = var.squeeze()
-  assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.ndim)
+  assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.naxes)
 
   fig = kwargs.pop('fig', None)
 
@@ -296,7 +336,7 @@ def showcol(vs, size=(4.1,2), **kwargs):
 
   Z = [v.squeeze() for v in vs]
 
-  assert Z[0].naxes in [1, 2], 'Variables %s has %d non-generate axes; must have 1 or 2.' % (Z.name, Z.ndim)
+  assert Z[0].naxes in [1, 2], 'Variables %s has %d non-generate axes; must have 1 or 2.' % (Z.name, Z.naxes)
 
   for z in Z[1:]:
     assert Z[0].naxes == z.naxes, 'All variables must have the same number of non-generate dimensions'
@@ -428,7 +468,9 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), **kwargs):
       axs.append(row)
       row = []
 
-  if len(row) > 0: axs.append(row)
+  if len(row) > 0: 
+    row.extend([None] * (ncol - len(row)))
+    axs.append(row)
 
   Ax = wr.grid(axs)
 
@@ -505,4 +547,4 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vcontour', 'savepages']
+__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vcontour', 'vsigmask', 'savepages']
