@@ -94,7 +94,7 @@ def correlate(X, Y, axes=None, pbar=None):
   return Rho, P
 # }}}
 
-def regress(X, Y, axes=None, pbar=None):
+def regress(X, Y, axes=None, pbar=None, N_fac=None):
 # {{{
   ''' regress(X, Y) - returns correlation between variables X and Y
       computed over axes. Returns rho_xy, and p values
@@ -149,7 +149,10 @@ def regress(X, Y, axes=None, pbar=None):
 
   m = xy/xx
   b = (y - m*x)/float(N)
-  sige = (yy - m * xy) / (N - 2.)
+
+  if N_fac is None: N_eff = N
+  else: N_eff = N / N_fac
+  sige = (yy - m * xy) / (N_eff - 2.)
   t = np.abs(m) * np.sqrt(xx / sige)
   p = tdist.cdf(t, N-2) * np.sign(m)
   xn = X.name if X.name != '' else 'X'
