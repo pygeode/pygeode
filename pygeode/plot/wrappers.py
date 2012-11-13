@@ -208,11 +208,29 @@ class PlotOp:
     pass
 # }}} 
 
-# 1D plot
+# 1D plots
 class Plot(PlotOp):
 # {{{
   def render (self, axes):
     axes.plot (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class Scatter(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.scatter (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class AxHLine(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.axhline (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class AxVLine(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.axvline (*self.plot_args, **self.plot_kwargs)
 # }}}
 
 class Legend(PlotOp):
@@ -230,18 +248,6 @@ class Text(PlotOp):
        #if tr == 'Data': self.plot_kwargs['transform'] = axes.transData
        
     pyl.figtext (*self.plot_args, **self.plot_kwargs)
-# }}}
-
-class AxHLine(PlotOp):
-# {{{
-  def render (self, axes):
-    axes.axhline (*self.plot_args, **self.plot_kwargs)
-# }}}
-
-class AxVLine(PlotOp):
-# {{{
-  def render (self, axes):
-    axes.axvline (*self.plot_args, **self.plot_kwargs)
 # }}}
 
 # Contour
@@ -270,6 +276,17 @@ class ModifyContours(PlotOp):
     coll = self.cnt._cnt.collections
     if self.ind is None: pyl.setp(coll, **self.plot_kwargs)
     else: pyl.setp([coll[i] for i in self.ind], **self.plot_kwargs)
+# }}}
+
+# Op to modify contours
+class CLabel(PlotOp):
+# {{{
+  def __init__(self, cnt, **kwargs):
+    self.cnt = cnt
+    PlotOp.__init__(self, **kwargs)
+
+  def render (self, axes):
+    pyl.clabel(self.cnt._cnt, **self.plot_kwargs)
 # }}}
 
 # Colorbar
@@ -338,6 +355,7 @@ def make_plot_member(f):
   return g
 
 plot = make_plot_func(Plot)
+scatter = make_plot_func(Scatter)
 axhline = make_plot_func(AxHLine)
 axvline = make_plot_func(AxVLine)
 legend = make_plot_func(Legend)
@@ -345,10 +363,12 @@ text = make_plot_func(Text, make_axes=False)
 contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 modifycontours = make_plot_func(ModifyContours)
+clabel = make_plot_func(CLabel)
 
-__all__ = ['plot', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'colorbar']
+__all__ = ['plot', 'scatter', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'colorbar']
 
 AxesWrapper.plot = make_plot_member(plot)
+AxesWrapper.scatter = make_plot_member(scatter)
 AxesWrapper.axhline = make_plot_member(axhline)
 AxesWrapper.axvline = make_plot_member(axvline)
 AxesWrapper.legend = make_plot_member(legend)
@@ -356,6 +376,7 @@ AxesWrapper.text = make_plot_member(text)
 AxesWrapper.contour = make_plot_member(contour)
 AxesWrapper.contourf = make_plot_member(contourf)
 AxesWrapper.modifycontours = make_plot_member(modifycontours)
+AxesWrapper.clabel = make_plot_member(clabel)
 
 # Routine for saving this plot to a file
 def save (fig, filename):

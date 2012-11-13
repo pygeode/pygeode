@@ -65,7 +65,7 @@ def scalevalues(var):
 
 def axes_parm(axis):
 # {{{
-  vals = scalevalues(axis)
+  vals = scalevalues(axis).ravel()
   lims = min(vals), max(vals)
   return axis.plotatts.get('plotscale', 'linear'), \
          _buildaxistitle(**axis.plotatts), \
@@ -86,7 +86,7 @@ def set_xaxis(axes, axis, lbl):
      axes.setp(xscale = scale, xlim = lim, xticklabels=[])
      axes.setp_xaxis(major_locator = loc)
      axes.pad = [pl, 0.1, pr, 0.3]
-# }}}
+ # }}}
 
 def set_yaxis(axes, axis, lbl):
 # {{{
@@ -181,6 +181,40 @@ def vplot(var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
   set_yaxis(axes, Y, lbly)
   lbl = _buildvartitle(var.axes, var.name, **var.plotatts)
   axes.setp(title=lbl, label=lbl)
+
+  return axes
+# }}}
+
+# Do a scatter plot
+def vscatter(varx, vary, axes=None, lblx=True, lbly=True, **kwargs):
+# {{{
+  ''' 
+  Do a scatter plot of a variable.
+
+  Parameters
+  ----------
+  varx :  :class:`Var`
+     Variable to use as abscissa values. Must have the same size as vary.
+
+  vary :  :class:`Var`
+     Variable to use as ordinate values.
+
+  Notes
+  -----
+  Wraps matplotlib.scatter
+  '''
+
+  assert varx.size == vary.size, 'Variables must have same size to do a scatter plot.'
+
+  x = scalevalues(varx).ravel()
+  y = scalevalues(vary).ravel()
+
+  axes = wr.scatter(x, y, axes=axes, **kwargs)
+
+  # Apply the custom axes args
+  axes.pad = (0.1, 0.1, 0.1, 0.1)
+  set_xaxis(axes, varx, lblx)
+  set_yaxis(axes, vary, lbly)
 
   return axes
 # }}}
@@ -547,4 +581,4 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vcontour', 'vsigmask', 'savepages']
+__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vscatter', 'vcontour', 'vsigmask', 'savepages']
