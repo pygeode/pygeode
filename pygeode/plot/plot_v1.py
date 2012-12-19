@@ -98,6 +98,7 @@ def plotvar (var, **kwargs):
 
   # Get # of dimensions - can only do 1D or 2D
   nd = len([s for s in var.shape if s > 1])
+  assert nd > 0, "the specified data has no dimensions.  Nothing to plot!"
   assert nd == 1 or nd == 2, "can only plot 1D or 2D arrays.  Try slicing along some dimensions."
 
   axes = var.axes
