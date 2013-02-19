@@ -1,3 +1,5 @@
+#include <Python.h>
+
 // Wrapper for GSL functions
 
 #include <gsl/gsl_interp.h>
@@ -22,6 +24,8 @@
   d_above: slope of extrapolation above the input field
 
 */
+
+// Raw C function
 int interpgsl (int narrays, int nxin, int nxout,
                double *xin, double *yin, double *xout, double *yout,
                int loop_xin, int loop_xout,
@@ -108,3 +112,34 @@ int interpgsl (int narrays, int nxin, int nxout,
   return 0;
 
 }
+
+static PyObject *interpcore_interpgsl (PyObject *self, PyObject *args) {
+  int narrays, nxin, nxout;
+  double *xin, *yin, *xout, *yout;
+  int loop_xin, loop_xout;
+  double d_below, d_above;
+  const gsl_interp_type *type;
+  long long xin_L, yin_L, xout_L, yout_L, type_L;
+  if (!PyArg_ParseTuple(args, "iiiLLLLiiddL",
+    &narrays, &nxin, &nxout, &xin_L, &yin_L, &xout_L, &yout_L,
+    &loop_xin, &loop_xout, &d_below, &d_above, &type_L)) return NULL;
+  // Do some unsafe casting to pointers.
+  // What's the worst that could happen?
+  xin = (double*)xin_L;
+  yin = (double*)yin_L;
+  xout = (double*)xout_L;
+  yout = (double*)yout_L;
+  type = (gsl_interp_type*)type_L;
+  interpgsl (narrays, nxin, nxout, xin, yin, xout, yout, loop_xin, loop_xout, d_below, d_above, type);
+  Py_RETURN_NONE;
+}
+
+static PyMethodDef InterpMethods[] = {
+  {"interpgsl", interpcore_interpgsl, METH_VARARGS, "Interpolate an array"},
+  {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC initinterpcore(void) {
+  (void) Py_InitModule("interpcore", InterpMethods);
+}
+

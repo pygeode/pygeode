@@ -11,7 +11,7 @@ from pygeode.libhelper import load_lib
 gslcblas = load_lib('gslcblas', Global=True)  # GSL needs some symbols from here
 gsl = load_lib('gsl', Global=True)
 
-interp = load_lib("interp")
+from pygeode import interpcore as interp
 
 del load_lib
 
@@ -111,9 +111,11 @@ class Interp (Var):
 
   def getview (self, view, pbar=None):
 # {{{
-    from pygeode.tools import point
+    from pygeode.tools import point as safe_point
     from ctypes import c_double
     import numpy as np
+    # Use unsafe pointer casting to an integer (easier to pass to C extension)
+    point = lambda x: safe_point(x).value
 
     #TODO: intelligent mapping of the input/output interpolation axes
     # Right now, we must read in the whole axis for the input.
@@ -163,10 +165,8 @@ class Interp (Var):
     ret = interp.interpgsl (narrays, ninx, noutx,
             point(inx_data), point(indata), point(outx_data), point(outdata),
             loop_inx, loop_outx,
-            c_double(self.d_below), c_double(self.d_above),
-            interp_type)
-
-    assert ret == 0
+            self.d_below, self.d_above,
+            interp_type.value)
 
     return outdata
 # }}}

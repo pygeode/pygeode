@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from distutils.core import setup, Extension
+
+interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'])
 
 # PyGeode installation script
 
@@ -13,6 +15,7 @@ setup (	name="pygeode",
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
-	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"]
+	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"],
+	ext_modules=[interpcore]
 )
 
