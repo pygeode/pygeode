@@ -75,7 +75,7 @@ def point (x):
 # {{{
   from ctypes import c_void_p
   import numpy as np
-  assert x is np.ascontiguousarray(x)
+  assert x is np.ascontiguousarray(x) or x.shape == ()
   return c_void_p(x.ctypes.data)
 # }}}
 

@@ -1,3 +1,5 @@
+#include <Python.h>
+
 /*
 
   Helper functions for manipulating time axes
@@ -582,5 +584,165 @@ int val_as_date_yearless (int n, int iyear, int imonth, int iday,
   }
 
   return 0;
+}
+
+
+/*****************   Python wrappers   ****************/
+
+// get_indices
+static PyObject *timeaxiscore_get_indices (PyObject *self, PyObject *args) {
+  int natts, *invalues, n_in, *outvalues, n_out, *indices;
+  long long invalues_L, outvalues_L, indices_L;
+  int ret;
+  if (!PyArg_ParseTuple(args, "iLiLiL", &natts, &invalues_L, &n_in, &outvalues_L, &n_out, &indices_L)) return NULL;
+  // Unsafe casting from integer to pointer
+  invalues = (int*)invalues_L;
+  outvalues = (int*)outvalues_L;
+  indices = (int*)indices_L;
+  ret = get_indices (natts, invalues, n_in, outvalues, n_out, indices);
+  return Py_BuildValue("i", ret);
+}
+
+// uniquify
+static PyObject *timeaxiscore_uniquify (PyObject *self, PyObject *args) {
+  int natts, *in_atts, n_in, *out_atts, *n_out;
+  long long in_atts_L, out_atts_L, n_out_L;
+  int ret;
+  if (!PyArg_ParseTuple(args, "iLiLL", &natts, &in_atts_L, &n_in, &out_atts_L, &n_out_L)) return NULL;
+  // Unsafe casting from integer to pointer
+  in_atts = (int*)in_atts_L;
+  out_atts = (int*)out_atts_L;
+  n_out = (int*)n_out_L;
+  ret = uniquify (natts, in_atts, n_in, out_atts, n_out);
+  return Py_BuildValue("i", ret);
+}
+
+// common_map
+static PyObject *timeaxiscore_common_map (PyObject *self, PyObject *args) {
+  int natts, na, *a, nb, *b, *nmap, *a_map, *b_map;
+  long long a_L, b_L, nmap_L, a_map_L, b_map_L;
+  int ret;
+  if (!PyArg_ParseTuple(args, "iiLiLLLL", &natts, &na, &a_L, &nb, &b_L, &nmap_L, &a_map_L, &b_map_L)) return NULL;
+  // Unsafe casting from integer to pointer
+  a = (int*)a_L;
+  b = (int*)b_L;
+  nmap = (int*)nmap_L;
+  a_map = (int*)a_map_L;
+  b_map = (int*)b_map_L;
+  ret = common_map (natts, na, a, nb, b, nmap, a_map, b_map);
+  return Py_BuildValue("i", ret);
+}
+
+typedef int (val_as_date_func) (int n, int iyear, int imonth, int iday,
+                     int ihour, int iminute, int isecond,
+                     long long int *val,
+                     int *year, int *month, int *day,
+                     int *hour, int *minute, int *second);
+
+static PyObject *val_as_date_wrapper (PyObject *args, val_as_date_func *f) {
+  int n, iyear, imonth, iday, ihour, iminute, isecond, *year, *month, *day, *hour, *minute, *second;
+  long long int *val;
+  long long val_L, year_L, month_L, day_L, hour_L, minute_L, second_L;
+  int ret;
+  if (!PyArg_ParseTuple(args, "iiiiiiiLLLLLLL", &n, &iyear, &imonth, &iday, &ihour, &iminute, &isecond, &val_L, &year_L, &month_L, &day_L, &hour_L, &minute_L, &second_L)) return NULL;
+  // Unsafe casting from integer to pointer
+  val = (long long int*) val_L;
+  year = (int*) year_L;
+  month = (int*) month_L;
+  day = (int*) day_L;
+  hour = (int*) hour_L;
+  minute = (int*) minute_L;
+  second = (int*) second_L;
+  ret = f (n, iyear, imonth, iday, ihour, iminute, isecond, val, year, month, day, hour, minute, second);
+  return Py_BuildValue("i", ret);
+
+}
+
+//val_as_date_std
+static PyObject *timeaxiscore_val_as_date_std (PyObject *self, PyObject *args) {
+  return val_as_date_wrapper (args, val_as_date_std);
+}
+
+//val_as_date_365
+static PyObject *timeaxiscore_val_as_date_365 (PyObject *self, PyObject *args) {
+  return val_as_date_wrapper (args, val_as_date_365);
+}
+
+//val_as_date_360
+static PyObject *timeaxiscore_val_as_date_360 (PyObject *self, PyObject *args) {
+  return val_as_date_wrapper (args, val_as_date_360);
+}
+
+//val_as_date_yearless
+static PyObject *timeaxiscore_val_as_date_yearless (PyObject *self, PyObject *args) {
+  return val_as_date_wrapper (args, val_as_date_yearless);
+}
+
+
+typedef int (date_as_val_func) (int n, int iyear, int imonth, int iday,
+                     int ihour, int iminute, int isecond,
+                     int *year, int *month, int *day,
+                     int *hour, int *minute, int *second,
+                     long long int *val);
+
+
+static PyObject *date_as_val_wrapper (PyObject *args, date_as_val_func *f) {
+  int n, iyear, imonth, iday, ihour, iminute, isecond, *year, *month, *day, *hour, *minute, *second;
+  long long int *val;
+  long long val_L, year_L, month_L, day_L, hour_L, minute_L, second_L;
+  int ret;
+  if (!PyArg_ParseTuple(args, "iiiiiiiLLLLLLL", &n, &iyear, &imonth, &iday, &ihour, &iminute, &isecond, &year_L, &month_L, &day_L, &hour_L, &minute_L, &second_L, &val_L)) return NULL;
+  // Unsafe casting from integer to pointer
+  val = (long long int*) val_L;
+  year = (int*) year_L;
+  month = (int*) month_L;
+  day = (int*) day_L;
+  hour = (int*) hour_L;
+  minute = (int*) minute_L;
+  second = (int*) second_L;
+  ret = f (n, iyear, imonth, iday, ihour, iminute, isecond, year, month, day, hour, minute, second, val);
+  return Py_BuildValue("i", ret);
+
+}
+
+//date_as_val_std
+static PyObject *timeaxiscore_date_as_val_std (PyObject *self, PyObject *args) {
+  return date_as_val_wrapper (args, date_as_val_std);
+}
+
+//date_as_val_365
+static PyObject *timeaxiscore_date_as_val_365 (PyObject *self, PyObject *args) {
+  return date_as_val_wrapper (args, date_as_val_365);
+}
+
+//date_as_val_360
+static PyObject *timeaxiscore_date_as_val_360 (PyObject *self, PyObject *args) {
+  return date_as_val_wrapper (args, date_as_val_360);
+}
+
+//date_as_val_yearless
+static PyObject *timeaxiscore_date_as_val_yearless (PyObject *self, PyObject *args) {
+  return date_as_val_wrapper (args, date_as_val_yearless);
+}
+
+
+
+static PyMethodDef TimeaxisMethods[] = {
+  {"get_indices", timeaxiscore_get_indices, METH_VARARGS, "Find indices mapping the input times to the output times"},
+  {"uniquify", timeaxiscore_uniquify, METH_VARARGS, "Gives unique elements of a time axis"},
+  {"common_map", timeaxiscore_common_map, METH_VARARGS, "Common map between two time axes"},
+  {"val_as_date_std", timeaxiscore_val_as_date_std, METH_VARARGS, ""},
+  {"val_as_date_365", timeaxiscore_val_as_date_365, METH_VARARGS, ""},
+  {"val_as_date_360", timeaxiscore_val_as_date_360, METH_VARARGS, ""},
+  {"val_as_date_yearless", timeaxiscore_val_as_date_yearless, METH_VARARGS, ""},
+  {"date_as_val_std", timeaxiscore_date_as_val_std, METH_VARARGS, ""},
+  {"date_as_val_365", timeaxiscore_date_as_val_365, METH_VARARGS, ""},
+  {"date_as_val_360", timeaxiscore_date_as_val_360, METH_VARARGS, ""},
+  {"date_as_val_yearless", timeaxiscore_date_as_val_yearless, METH_VARARGS, ""},
+  {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC inittimeaxiscore(void) {
+  (void) Py_InitModule("timeaxiscore", TimeaxisMethods);
 }
 

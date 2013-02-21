@@ -10,22 +10,24 @@ from pygeode.timeaxis import lib
 # NOTE: the fields are assumed to be pre-sorted
 def _uniquify (fields):
 # {{{
-  from pygeode.tools import point
+  from pygeode.tools import point as safe_point
   from pygeode.timeaxis import _argsort
-  from ctypes import c_int, byref
   import numpy as np
+  # Unsafe casting from pointer to integer (easier for extensions)
+  point = lambda x: safe_point(x).value
+
   assert len(fields) > 0, 'no fields provided'
   S = _argsort(fields)
   in_atts = np.vstack(f[S] for f in fields).transpose()
   in_atts = np.ascontiguousarray(in_atts,dtype='int32')
   out_atts = np.empty(in_atts.shape, dtype='int32')
   selection = np.empty(len(in_atts), dtype='int32')
-  nout = c_int()
+  nout = np.empty([], dtype='int32')
   ret = lib.uniquify (len(fields), point(in_atts), len(in_atts), 
-                                   point(out_atts), byref(nout))
+                                   point(out_atts), point(nout))
   assert ret == 0
 
-  nout = nout.value
+  nout = int(nout)
 
   # Convert back to a list of fields
   return list(out_atts[:nout,:].transpose())

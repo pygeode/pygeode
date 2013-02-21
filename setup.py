@@ -3,6 +3,7 @@
 from distutils.core import setup, Extension
 
 interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'])
+timeaxiscore = Extension ('pygeode.timeaxiscore', sources=['pygeode/timeaxis.c'], extra_compile_args=['-std=c99'])
 
 # PyGeode installation script
 
@@ -16,6 +17,6 @@ setup (	name="pygeode",
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
 	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"],
-	ext_modules=[interpcore]
+	ext_modules=[interpcore, timeaxiscore]
 )
 

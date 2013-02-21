@@ -10,10 +10,8 @@
 #      same values as if we went directly from the instantaneous to annual mean.
 
 
-# helper C library (for things that numpy can't do easily)
-from pygeode.libhelper import load_lib
-lib = load_lib("timeaxis")
-del load_lib
+# helper C extension (for things that numpy can't do easily)
+from pygeode import timeaxiscore as lib
 
 months = ['Smarch', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -167,7 +165,9 @@ class Time (TAxis):
   # {{{
     ''' Define a mapping between this time axis and another one '''
     import numpy as np
-    from ctypes import c_void_p
+    from pygeode.tools import point as safe_point
+    # Unsafe casting from pointer to integer (easier for extensions)
+    point = lambda x: safe_point(x).value
 
     if not type(self) is type(other): return None
     #isinstance(other,Time): return None
@@ -193,9 +193,9 @@ class Time (TAxis):
     myvalues = np.ascontiguousarray(myvalues,'int32')
     othervalues = np.ascontiguousarray(othervalues,'int32')
     indices = np.empty(len(other), 'int32')
-    ret = lib.get_indices (nfields, c_void_p(myvalues.ctypes.data), len(myvalues), 
-                           c_void_p(othervalues.ctypes.data), len(othervalues), 
-                           c_void_p(indices.ctypes.data))
+    ret = lib.get_indices (nfields, point(myvalues), len(myvalues), 
+                           point(othervalues), len(othervalues), 
+                           point(indices))
 
 #    print othervalues, "map_to", myvalues, "=>", indices
     assert ret == 0
@@ -212,8 +212,9 @@ class Time (TAxis):
 # {{{
     '''return the indices that map common elements from one time axis to another'''
     import numpy as np
-    from pygeode.tools import point
-    from ctypes import c_int, byref
+    from pygeode.tools import point as safe_point
+    # Unsafe casting from pointer to integer (easier for extensions)
+    point = lambda x: safe_point(x).value
 
 #    print 'common_map:'
 #    print self
@@ -240,9 +241,9 @@ class Time (TAxis):
     b_map = np.empty(nmap, 'int32')
 
     # Call the C routine
-    nmap = c_int(nmap)
-    ier = lib.common_map(len(self_f), na, point(a), nb, point(b), byref(nmap), point(a_map), point(b_map))
-    nmap = nmap.value
+    nmap = np.array(nmap, dtype='int32')
+    ier = lib.common_map(len(self_f), na, point(a), nb, point(b), point(nmap), point(a_map), point(b_map))
+    nmap = int(nmap)
 
     # filter out unmapped indices
     a_map = a_map[:nmap]
@@ -587,7 +588,9 @@ class CalendarTime(Time):
   def val_as_date (self, vals = None, startdate = None, units = None, allfields=False):
   # {{{
     import numpy as np
-    from pygeode.tools import point
+    from pygeode.tools import point as safe_point
+    # Unsafe casting from pointer to integer (easier for extensions)
+    point = lambda x: safe_point(x).value
 
     if vals is None: vals = self.values
     if startdate is None: startdate = self.startdate
@@ -622,7 +625,9 @@ class CalendarTime(Time):
   def date_as_val (self, dates = None, startdate = None, units = None):
   # {{{
     import numpy as np
-    from pygeode.tools import point
+    from pygeode.tools import point as safe_point
+    # Unsafe casting from pointer to integer (easier for extensions)
+    point = lambda x: safe_point(x).value
 
     if dates is None: dates = self.auxarrays
     if startdate is None: startdate = self.startdate
