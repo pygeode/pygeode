@@ -694,17 +694,18 @@ class Lat (YAxis):
   # }}}
 # }}}
 
-from pygeode.libhelper import load_lib
-def gausslat (n, order=1, axis_dict={}, lib=load_lib("quadrule")):
+def gausslat (n, order=1, axis_dict={}):
 # {{{
   '''Gaussian latitude axis'''
+  from pygeode.quadrulepy import legendre_compute
   import numpy as np
   from math import pi
-  from ctypes import c_void_p
+  from pygeode.tools import point as safe_point
+  point = lambda x: safe_point(x).value
   if n in axis_dict: return axis_dict[n]
   x = np.empty([n],'d')
   w = np.empty([n],'d')
-  lib.legendre_compute(n,c_void_p(x.ctypes.data),c_void_p(w.ctypes.data))
+  legendre_compute(n,point(x),point(w))
   x = np.arcsin(x) / pi * 180
 
   x = x[::order]
@@ -715,7 +716,6 @@ def gausslat (n, order=1, axis_dict={}, lib=load_lib("quadrule")):
   return axis
 # }}}
 
-del load_lib
 
 
 # Spectral axes
