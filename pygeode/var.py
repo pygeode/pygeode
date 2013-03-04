@@ -7,6 +7,7 @@
 class SL:
   def __init__(self, v): self.v = v
   def __getitem__ (self, slices):  return self.v._getitem_asvar(slices)
+  def __len__ (self): return len(self.v)
 
 #TODO: make Vars truly immutable (i.e. use 'slots' or something?).  Then:
 #TODO: get rid of dynamic references to axes (__getattr__) - causes too many headaches!

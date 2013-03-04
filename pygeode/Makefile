@@ -1,4 +1,4 @@
 SUBDIRS = formats server plugins plot
-LIBS = tools svd eof
+LIBS = svd eof
 
 include rules.mk

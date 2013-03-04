@@ -1,3 +1,5 @@
+#include <Python.h>
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -224,6 +226,7 @@ PARTIAL_SUM (float32);
 PARTIAL_SUM (float64);
 PARTIAL_SUM (int32);
 PARTIAL_SUM (int64);
+#undef PARTIAL_SUM
 
 typedef struct {
   float32 real;
@@ -258,4 +261,86 @@ int partial_sum_##TYPE (int nx, int nin, int nout, int ny, 		\
 
 PARTIAL_SUM_COMPLEX (complex64);
 PARTIAL_SUM_COMPLEX (complex128);
+#undef PARTIAL_SUM_COMPLEX
+
+
+/***** Python wrappers *****/
+
+static PyObject *toolscore_map_to (PyObject *self, PyObject *args) {
+  int na, nb, *indices;
+  double *a_orig, *b_orig, rtol;
+  long long a_orig_L, b_orig_L, indices_L;
+
+  if (!PyArg_ParseTuple(args, "iLiLLd",
+    &na, &a_orig_L, &nb, &b_orig_L, &indices_L, &rtol)) return NULL;
+  // Do some unsafe casting to pointers.
+  // What's the worst that could happen?
+  indices = (int*)indices_L;
+  a_orig = (double*)a_orig_L;
+  b_orig = (double*)b_orig_L;
+  map_to (na, a_orig, nb, b_orig, indices, rtol);
+  Py_RETURN_NONE;
+}
+
+static PyObject *toolscore_common_map (PyObject *self, PyObject *args) {
+
+  int na, nb, *nmap, *a_map, *b_map;
+  double *a, *b;
+  long long nmap_L, a_map_L, b_map_L, a_L, b_L;
+
+  if (!PyArg_ParseTuple(args, "iLiLLLL",
+    &na, &a_L, &nb, &b_L, &nmap_L, &a_map_L, &b_map_L)) return NULL;
+  // Do some unsafe casting to pointers.
+  // What's the worst that could happen?
+  a = (double*)a_L;
+  b = (double*)b_L;
+  nmap = (int*)nmap_L;
+  a_map = (int*)a_map_L;
+  b_map = (int*)b_map_L;
+
+  common_map (na, a, nb, b, nmap, a_map, b_map);
+  Py_RETURN_NONE;
+}
+
+#define WRAP_PARTIAL_SUM(TYPE)						\
+static PyObject *toolscore_partial_sum_##TYPE (PyObject *self, PyObject *args){\
+  int nx, nin, nout, ny, *count, *outmap;				\
+  TYPE *in, *out;							\
+  long long count_L, outmap_L, in_L, out_L;				\
+  if (!PyArg_ParseTuple(args, "iiiiLLLL",				\
+    &nx, &nin, &nout, &ny, &in_L, &out_L, &count_L, &outmap_L)) return NULL;\
+  /* Do some unsafe casting to pointers.*/				\
+  /* What's the worst that could happen?*/				\
+  count = (int*)count_L;						\
+  outmap = (int*)outmap_L;						\
+  in = (TYPE*)in_L;							\
+  out = (TYPE*)out_L;							\
+  partial_sum_##TYPE (nx, nin, nout, ny, in, out, count, outmap);	\
+  Py_RETURN_NONE;							\
+}
+
+WRAP_PARTIAL_SUM(float32);
+WRAP_PARTIAL_SUM(float64);
+WRAP_PARTIAL_SUM(int32);
+WRAP_PARTIAL_SUM(int64);
+WRAP_PARTIAL_SUM(complex64);
+WRAP_PARTIAL_SUM(complex128);
+
+#undef WRAP_PARTIAL_SUM
+
+static PyMethodDef ToolsMethods[] = {
+  {"map_to", toolscore_map_to, METH_VARARGS, ""},
+//  {"common_map", toolscore_common_map, METH_VARARGS, ""},
+  {"partial_sum_float32", toolscore_partial_sum_float32, METH_VARARGS, ""},
+  {"partial_sum_float64", toolscore_partial_sum_float64, METH_VARARGS, ""},
+  {"partial_sum_int32", toolscore_partial_sum_int32, METH_VARARGS, ""},
+  {"partial_sum_int64", toolscore_partial_sum_int64, METH_VARARGS, ""},
+  {"partial_sum_complex64", toolscore_partial_sum_complex64, METH_VARARGS, ""},
+  {"partial_sum_complex128", toolscore_partial_sum_complex128, METH_VARARGS, ""},
+  {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC inittoolscore(void) {
+  (void) Py_InitModule("toolscore", ToolsMethods);
+}
 

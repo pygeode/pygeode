@@ -68,7 +68,7 @@ def load_lib (name, Global=False):
 # (above code kept for compatibility while transition plugins, etc.)
 from pygeode.libhelper import load_lib as new_load_lib
 # Some compiled code used by this python module
-libmisc = new_load_lib("tools")
+from pygeode import toolscore as libmisc
 
 # C Pointer to a numpy array
 def point (x):
@@ -265,19 +265,17 @@ def shared_axes(axes, sets):
 def map_to (a, b, rtol=1e-5):
 # {{{
   import numpy as np
-  from ctypes import c_int, c_double, byref, c_void_p
+  pnt = lambda x: point(x).value
   A = np.ascontiguousarray(a, 'd')
-  NA = c_int(len(A))
+  NA = len(A)
   B = np.ascontiguousarray(b, 'd')
-  NB = c_int(len(B))
+  NB = len(B)
   ind = np.zeros(len(B), 'int32')
 #  print hex(ind.ctypes.data)
 #  nind = c_int(0)
-  libmisc.map_to.argtypes = [c_int, c_void_p, c_int, c_void_p, c_void_p, c_double]
-  ret = libmisc.map_to(NA, A.ctypes.data, NB, B.ctypes.data, ind.ctypes.data, c_double(rtol))
+  ret = libmisc.map_to(NA, pnt(A), NB, pnt(B), pnt(ind), rtol)
 #  print A, "map_to", B, "=>", ind
   # Filter out any unmatched indices
-  assert ret == 0
   ind = ind[ind>=0]  #ignore unmatched values
   return ind
 # }}}
@@ -300,6 +298,7 @@ def order (a):
 
 # }}}
 
+"""
 # Map between two arrays
 # (Finds elements that can map between the two arrays, and returns the indices referencing them
 # i.e. (1,3,5,7,9,11,13,17,19,23,29,31,27,41) and (1,2,3,5,8,13,21,34,55) give:
@@ -335,6 +334,7 @@ def common_map (a, b):
   b_map = b_ind[b_map]
   return a_map, b_map
 # }}}
+"""
 
 """
 def npsum(a, axes):
@@ -429,6 +429,7 @@ def loopover (vars, outview, inaxes=None, pbar=None):
 def partial_sum (arr, sl, bigout, bigcount, iaxis, outmap):
 # {{{
   import numpy as np
+  pnt = lambda x: point(x).value
 
 #  out = np.zeros(arr.shape[:iaxis] + (bigout.shape[iaxis],) + arr.shape[iaxis+1:], dtype=bigout.dtype)
   out = np.zeros(arr.shape[:iaxis] + (bigout.shape[iaxis],) + arr.shape[iaxis+1:], dtype=arr.dtype)
@@ -452,8 +453,7 @@ def partial_sum (arr, sl, bigout, bigcount, iaxis, outmap):
   nout = out.shape[iaxis]
   ny = int(np.product(arr.shape[iaxis+1:]))
   func = getattr(libmisc,'partial_sum_'+arr.dtype.name)
-  ier = func (nx, nin, nout, ny, point(arr), point(out), point(count), point(outmap))
-  assert ier == 0
+  func (nx, nin, nout, ny, pnt(arr), pnt(out), pnt(count), pnt(outmap))
 
   bigout[sl] += out
   bigcount[sl] += count
