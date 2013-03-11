@@ -1,4 +1,5 @@
 #include <Python.h>
+#include <numpy/arrayobject.h>
 
 #include <math.h>
 #include <stdio.h>
@@ -268,20 +269,41 @@ PARTIAL_SUM_COMPLEX (complex128);
 
 static PyObject *toolscore_map_to (PyObject *self, PyObject *args) {
   int na, nb, *indices;
-  double *a_orig, *b_orig, rtol;
-  long long a_orig_L, b_orig_L, indices_L;
+  double *a, *b, rtol;
+  PyObject *a_obj, *b_obj;
+  PyArrayObject *a_array, *b_array, *indices_array;
 
-  if (!PyArg_ParseTuple(args, "iLiLLd",
-    &na, &a_orig_L, &nb, &b_orig_L, &indices_L, &rtol)) return NULL;
-  // Do some unsafe casting to pointers.
-  // What's the worst that could happen?
-  indices = (int*)indices_L;
-  a_orig = (double*)a_orig_L;
-  b_orig = (double*)b_orig_L;
-  map_to (na, a_orig, nb, b_orig, indices, rtol);
-  Py_RETURN_NONE;
+  if (!PyArg_ParseTuple(args, "OOd", &a_obj, &b_obj, &rtol)) return NULL;
+
+  // Make sure the arrays are contiguous, and of the right type
+  a_array = (PyArrayObject*)PyArray_ContiguousFromObject(a_obj,NPY_DOUBLE,1,1);
+  b_array = (PyArrayObject*)PyArray_ContiguousFromObject(b_obj,NPY_DOUBLE,1,1);
+  if (a_array == NULL || b_array == NULL) return NULL;
+
+  na = a_array->dimensions[0];
+  nb = b_array->dimensions[0];
+
+  // Create an output array for the indices
+  indices_array = (PyArrayObject*)PyArray_FromDims(1, &nb, NPY_INT);
+  if (indices_array == NULL) return NULL;
+
+  // Get the C-level parameters
+  a = (double*)a_array->data;
+  b = (double*)b_array->data;
+  indices = (int*)indices_array->data;
+
+  // Call the C function
+  map_to (na, a, nb, b, indices, rtol);
+
+  // Clean up internal objects
+  Py_DECREF(a_array);
+  Py_DECREF(b_array);
+
+  return PyArray_Return(indices_array);
+
 }
 
+/*** not used
 static PyObject *toolscore_common_map (PyObject *self, PyObject *args) {
 
   int na, nb, *nmap, *a_map, *b_map;
@@ -301,20 +323,22 @@ static PyObject *toolscore_common_map (PyObject *self, PyObject *args) {
   common_map (na, a, nb, b, nmap, a_map, b_map);
   Py_RETURN_NONE;
 }
+***/
 
 #define WRAP_PARTIAL_SUM(TYPE)						\
 static PyObject *toolscore_partial_sum_##TYPE (PyObject *self, PyObject *args){\
   int nx, nin, nout, ny, *count, *outmap;				\
   TYPE *in, *out;							\
-  long long count_L, outmap_L, in_L, out_L;				\
-  if (!PyArg_ParseTuple(args, "iiiiLLLL",				\
-    &nx, &nin, &nout, &ny, &in_L, &out_L, &count_L, &outmap_L)) return NULL;\
-  /* Do some unsafe casting to pointers.*/				\
-  /* What's the worst that could happen?*/				\
-  count = (int*)count_L;						\
-  outmap = (int*)outmap_L;						\
-  in = (TYPE*)in_L;							\
-  out = (TYPE*)out_L;							\
+  PyArrayObject *count_array, *outmap_array, *in_array, *out_array;	\
+  if (!PyArg_ParseTuple(args, "iiiiO!O!O!O!",				\
+    &nx, &nin, &nout, &ny, &PyArray_Type, &in_array, 			\
+    &PyArray_Type, &out_array, &PyArray_Type, &count_array,		\
+    &PyArray_Type, &outmap_array)) return NULL;				\
+  /* Assume all arrays are contiguous and of the right type */		\
+  count = (int*)count_array->data;					\
+  outmap = (int*)outmap_array->data;					\
+  in = (TYPE*)in_array->data;						\
+  out = (TYPE*)out_array->data;						\
   partial_sum_##TYPE (nx, nin, nout, ny, in, out, count, outmap);	\
   Py_RETURN_NONE;							\
 }
@@ -342,5 +366,6 @@ static PyMethodDef ToolsMethods[] = {
 
 PyMODINIT_FUNC inittoolscore(void) {
   (void) Py_InitModule("toolscore", ToolsMethods);
+  import_array();
 }
 

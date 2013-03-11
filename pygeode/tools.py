@@ -264,17 +264,7 @@ def shared_axes(axes, sets):
 # (very similar to np.searchsorted, but it includes an error tolerance)
 def map_to (a, b, rtol=1e-5):
 # {{{
-  import numpy as np
-  pnt = lambda x: point(x).value
-  A = np.ascontiguousarray(a, 'd')
-  NA = len(A)
-  B = np.ascontiguousarray(b, 'd')
-  NB = len(B)
-  ind = np.zeros(len(B), 'int32')
-#  print hex(ind.ctypes.data)
-#  nind = c_int(0)
-  ret = libmisc.map_to(NA, pnt(A), NB, pnt(B), pnt(ind), rtol)
-#  print A, "map_to", B, "=>", ind
+  ind = libmisc.map_to(a, b, rtol)
   # Filter out any unmatched indices
   ind = ind[ind>=0]  #ignore unmatched values
   return ind
@@ -429,7 +419,6 @@ def loopover (vars, outview, inaxes=None, pbar=None):
 def partial_sum (arr, sl, bigout, bigcount, iaxis, outmap):
 # {{{
   import numpy as np
-  pnt = lambda x: point(x).value
 
 #  out = np.zeros(arr.shape[:iaxis] + (bigout.shape[iaxis],) + arr.shape[iaxis+1:], dtype=bigout.dtype)
   out = np.zeros(arr.shape[:iaxis] + (bigout.shape[iaxis],) + arr.shape[iaxis+1:], dtype=arr.dtype)
@@ -453,7 +442,7 @@ def partial_sum (arr, sl, bigout, bigcount, iaxis, outmap):
   nout = out.shape[iaxis]
   ny = int(np.product(arr.shape[iaxis+1:]))
   func = getattr(libmisc,'partial_sum_'+arr.dtype.name)
-  func (nx, nin, nout, ny, pnt(arr), pnt(out), pnt(count), pnt(outmap))
+  func (nx, nin, nout, ny, arr, out, count, outmap)
 
   bigout[sl] += out
   bigcount[sl] += count
