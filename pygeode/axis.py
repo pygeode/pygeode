@@ -700,19 +700,15 @@ def gausslat (n, order=1, axis_dict={}):
   from pygeode.quadrulepy import legendre_compute
   import numpy as np
   from math import pi
-  from pygeode.tools import point as safe_point
-  point = lambda x: safe_point(x).value
-  if n in axis_dict: return axis_dict[n]
-  x = np.empty([n],'d')
-  w = np.empty([n],'d')
-  legendre_compute(n,point(x),point(w))
+  if (n,order) in axis_dict: return axis_dict[(n,order)]
+  x, w = legendre_compute(n)
   x = np.arcsin(x) / pi * 180
 
   x = x[::order]
   w = w[::order]
 
   axis = Lat (x, weights=w)
-  axis_dict[n] = axis
+  axis_dict[(n,order)] = axis
   return axis
 # }}}
 

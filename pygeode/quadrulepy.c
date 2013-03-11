@@ -1,4 +1,5 @@
 #include <Python.h>
+#include <numpy/arrayobject.h>
 
 # include <stdlib.h>
 # include <stdio.h>
@@ -12,14 +13,25 @@
 static PyObject *quadrulepy_legendre_compute (PyObject *self, PyObject *args) {
   int order;
   double *xtab, *weight;
-  long long xtab_L, weight_L;
-  if (!PyArg_ParseTuple(args, "iLL", &order, &xtab_L, &weight_L)) return NULL;
-  // Do some unsafe casting to pointers.
-  // What's the worst that could happen?
-  xtab = (double*)xtab_L;
-  weight = (double*)weight_L;
+  PyArrayObject *xtab_array, *weight_array;
+  PyObject *result;
+  if (!PyArg_ParseTuple(args, "i", &order)) return NULL;
+  // Allocate the output arrays
+  xtab_array = (PyArrayObject*)PyArray_FromDims(1,&order,NPY_DOUBLE);
+  weight_array = (PyArrayObject*)PyArray_FromDims(1,&order,NPY_DOUBLE);
+  if (xtab_array == NULL || weight_array == NULL) return NULL;
+  // Extract C arrays
+  xtab = (double*)xtab_array->data;
+  weight = (double*)weight_array->data;
+
   legendre_compute (order, xtab, weight);
-  Py_RETURN_NONE;
+
+  // Return the 2 arrays
+  result = Py_BuildValue("(O,O)", xtab_array, weight_array);
+  if (result == NULL) return NULL;
+  Py_DECREF(xtab_array);
+  Py_DECREF(weight_array);
+  return result;
 }
 
 
@@ -31,5 +43,6 @@ static PyMethodDef QuadrulepyMethods[] = {
 
 PyMODINIT_FUNC initquadrulepy(void) {
   (void) Py_InitModule("quadrulepy", QuadrulepyMethods);
+  import_array();
 }
 
