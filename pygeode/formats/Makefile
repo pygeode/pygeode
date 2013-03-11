@@ -1,4 +1,4 @@
-LIBS = grib opendap index
+LIBS = grib opendap
 
 include ../rules.mk
 
