@@ -17,8 +17,8 @@ static PyObject *quadrulepy_legendre_compute (PyObject *self, PyObject *args) {
   PyObject *result;
   if (!PyArg_ParseTuple(args, "i", &order)) return NULL;
   // Allocate the output arrays
-  xtab_array = (PyArrayObject*)PyArray_FromDims(1,&order,NPY_DOUBLE);
-  weight_array = (PyArrayObject*)PyArray_FromDims(1,&order,NPY_DOUBLE);
+  xtab_array = (PyArrayObject*)PyArray_SimpleNew(1,&order,NPY_DOUBLE);
+  weight_array = (PyArrayObject*)PyArray_SimpleNew(1,&order,NPY_DOUBLE);
   if (xtab_array == NULL || weight_array == NULL) return NULL;
   // Extract C arrays
   xtab = (double*)xtab_array->data;

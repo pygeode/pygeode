@@ -284,7 +284,7 @@ static PyObject *toolscore_map_to (PyObject *self, PyObject *args) {
   nb = b_array->dimensions[0];
 
   // Create an output array for the indices
-  indices_array = (PyArrayObject*)PyArray_FromDims(1, &nb, NPY_INT);
+  indices_array = (PyArrayObject*)PyArray_SimpleNew(1, &nb, NPY_INT);
   if (indices_array == NULL) return NULL;
 
   // Get the C-level parameters
