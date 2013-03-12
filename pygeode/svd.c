@@ -1,3 +1,6 @@
+#include <Python.h>
+#include <numpy/arrayobject.h>
+
 #include <math.h>   // for sqrt
 
 // low-level functions to assist in calculating EOFs
@@ -154,3 +157,120 @@ int fixcov (int num_eofs, int nt, int nx, double *pcA, double *pcB, double *eofB
   }
   return 0;
 }
+
+/*** Python wrappers ***/
+
+static PyObject *svdcore_build_svds (PyObject *self, PyObject *args) {
+  int num_svds, nt, nx1, nx2;
+  double *input1, *input2, *oldeofs, *neweofs, *pcs;
+  PyArrayObject *input1_array, *input2_array, *oldeofs_array, *neweofs_array, *pcs_array;
+
+  // Assume the arrays are contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiiiO!O!O!O!O!",
+    &num_svds, &nt, &nx1, &nx2,
+    &PyArray_Type, &input1_array, &PyArray_Type, &input2_array,
+    &PyArray_Type, &oldeofs_array, &PyArray_Type, &neweofs_array,
+    &PyArray_Type, &pcs_array)) return NULL;
+
+  input1 = (double*)input1_array->data;
+  input2 = (double*)input2_array->data;
+  oldeofs = (double*)oldeofs_array->data;
+  neweofs = (double*)neweofs_array->data;
+  pcs = (double*)pcs_array->data;
+
+  // Call the C function
+  int ret = build_svds (num_svds, nt, nx1, nx2, input1, input2, oldeofs, neweofs, pcs);
+
+  return Py_BuildValue("i", ret);
+}
+
+static PyObject *svdcore_dot (PyObject *self, PyObject *args) {
+  int num_eofs, nx;
+  double *U, *V, *out;
+  PyArrayObject *U_array, *V_array, *out_array;
+
+  // Assume the arrays are contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiO!O!O!",
+    &num_eofs, &nx, &PyArray_Type, &U_array, &PyArray_Type, &V_array,
+    &PyArray_Type, &out_array)) return NULL;
+
+  U = (double*)U_array->data;
+  V = (double*)V_array->data;
+  out = (double*)out_array->data;
+
+  // Call the C function
+  dot (num_eofs, nx, U, V, out);
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *svdcore_transform (PyObject *self, PyObject *args) {
+  int num_eofs, nx;
+  double *P, *U;
+  PyArrayObject *P_array, *U_array;
+
+  // Assume the arrays are contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiO!O!",
+    &num_eofs, &nx, &PyArray_Type, &P_array, &PyArray_Type, &U_array)) return NULL;
+
+  P = (double*)P_array->data;
+  U = (double*)U_array->data;
+
+  // Call the C function
+  transform (num_eofs, nx, P, U);
+
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *svdcore_normalize (PyObject *self, PyObject *args) {
+  int num_eofs, nx;
+  double *U;
+  PyArrayObject *U_array;
+
+  // Assume the arrays are contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiO!",
+    &num_eofs, &nx, &PyArray_Type, &U_array)) return NULL;
+
+  U = (double*)U_array->data;
+
+  // Call the C function
+  normalize (num_eofs, nx, U);
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *svdcore_fixcov (PyObject *self, PyObject *args) {
+  int num_eofs, nt, nx;
+  double *pcA, *pcB, *eofB;
+  PyArrayObject *pcA_array, *pcB_array, *eofB_array;
+
+  // Assume the arrays are contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiiO!O!O!",
+    &num_eofs, &nt, &nx, &PyArray_Type, &pcA_array, &PyArray_Type, &pcB_array,
+    &PyArray_Type, &eofB_array)) return NULL;
+
+  pcA = (double*)pcA_array->data;
+  pcB = (double*)pcB_array->data;
+  eofB = (double*)eofB_array->data;
+
+  // Call the C function
+  fixcov (num_eofs, nt, nx, pcA, pcB, eofB);
+
+  Py_RETURN_NONE;
+}
+
+static PyMethodDef SVDMethods[] = {
+  {"build_svds", svdcore_build_svds, METH_VARARGS, ""},
+  {"dot", svdcore_dot, METH_VARARGS, ""},
+  {"transform", svdcore_transform, METH_VARARGS, ""},
+  {"normalize", svdcore_normalize, METH_VARARGS, ""},
+  {"fixcov", svdcore_fixcov, METH_VARARGS, ""},
+  {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC initsvdcore(void) {
+  (void) Py_InitModule("svdcore", SVDMethods);
+  import_array();
+}
+

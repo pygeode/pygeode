@@ -54,11 +54,9 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
   from pygeode.timeaxis import Time
   from pygeode.var import Var
   from pygeode.view import View
-  from pygeode.tools import point
-  from pygeode.libhelper import load_lib
   from pygeode import MAX_ARRAY_SIZE
   from warnings import warn
-  lib = load_lib("svd")
+  from pygeode import svdcore as lib
 
   if matrix in ('cov', 'covariance'): matrix = 'cov'
   elif matrix in ('cor', 'corr', 'correlation'): matrix = 'cor'
@@ -205,19 +203,19 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
       chunk2 = view2.modify_slice(0, slice(t,t+nt)).get(var2)
       chunk2 = np.ascontiguousarray(chunk2, dtype='d')
 
-      ier = lib.build_svds (subspace, nt, NX1, NX2, point(chunk1), point(chunk2),
-                            point(X), point(Y), point(pcs2[t,...]))
+      ier = lib.build_svds (subspace, nt, NX1, NX2, chunk1, chunk2,
+                            X, Y, pcs2[t,...])
       assert ier == 0
-      ier = lib.build_svds (subspace, nt, NX2, NX1, point(chunk2), point(chunk1),
-                            point(U), point(V), point(pcs1[t,...]))
+      ier = lib.build_svds (subspace, nt, NX2, NX1, chunk2, chunk1,
+                            U, V, pcs1[t,...])
       assert ier == 0
 
 
     # Useful dot products
-    lib.dot(subspace, NX1, point(U), point(Y), point(UtAX))
-    lib.dot(subspace, NX2, point(V), point(V), point(VtV))
-    lib.dot(subspace, NX1, point(Y), point(U), point(XtAtU))
-    lib.dot(subspace, NX1, point(Y), point(Y), point(YtY))
+    lib.dot(subspace, NX1, U, Y, UtAX)
+    lib.dot(subspace, NX2, V, V, VtV)
+    lib.dot(subspace, NX1, Y, U, XtAtU)
+    lib.dot(subspace, NX1, Y, Y, YtY)
 
     # Compute surrogate matrices (using all available information from this iteration)
     A1, residues, rank, s = np.linalg.lstsq(UtAX,VtV,rcond=1e-30)
@@ -240,12 +238,12 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
     print D
 
     # Translate the surrogate eigenvectors to an estimate of the true eigenvectors
-    lib.transform(subspace, NX1, point(Qy), point(Y))
-    lib.transform(subspace, NX2, point(Qv), point(V))
+    lib.transform(subspace, NX1, Qy, Y)
+    lib.transform(subspace, NX2, Qv, V)
 
     # Normalize
-    lib.normalize (subspace, NX1, point(Y))
-    lib.normalize (subspace, NX2, point(V))
+    lib.normalize (subspace, NX1, Y)
+    lib.normalize (subspace, NX2, V)
 
     if not np.allclose(U[:num,...],Y[:num,...], atol=0): continue
     if not np.allclose(X[:num,...],V[:num,...], atol=0): continue
@@ -255,7 +253,7 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
   assert iter_num != MAX_ITER, "no convergence"
 
   # Flip the sign of the var2 EOFs and PCs so that the covariance is positive
-  lib.fixcov (subspace, NT, NX2, point(pcs1), point(pcs2), point(V))
+  lib.fixcov (subspace, NT, NX2, pcs1, pcs2, V)
 
   # Wrap as pygeode vars, and return
   # Only need some of the eofs for output (the rest might not have even converged yet)
