@@ -2,7 +2,7 @@
 
 from distutils.core import setup, Extension
 
-interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'])
+interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'], libraries=['gslcblas','gsl'])
 timeaxiscore = Extension ('pygeode.timeaxiscore', sources=['pygeode/timeaxis.c'], extra_compile_args=['-std=c99'])
 quadrulepy = Extension ('pygeode.quadrulepy', sources=['pygeode/quadrule.c','pygeode/quadrulepy.c'])
 toolscore = Extension ('pygeode.toolscore', sources=['pygeode/tools.c'], extra_compile_args=['-std=c99'])

@@ -1,4 +1,5 @@
 #include <Python.h>
+#include <numpy/arrayobject.h>
 
 // Wrapper for GSL functions
 
@@ -119,18 +120,45 @@ static PyObject *interpcore_interpgsl (PyObject *self, PyObject *args) {
   int loop_xin, loop_xout;
   double d_below, d_above;
   const gsl_interp_type *type;
-  long long xin_L, yin_L, xout_L, yout_L, type_L;
-  if (!PyArg_ParseTuple(args, "iiiLLLLiiddL",
-    &narrays, &nxin, &nxout, &xin_L, &yin_L, &xout_L, &yout_L,
-    &loop_xin, &loop_xout, &d_below, &d_above, &type_L)) return NULL;
-  // Do some unsafe casting to pointers.
-  // What's the worst that could happen?
-  xin = (double*)xin_L;
-  yin = (double*)yin_L;
-  xout = (double*)xout_L;
-  yout = (double*)yout_L;
-  type = (gsl_interp_type*)type_L;
+  PyObject *xin_obj, *yin_obj, *xout_obj;
+  PyArrayObject *xin_array, *yin_array, *xout_array, *yout_array;
+  const char *type_str;
+  // Assume the output array is contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiiOOOO!iidds",
+    &narrays, &nxin, &nxout, &xin_obj, &yin_obj, &xout_obj,
+    &PyArray_Type, &yout_array,
+    &loop_xin, &loop_xout, &d_below, &d_above, &type_str)) return NULL;
+  // Make sure the input arrays are contiguous and of the right type
+  xin_array = (PyArrayObject*)PyArray_ContiguousFromObject(xin_obj,NPY_DOUBLE,1,0);
+  yin_array = (PyArrayObject*)PyArray_ContiguousFromObject(yin_obj,NPY_DOUBLE,1,0);
+  xout_array = (PyArrayObject*)PyArray_ContiguousFromObject(xout_obj,NPY_DOUBLE,1,0);
+  if (xin_array == NULL || yin_array == NULL || xout_array == NULL) return NULL;
+
+  xin = (double*)xin_array->data;
+  yin = (double*)yin_array->data;
+  xout = (double*)xout_array->data;
+  yout = (double*)yout_array->data;
+
+  // Determine the interpolation type
+  if (strcmp(type_str,"linear")==0) type = gsl_interp_linear;
+  else if (strcmp(type_str,"polynomial")==0) type = gsl_interp_polynomial;
+  else if (strcmp(type_str,"cspline")==0) type = gsl_interp_cspline;
+  else if (strcmp(type_str,"cspline_periodic")==0) type = gsl_interp_cspline_periodic;
+  else if (strcmp(type_str,"akima")==0) type = gsl_interp_akima;
+  else if (strcmp(type_str,"akima_periodic")==0) type = gsl_interp_akima_periodic;
+  else {
+    PyErr_SetString(PyExc_KeyError, type_str);
+    return NULL;
+  }
+
+  // Call the C function
   interpgsl (narrays, nxin, nxout, xin, yin, xout, yout, loop_xin, loop_xout, d_below, d_above, type);
+
+  // Clean up internal objects
+  Py_DECREF(xin_array);
+  Py_DECREF(xout_array);
+  Py_DECREF(yin_array);
+
   Py_RETURN_NONE;
 }
 
@@ -141,5 +169,6 @@ static PyMethodDef InterpMethods[] = {
 
 PyMODINIT_FUNC initinterpcore(void) {
   (void) Py_InitModule("interpcore", InterpMethods);
+  import_array();
 }
 

@@ -4,25 +4,7 @@
 #TODO
 
 from pygeode.var import Var
-
-from pygeode.libhelper import load_lib
-
-
-gslcblas = load_lib('gslcblas', Global=True)  # GSL needs some symbols from here
-gsl = load_lib('gsl', Global=True)
-
-from pygeode import interpcore as interp
-
-del load_lib
-
-
-# Interpolation types from GSL
-import ctypes
-interp_types = dict([t,ctypes.c_void_p.in_dll(gsl,'gsl_interp_'+t)]
-  for t in ['linear', 'polynomial', 'cspline', 'cspline_periodic', 'akima', 'akima_periodic']
-)
-del ctypes
-
+from pygeode import interpcore
 
 # Sorted var
 # (sorted along a certain axis)
@@ -111,11 +93,8 @@ class Interp (Var):
 
   def getview (self, view, pbar=None):
 # {{{
-    from pygeode.tools import point as safe_point
-    from ctypes import c_double
     import numpy as np
     # Use unsafe pointer casting to an integer (easier to pass to C extension)
-    point = lambda x: safe_point(x).value
 
     #TODO: intelligent mapping of the input/output interpolation axes
     # Right now, we must read in the whole axis for the input.
@@ -159,14 +138,14 @@ class Interp (Var):
     indata = np.ascontiguousarray(indata, dtype='float64')
     outx_data = np.ascontiguousarray(outx_data, dtype='float64')
     outdata = np.ascontiguousarray(outdata, dtype='float64')
-    interp_type = interp_types[self.interp_type]
+    interp_type = self.interp_type
 
     # Do the interpolation
-    ret = interp.interpgsl (narrays, ninx, noutx,
-            point(inx_data), point(indata), point(outx_data), point(outdata),
+    ret = interpcore.interpgsl (narrays, ninx, noutx,
+            inx_data, indata, outx_data, outdata,
             loop_inx, loop_outx,
             self.d_below, self.d_above,
-            interp_type.value)
+            interp_type)
 
     return outdata
 # }}}
