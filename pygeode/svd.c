@@ -184,6 +184,31 @@ static PyObject *svdcore_build_svds (PyObject *self, PyObject *args) {
   return Py_BuildValue("i", ret);
 }
 
+static PyObject *svdcore_build_eofs (PyObject *self, PyObject *args) {
+  int num_eofs, nt, nx;
+  double *input, *oldeofs, *neweofs, *pcs;
+  PyArrayObject *input_array, *oldeofs_array, *neweofs_array, *pcs_array;
+
+  // Assume the arrays are contiguous and of the right type
+  if (!PyArg_ParseTuple(args, "iiiO!O!O!O!",
+    &num_eofs, &nt, &nx,
+    &PyArray_Type, &input_array,
+    &PyArray_Type, &oldeofs_array, &PyArray_Type, &neweofs_array,
+    &PyArray_Type, &pcs_array)) return NULL;
+
+  input = (double*)input_array->data;
+  oldeofs = (double*)oldeofs_array->data;
+  neweofs = (double*)neweofs_array->data;
+  pcs = (double*)pcs_array->data;
+
+  // Call the C function
+  int ret = build_eofs (num_eofs, nt, nx, input, oldeofs, neweofs, pcs);
+
+  return Py_BuildValue("i", ret);
+}
+
+
+
 static PyObject *svdcore_dot (PyObject *self, PyObject *args) {
   int num_eofs, nx;
   double *U, *V, *out;
@@ -262,6 +287,7 @@ static PyObject *svdcore_fixcov (PyObject *self, PyObject *args) {
 
 static PyMethodDef SVDMethods[] = {
   {"build_svds", svdcore_build_svds, METH_VARARGS, ""},
+  {"build_eofs", svdcore_build_eofs, METH_VARARGS, ""},
   {"dot", svdcore_dot, METH_VARARGS, ""},
   {"transform", svdcore_transform, METH_VARARGS, ""},
   {"normalize", svdcore_normalize, METH_VARARGS, ""},
