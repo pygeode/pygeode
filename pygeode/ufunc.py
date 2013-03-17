@@ -84,6 +84,8 @@ class UfuncVar (Var):
     for I,i in enumerate(self.ivars):
       # For each variable, get appropriate subranges, reshape, and transpose array
       args[i] = view.get(args[i], pbar=pbar.subset(prog[I],prog[I+1]))
+      # Fix for 0-dimensions variables, which will return a scalar
+      args[i] = np.array(args[i])
     # Ensure that the output is still a numpy array
     # (if the input arrays are degenerate, numpy wants to return a scalar
     #  by default)

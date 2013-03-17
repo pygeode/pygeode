@@ -12,6 +12,10 @@ class ReducedVar(Var):
   def __new__ (type, var, indices, *args, **kwargs):
   # {{{
     from pygeode.var import Var
+
+    # Very 'special' case: reducing on a scalar.
+    if var.naxes == 0: return var.get()
+
     new = object.__new__(type)
 
     varlist = [var] if isinstance(var,Var) else var  # simplify logic below
