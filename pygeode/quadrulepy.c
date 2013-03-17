@@ -13,12 +13,14 @@
 static PyObject *quadrulepy_legendre_compute (PyObject *self, PyObject *args) {
   int order;
   double *xtab, *weight;
+  npy_intp order_np;
   PyArrayObject *xtab_array, *weight_array;
   PyObject *result;
   if (!PyArg_ParseTuple(args, "i", &order)) return NULL;
+  order_np = order;
   // Allocate the output arrays
-  xtab_array = (PyArrayObject*)PyArray_SimpleNew(1,&order,NPY_DOUBLE);
-  weight_array = (PyArrayObject*)PyArray_SimpleNew(1,&order,NPY_DOUBLE);
+  xtab_array = (PyArrayObject*)PyArray_SimpleNew(1,&order_np,NPY_DOUBLE);
+  weight_array = (PyArrayObject*)PyArray_SimpleNew(1,&order_np,NPY_DOUBLE);
   if (xtab_array == NULL || weight_array == NULL) return NULL;
   // Extract C arrays
   xtab = (double*)xtab_array->data;

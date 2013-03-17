@@ -268,7 +268,8 @@ PARTIAL_SUM_COMPLEX (complex128);
 /***** Python wrappers *****/
 
 static PyObject *toolscore_map_to (PyObject *self, PyObject *args) {
-  int na, nb, *indices;
+  npy_intp na, nb;
+  int *indices;
   double *a, *b, rtol;
   PyObject *a_obj, *b_obj;
   PyArrayObject *a_array, *b_array, *indices_array;
