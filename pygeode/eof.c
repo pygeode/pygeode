@@ -1,3 +1,5 @@
+#include <Python.h>
+#include <numpy/arrayobject.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
@@ -542,3 +544,74 @@ int finish (Workspace *work) {
 
   return 0;
 }
+
+/*** Python wrappers ***/
+
+static PyObject *eofcore_start (PyObject *self, PyObject *args) {
+  int num_eofs, nx;
+  Workspace *work;
+  if (!PyArg_ParseTuple(args, "ii", &num_eofs, &nx)) return NULL;
+  // Make sure the input arrays are contiguous and of the right type
+
+  // Call the C function
+  start (num_eofs, nx, &work);
+
+  return Py_BuildValue("L", (long long)(work));
+}
+
+static PyObject *eofcore_process (PyObject *self, PyObject *args) {
+  Workspace *work;
+  int NREC;
+  double *data;
+  PyArrayObject *data_array;
+  if (!PyArg_ParseTuple(args, "LiO!",
+    &work, &NREC, &PyArray_Type, &data_array)) return NULL;
+
+  // Call the C function
+  data = (double*)data_array->data;
+  process (work, NREC, data);
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *eofcore_endloop (PyObject *self, PyObject *args) {
+  Workspace *work;
+  double *EOFs, *EIGs, *PCs;
+  PyArrayObject *EOFs_array, *EIGs_array, *PCs_array;
+  if (!PyArg_ParseTuple(args, "LO!O!O!",
+    &work, &PyArray_Type, &EOFs_array, &PyArray_Type, &EIGs_array,
+    &PyArray_Type, &PCs_array)) return NULL;
+
+  // Call the C function
+  EOFs = (double*)EOFs_array->data;
+  EIGs = (double*)EIGs_array->data;
+  PCs = (double*)PCs_array->data;
+  endloop (work, EOFs, EIGs, PCs);
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *eofcore_finish (PyObject *self, PyObject *args) {
+  Workspace *work;
+  if (!PyArg_ParseTuple(args, "L", &work)) return NULL;
+
+  // Call the C function
+  finish (work);
+
+  Py_RETURN_NONE;
+}
+
+
+static PyMethodDef EOFMethods[] = {
+  {"start", eofcore_start, METH_VARARGS, ""},
+  {"process", eofcore_process, METH_VARARGS, ""},
+  {"endloop", eofcore_endloop, METH_VARARGS, ""},
+  {"finish", eofcore_finish, METH_VARARGS, ""},
+  {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC initeofcore(void) {
+  (void) Py_InitModule("eofcore", EOFMethods);
+  import_array();
+}
+

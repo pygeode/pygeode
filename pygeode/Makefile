@@ -1,4 +1,4 @@
 SUBDIRS = formats server plugins plot
-LIBS = eof
+LIBS = 
 
 include rules.mk

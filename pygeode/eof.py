@@ -185,11 +185,9 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
   import numpy as np
   from pygeode import libpath
   from pygeode.view import View
-  from pygeode.tools import point
   from math import sqrt
   from pygeode.varoperations import fill
-  from pygeode.libhelper import load_lib
-  lib = load_lib("svd")
+  from pygeode import svdcore as lib
 
   # Iterate over more EOFs than we need
   # (this helps with convergence)
@@ -241,8 +239,8 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
 
       nt = inview.shape[0]
       time_offset = inview.slices[0].start
-      ier = lib.build_eofs (subspace, nt, NX, point(X), point(oldeofs),
-                            point(neweofs), point(pcs[time_offset,...]))
+      ier = lib.build_eofs (subspace, nt, NX, X, oldeofs,
+                            neweofs, pcs[time_offset,...])
       assert ier == 0
 
       # Compute variance?
@@ -250,8 +248,8 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
         variance += (X**2).sum()
 
     # Useful dot products
-    lib.dot(subspace, NX, point(oldeofs), point(neweofs), point(work1))
-    lib.dot(subspace, NX, point(neweofs), point(neweofs), point(work2))
+    lib.dot(subspace, NX, oldeofs, neweofs, work1)
+    lib.dot(subspace, NX, neweofs, neweofs, work2)
 
     # Compute surrogate matrix (using all available information from this iteration)
     A, residues, rank, s = np.linalg.lstsq(work1,work2,rcond=1e-30)
@@ -267,10 +265,10 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
     P = np.ascontiguousarray(P[:,S], dtype='d')
 
     # Translate the surrogate eigenvectors to an estimate of the true eigenvectors
-    lib.transform(subspace, NX, point(P), point(neweofs))
+    lib.transform(subspace, NX, P, neweofs)
 
     # Normalize
-    lib.normalize (subspace, NX, point(neweofs))
+    lib.normalize (subspace, NX, neweofs)
 
 #    # verify orthogonality
 #    for i in range(num):
@@ -308,13 +306,7 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
   import numpy as np
   from pygeode.var import Var
   from pygeode.view import View
-  from ctypes import c_void_p, byref
-  from pygeode.tools import point
-
-  # Load lapack library and lower-level code for this module
-  from pygeode.libhelper import load_lib
-  lapack = load_lib("lapack", Global=True)
-  lib = load_lib("eof")
+  from pygeode import eofcore as lib
 
   x, time, space = prep (x, iaxis, weight=weight, out=out)
   del iaxis
@@ -322,8 +314,7 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
   print "working on array shape", x.shape
 
   # Initialize workspace
-  work = c_void_p()
-  lib.start (num, space.size, byref(work))
+  work = lib.start (num, space.size)
 
   eof = np.empty((num,)+space.shape, dtype='d')
   eig = np.empty([num], dtype='d')
@@ -337,13 +328,13 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
     X = np.ascontiguousarray(inview.get(x), dtype='d')
     assert X.size >= space.size, "Spatial pattern is too large"
     nrec = X.size / space.size
-    lib.process (work, nrec, point(X))
+    lib.process (work, nrec, X)
 
     # Accumulate variance
     variance += (X**2).sum()
 
   # Get result
-  lib.endloop (work, point(eof), point(eig), point(pc))
+  lib.endloop (work, eof, eig, pc)
 
   # Free workspace
   lib.finish (work)
