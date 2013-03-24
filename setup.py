@@ -8,6 +8,7 @@ quadrulepy = Extension ('pygeode.quadrulepy', sources=['pygeode/quadrule.c','pyg
 toolscore = Extension ('pygeode.toolscore', sources=['pygeode/tools.c'], extra_compile_args=['-std=c99'])
 svdcore = Extension ('pygeode.svdcore', sources=['pygeode/svd.c'], extra_compile_args=['-std=c99'])
 eofcore = Extension ('pygeode.eofcore', sources=['pygeode/eof.c'], libraries=['lapack'], extra_compile_args=['-std=c99'])
+opendapcore = Extension ('pygeode.formats.opendapcore', sources=['pygeode/formats/opendap.c'], extra_compile_args=['-std=c99'])
 
 # PyGeode installation script
 
@@ -21,6 +22,6 @@ setup (	name="pygeode",
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
 	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"],
-	ext_modules=[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore]
+	ext_modules=[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore, opendapcore]
 )
 

@@ -17,9 +17,7 @@ dap2np = {'byte':'uint8', 'uint16':'uint16', 'int16':'int16',
 supported_type = dict((k,dap2np[v.lower()]) for k,v in np2dap.iteritems())
 
 # Supporting library
-from pygeode.libhelper import load_lib
-lib = load_lib("formats/opendap")
-del load_lib
+from pygeode.formats import opendapcore as lib
 
 
 ###############################################################################
@@ -82,20 +80,16 @@ def write_xdr(var, wfile):
 #      # Do byte encoding here
 #      raise Exception
       values = np.ascontiguousarray(values, 'uint8');
-      s = create_string_buffer(values.size)
-      lib.int8toStr(point(values), s, values.size)
+      s = lib.int8toStr(values)
     elif daptype in ('UInt16', 'Int16', 'UInt32', 'Int32'):
       values = np.ascontiguousarray(values, 'int32')
-      s = create_string_buffer(4*values.size)
-      lib.int32toStr(point(values), s, values.size)
+      s = lib.int32toStr(values)
     elif daptype == 'Float32':
       values = np.ascontiguousarray(values, 'float32')
-      s = create_string_buffer(4*values.size)
-      lib.int32toStr(point(values), s, values.size)
+      s = lib.int32toStr(values)
     elif daptype == 'Float64':
       values = np.ascontiguousarray(values, 'float64')
-      s = create_string_buffer(8*values.size)
-      lib.int64toStr(point(values), s, values.size)
+      s = lib.int64toStr(values)
 
     wfile.write(s.raw)
 
@@ -767,16 +761,13 @@ def load_array (url):
     raise Exception
   elif daptype in ('uint16', 'int16', 'uint32', 'int32'):
 #    arr = struct.unpack('!%sl'%size, xdr[:4*size])
-    arr = np.empty(size, 'int32')
-    lib.str2int32(xdr, point(arr), size)
+    arr = lib.str2int32(xdr)
   elif daptype == 'float32':
 #    arr = struct.unpack('!%sf'%size, xdr[:4*size])
-    arr = np.empty(size, 'float32')
-    lib.str2int32(xdr, point(arr), size)
+    arr = lib.str2int32(xdr)
   elif daptype == 'float64':
 #    arr = struct.unpack('!%sd'%size, xdr[:8*size])
-    arr = np.empty(size, 'float64')
-    lib.str2int64(xdr, point(arr), size)
+    arr = lib.str2int64(xdr)
   else: raise Exception
 
   return arr.reshape(shape)
