@@ -47,10 +47,8 @@ def get_data_trap_io (view, var):
 # to the client, so their program doesn't crash due to something beyond their control.
 def write_xdr(var, wfile):
   import struct
-  from ctypes import create_string_buffer, c_void_p
   import numpy as np
   from pygeode.view import View
-  from pygeode.tools import point
 
   lenstr = struct.pack('!2l', var.size, var.size)
   wfile.write(lenstr)
@@ -86,12 +84,12 @@ def write_xdr(var, wfile):
       s = lib.int32toStr(values)
     elif daptype == 'Float32':
       values = np.ascontiguousarray(values, 'float32')
-      s = lib.int32toStr(values)
+      s = lib.float32toStr(values)
     elif daptype == 'Float64':
       values = np.ascontiguousarray(values, 'float64')
-      s = lib.int64toStr(values)
+      s = lib.float64toStr(values)
 
-    wfile.write(s.raw)
+    wfile.write(s)
 
   # end of write_xdr
 
@@ -724,7 +722,6 @@ class OpenDAP_Var(Var):
 def load_array (url):
   import struct
   import numpy as np
-  from pygeode.tools import point
 
   # Read binary data (with ascii header)
   data = readurl(url)
@@ -764,13 +761,13 @@ def load_array (url):
     arr = lib.str2int32(xdr)
   elif daptype == 'float32':
 #    arr = struct.unpack('!%sf'%size, xdr[:4*size])
-    arr = lib.str2int32(xdr)
+    arr = lib.str2float32(xdr)
   elif daptype == 'float64':
 #    arr = struct.unpack('!%sd'%size, xdr[:8*size])
-    arr = lib.str2int64(xdr)
+    arr = lib.str2float64(xdr)
   else: raise Exception
 
-  return arr.reshape(shape)
+  return arr[:size].reshape(shape)
 
 
 def readurl (url, hosts={}):
