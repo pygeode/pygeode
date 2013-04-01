@@ -1,4 +1,4 @@
-LIBS = grib
+LIBS = 
 
 include ../rules.mk
 

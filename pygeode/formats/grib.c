@@ -1,3 +1,6 @@
+#include <Python.h>
+#include <numpy/arrayobject.h>
+
 #include "grib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +59,8 @@ int decode_IS (IS_raw *raw, IS *is) {
 }
 int read_IS (FILE *f, IS *is) {
   IS_raw raw;
-  fread (&raw, sizeof(IS_raw), 1, f);
+  int n = fread (&raw, sizeof(IS_raw), 1, f);
+  if (n != 1) return -1;
   decode_IS (&raw, is);
   return 0;
 }
@@ -113,7 +117,8 @@ int decode_PDS (PDS_raw *raw, PDS *pds) {
 }
 int read_PDS (FILE *f, PDS *pds) {
   PDS_raw raw;
-  fread (&raw, sizeof(PDS_raw), 1, f);
+  int n = fread (&raw, sizeof(PDS_raw), 1, f);
+  if (n != 1) return -1;
   decode_PDS (&raw, pds);
   return 0;
 }
@@ -222,7 +227,8 @@ int decode_GDS (GDS_raw *raw, GDS *gds) {
 }
 int read_GDS (FILE *f, GDS *gds) {
   GDS_raw raw;
-  fread (&raw, sizeof(GDS_raw), 1, f);
+  int n = fread (&raw, sizeof(GDS_raw), 1, f);
+  if (n != 1) return -1;
   decode_GDS (&raw, gds);
   return 0;
 }
@@ -319,7 +325,8 @@ int decode_BDS (BDS_raw *raw, BDS *bds) {
 }
 int read_BDS (FILE *f, BDS *bds) {
   BDS_raw raw;
-  fread (&raw, sizeof(BDS_raw), 1, f);
+  int n = fread (&raw, sizeof(BDS_raw), 1, f);
+  if (n != 1) return -1;
   decode_BDS (&raw, bds);
   return 0;
 }
@@ -344,7 +351,8 @@ void print_BDS (BDS *x) {
 // Read a record terminator ('7777')
 int read_EOR (FILE *f) {
   char data[4];
-  fread (data, sizeof(char)*4, 1, f);
+  int n = fread (data, sizeof(char)*4, 1, f);
+  if (n != 1) return -1;
   if (strncmp(data, "7777", 4)!=0) {
     fprintf (stderr, "read_EOR: Error: bad record terminator\n");
     return 1;
@@ -357,7 +365,8 @@ int read_EOR (FILE *f) {
 // Skip over the BDS section
 int skip_BDS (FILE *f) {
   BDS_raw raw;
-  fread (&raw, sizeof(BDS_raw), 1, f);
+  int n = fread (&raw, sizeof(BDS_raw), 1, f);
+  if (n != 1) return -1;
   int length = (raw.length[0]<<16) + (raw.length[1]<<8) + raw.length[2];
   //printf ("BDS length = %d, nbits = %d\n", length, raw.nbits[0]);
   fseeko (f, length - sizeof(BDS_raw), SEEK_CUR);
@@ -440,8 +449,11 @@ int make_index (char *gribfile, char *indexfile) {
     read_GDS(f, &gds);
     //fseeko (f, 4*gds.nv[0], SEEK_CUR);
     unsigned char pv[2][MAX_LEVELS][4];
-    fread (&(pv[0][0][0]), 4, gds.nv/2, f);
-    fread (&(pv[1][0][0]), 4, gds.nv/2, f);
+    int n;
+    n = fread (&(pv[0][0][0]), 4, gds.nv/2, f);
+    if (n != gds.nv/2) return -1;
+    n = fread (&(pv[1][0][0]), 4, gds.nv/2, f);
+    if (n != gds.nv/2) return -1;
     skip_BDS(f);
     read_EOR(f);
 
@@ -755,6 +767,12 @@ int free_Index (Index **index) {
   return 0;
 }
 
+// Similar to above, but is compatible with Python CObjects
+void destroy_Index (void *index) {
+  Index *junk = (Index*)index;
+  free_Index(&junk);
+}
+
 int get_nvars (Index *index) {
   return index->nvars;
 }
@@ -780,6 +798,12 @@ int close_grib (FILE **f) {
   fclose (*f);
   *f = NULL;
   return 0;
+}
+
+// Similar to above, but compatible with Python CObjects
+void destroy_grib (void *f) {
+  FILE *junk = (FILE*)f;
+  close_grib (&junk);
 }
 
 // Get info about a variable
@@ -958,4 +982,234 @@ int read_data_loop (FILE *f, Index *index, int v, int nt, int *t,
   return 0;
 }
 
+
+// Python wrapper
+
+static PyObject *gribcore_make_index (PyObject *self, PyObject *args) {
+  char *gribfile, *indexfile;
+  if (!PyArg_ParseTuple(args, "ss", &gribfile, &indexfile)) return NULL;
+  int ret = make_index (gribfile, indexfile);
+  if (ret != 0) return NULL;
+  Py_RETURN_NONE;
+}
+
+static PyObject *gribcore_read_Index (PyObject *self, PyObject *args) {
+  char *indexfile;
+  Index *index = NULL;
+  if (!PyArg_ParseTuple(args, "s", &indexfile)) return NULL;
+  int ret = read_Index (indexfile, &index);
+  if (ret != 0) return NULL;
+  return PyCObject_FromVoidPtr(index, destroy_Index);
+}
+
+static PyObject *gribcore_open_grib (PyObject *self, PyObject *args) {
+  char *filename;
+  FILE *f;
+  if (!PyArg_ParseTuple(args, "s", &filename)) return NULL;
+  int ret = open_grib (filename, &f);
+  if (ret != 0) return NULL;
+  return PyCObject_FromVoidPtr(f, destroy_grib);
+}
+
+static PyObject *gribcore_get_varcode (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v;
+  int center, table, varid, level_type;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  int ret = get_varcode (index, v, &center, &table, &varid, &level_type);
+  if (ret != 0) return NULL;
+  return Py_BuildValue("(i,i,i,i)", center, table, varid, level_type);
+}
+
+static PyObject *gribcore_get_var_nt (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v, nt;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  nt = get_var_nt (index, v);
+  return Py_BuildValue("i", nt);
+}
+
+static PyObject *gribcore_get_var_t (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v;
+  npy_intp nt;
+  PyArrayObject *y, *m, *d, *H, *M;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  nt = get_var_nt (index, v);
+  y = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
+  m = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
+  d = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
+  H = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
+  M = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
+  int ret = get_var_t (index, v, (int*)y->data, (int*)m->data, (int*)d->data, (int*)H->data, (int*)M->data);
+  if (ret != 0) return NULL;
+  PyObject *tuple = Py_BuildValue("(O,O,O,O,O)", y, m, d, H, M);
+  Py_DECREF (y);
+  Py_DECREF (m);
+  Py_DECREF (d);
+  Py_DECREF (H);
+  Py_DECREF (M);
+  return tuple;
+}
+
+static PyObject *gribcore_get_var_nz (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v, nz;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  nz = get_var_nz (index, v);
+  return Py_BuildValue("i", nz);
+}
+
+static PyObject *gribcore_get_var_z (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v;
+  npy_intp nz;
+  PyArrayObject *l1, *l2;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  nz = get_var_nz (index, v);
+  l1 = (PyArrayObject*)PyArray_SimpleNew(1,&nz,NPY_INT32);
+  l2 = (PyArrayObject*)PyArray_SimpleNew(1,&nz,NPY_INT32);
+  int ret = get_var_z (index, v, (int*)l1->data, (int*)l2->data);
+  if (ret != 0) return NULL;
+  PyObject *tuple = Py_BuildValue("(O,O)", l1, l2);
+  Py_DECREF (l1);
+  Py_DECREF (l2);
+  return tuple;
+}
+
+static PyObject *gribcore_get_var_neta (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v, neta;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  neta = get_var_neta (index, v);
+  return Py_BuildValue("i", neta);
+}
+
+static PyObject *gribcore_get_var_eta (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v;
+  npy_intp neta;
+  PyArrayObject *a, *b;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  neta = get_var_neta (index, v);
+  a = (PyArrayObject*)PyArray_SimpleNew(1,&neta,NPY_FLOAT32);
+  b = (PyArrayObject*)PyArray_SimpleNew(1,&neta,NPY_FLOAT32);
+  int ret = get_var_eta (index, v, (float*)a->data, (float*)b->data);
+  if (ret != 0) return NULL;
+  PyObject *tuple = Py_BuildValue("(O,O)", a, b);
+  Py_DECREF (a);
+  Py_DECREF (b);
+  return tuple;
+}
+
+static PyObject *gribcore_get_grid (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  int v, type, ni, nj, la1, lo1, la2, lo2;
+  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  int ret = get_grid (index, v, &type, &ni, &nj, &la1, &lo1, &la2, &lo2);
+  if (ret != 0) return NULL;
+  return Py_BuildValue("(i,i,i,i,i,i,i)", type, ni, nj, la1, lo1, la2, lo2);
+}
+
+static PyObject *gribcore_get_nvars (PyObject *self, PyObject *args) {
+  PyObject *index_obj;
+  Index *index;
+  if (!PyArg_ParseTuple(args, "O!", &PyCObject_Type, &index_obj)) return NULL;
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  int nvars = get_nvars(index);
+  return Py_BuildValue("i", nvars);
+}
+
+static PyObject *gribcore_read_data_loop (PyObject *self, PyObject *args) {
+  PyObject *f_obj, *index_obj;
+  FILE *f;
+  Index *index;
+  int v, nt, nz, ny, nx;
+  PyArrayObject *t, *z, *y, *x, *out;
+  // Assuming the arrays are of the right type and contiguous
+  if (!PyArg_ParseTuple(args, "O!O!iiO!iO!iO!iO!O!", &PyCObject_Type, &f_obj, &PyCObject_Type, &index_obj, &v, &nt, &PyArray_Type, &t, &nz, &PyArray_Type, &z, &ny, &PyArray_Type, &y, &nx, &PyArray_Type, &x, &PyArray_Type, &out)) return NULL;
+  f = (FILE*)PyCObject_AsVoidPtr(f_obj);
+  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+
+  int ret = read_data_loop (f, index, v, nt, (int*)t->data, 
+    nz, (int*)z->data, ny, (int*)y->data, nx, (int*)x->data,
+    (double*)out->data);
+  if (ret != 0) return NULL;
+  Py_RETURN_NONE;
+}
+
+static PyObject *opendapcore_str2int8 (PyObject *self, PyObject *args) {
+  unsigned char *str;
+  int slen;
+  npy_intp n;
+  PyArrayObject *x;
+  if (!PyArg_ParseTuple(args, "s#", &str, &slen)) return NULL;
+  n = slen;
+  x = (PyArrayObject*)PyArray_SimpleNew(1,&n,NPY_INT8);
+
+  // Call the C function
+  str2int8 (str, (unsigned char*)x->data, n);
+
+  return (PyObject*)x;
+}
+
+static PyObject *opendapcore_int8toStr (PyObject *self, PyObject *args) {
+  npy_intp n;
+  PyObject *obj;
+  PyArrayObject *x;
+  if (!PyArg_ParseTuple(args, "O", &obj)) return NULL;
+  x = (PyArrayObject*)PyArray_ContiguousFromObject(obj,NPY_INT8,0,0);
+  if (x == NULL) return NULL;
+  n = 1;
+  for (int i = 0; i < x->nd; i++) n *= x->dimensions[i];
+  char str[n];
+
+  // Call the C function
+  int8toStr ((unsigned char*)x->data, str, n);
+
+  // Clean up local objects
+  Py_DECREF (x);
+
+  return Py_BuildValue("s#", str, n);
+}
+
+
+
+static PyMethodDef GribMethods[] = {
+  {"make_index", gribcore_make_index, METH_VARARGS, ""},
+  {"read_Index", gribcore_read_Index, METH_VARARGS, ""},
+  {"open_grib", gribcore_open_grib, METH_VARARGS, ""},
+  {"get_varcode", gribcore_get_varcode, METH_VARARGS, ""},
+  {"get_var_nt", gribcore_get_var_nt, METH_VARARGS, ""},
+  {"get_var_t", gribcore_get_var_t, METH_VARARGS, ""},
+  {"get_var_nz", gribcore_get_var_nz, METH_VARARGS, ""},
+  {"get_var_z", gribcore_get_var_z, METH_VARARGS, ""},
+  {"get_var_neta", gribcore_get_var_neta, METH_VARARGS, ""},
+  {"get_var_eta", gribcore_get_var_eta, METH_VARARGS, ""},
+  {"get_grid", gribcore_get_grid, METH_VARARGS, ""},
+  {"get_nvars", gribcore_get_nvars, METH_VARARGS, ""},
+  {"read_data_loop", gribcore_read_data_loop, METH_VARARGS, ""},
+  {NULL, NULL, 0, NULL}
+};
+
+PyMODINIT_FUNC initgribcore(void) {
+  (void) Py_InitModule("gribcore", GribMethods);
+  import_array();
+}
 

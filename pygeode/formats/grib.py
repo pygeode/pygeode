@@ -1,9 +1,5 @@
 from pygeode.var import Var
-from ctypes import byref, c_void_p, c_int, c_float, c_ulonglong, create_string_buffer, cast, c_char_p, c_double
-from pygeode.libhelper import load_lib
-
-lib = load_lib('formats/grib')
-del load_lib
+from pygeode.formats import gribcore as lib
 
 class GribFile:
   def __init__(self, filename):
@@ -13,21 +9,15 @@ class GribFile:
       indexname = basename(indexname)
     if not exists(indexname):
       print "GribFile: generating "+indexname
-      assert lib.make_index(filename, indexname) == 0
-    index = c_void_p()
-    assert lib.read_Index(indexname, byref(index)) == 0
-    file = c_void_p()
-    assert lib.open_grib(filename, byref(file)) == 0
+      lib.make_index(filename, indexname)
+    index = lib.read_Index(indexname)
+    file = lib.open_grib(filename)
 
     self.index = index
     self.file = file
 
     self.lib = lib
-    self.byref = byref
 
-  def __del__(self):
-    self.lib.free_Index(self.byref(self.index))
-    self.lib.close_grib(self.byref(self.file))
 
 class GribVar(Var):
   def __init__(self, file, v):
@@ -35,34 +25,26 @@ class GribVar(Var):
     import numpy as np
 
     # Get the variable code
-    center, table, varid, level_type = c_int(), c_int(), c_int(), c_int()
-    lib.get_varcode (file.index, v, byref(center), byref(table), byref(varid), byref(level_type))
-    center, table, varid, level_type = center.value, table.value, varid.value, level_type.value
+    center, table, varid, level_type = lib.get_varcode (file.index, v)
+    print "varcode:", center, table, varid, level_type
 
     # Get time axis
-    nt = lib.get_var_nt (file.index, v)
-    y, m, d, H, M = ((c_int*nt)() for i in range(5))
-    lib.get_var_t(file.index, v, y, m, d, H, M)
-    y, m, d, H, M = (np.asarray(x[:]) for x in (y,m,d,H,M))
+    y, m, d, H, M = lib.get_var_t(file.index, v)
+    print "time:", y, m, d, H, M
     #TODO: proper time axis
     time = timeaxis.StandardTime(year=y, month=m, day=d, hour=H, minute=M)
 
     # Get vertical levels
     #TODO: check for z *range*, handle that as a separate axis type??
-    nz = lib.get_var_nz (file.index, v)
-    lev1, lev2 = ((c_int*nz)() for i in range(2))
-    lib.get_var_z(file.index, v, lev1, lev2)
-    lev1, lev2 = (np.asarray(x[:]) for x in (lev1,lev2))
-    #zorder = np.argsort(lev2)
+    lev1, lev2 = lib.get_var_z(file.index, v)
+    print "levels:", lev1, lev2
     zorder = lev2.tolist()
     lev2.sort()
 
     # Read a,b for hybrid coordinates
     neta = lib.get_var_neta (file.index, v)
     if (neta > 0 and len(lev2) == neta-1):
-      a, b = ((c_float*neta)() for i in range(2))
-      lib.get_var_eta(file.index, v, a, b)
-      a, b = (np.asarray(x[:]) for x in (a,b))
+      a, b = lib.get_var_eta(file.index, v)
       #TODO: specify linear (not logarithmic) axis
       zaxis = axis.Hybrid(lev2, a[1:], b[1:])
     else:
@@ -75,17 +57,16 @@ class GribVar(Var):
       zorder = [1]
 
     # Get horizontal axes
-    grid_type, ni, nj, la1, lo1, la2, lo2 = (c_int() for i in range(7))
-    lib.get_grid (file.index, v, byref(grid_type), byref(ni), byref(nj),
-                  byref(la1), byref(lo1), byref(la2), byref(lo2))
-    grid_type,ni,nj,la1,lo1,la2,lo2 = (x.value for x in (grid_type,ni,nj,la1,lo1,la2,lo2))
+    grid_type, ni, nj, la1, lo1, la2, lo2 = lib.get_grid (file.index, v)
     la1 /= 1000.
     la2 /= 1000.
     lo1 /= 1000.
     if lo1 < 0: lo1 += 360
     lo2 /= 1000.
     if lo2 < 0: lo2 += 360
-    assert grid_type in (0,4)
+    print ni, nj
+    print la1, la2, lo1, lo2
+    assert grid_type in (0,4), grid_type
 
     if grid_type == 0:  # regular lat/lon
       lat = axis.Lat(la1 + np.arange(nj,dtype='d')/(nj-1)*(la2-la1))
@@ -130,7 +111,6 @@ class GribVar(Var):
     from pygeode.axis import ZAxis, Lat, Lon
     from pygeode.timeaxis import Time
     import numpy as np
-    from pygeode.tools import point
     ti = view.index(Time)
     t = np.ascontiguousarray(view.integer_indices[ti], 'int32')
     zi = view.index(ZAxis)
@@ -160,8 +140,8 @@ class GribVar(Var):
     out = np.empty(view.shape, self.dtype)
     assert out.dtype.name == 'float64'
 
-    lib.read_data_loop(self.file.file, self.file.index, self.v, nt, point(t), 
-                  nz, point(z), ny, point(y), nx, point(x), point(out))
+    lib.read_data_loop(self.file.file, self.file.index, self.v, nt, t, 
+                  nz, z, ny, y, nx, x, out)
 
     return out
 
