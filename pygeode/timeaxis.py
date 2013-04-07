@@ -165,9 +165,6 @@ class Time (TAxis):
   # {{{
     ''' Define a mapping between this time axis and another one '''
     import numpy as np
-    from pygeode.tools import point as safe_point
-    # Unsafe casting from pointer to integer (easier for extensions)
-    point = lambda x: safe_point(x).value
 
     if not type(self) is type(other): return None
     #isinstance(other,Time): return None
@@ -190,12 +187,10 @@ class Time (TAxis):
       othervalues = np.vstack(other_f).transpose()
       nfields = len(self_f)
 
-    myvalues = np.ascontiguousarray(myvalues,'int32')
-    othervalues = np.ascontiguousarray(othervalues,'int32')
     indices = np.empty(len(other), 'int32')
-    ret = lib.get_indices (nfields, point(myvalues), len(myvalues), 
-                           point(othervalues), len(othervalues), 
-                           point(indices))
+    ret = lib.get_indices (nfields, myvalues, len(myvalues),
+                           othervalues, len(othervalues),
+                           indices)
 
 #    print othervalues, "map_to", myvalues, "=>", indices
     assert ret == 0
@@ -212,9 +207,6 @@ class Time (TAxis):
 # {{{
     '''return the indices that map common elements from one time axis to another'''
     import numpy as np
-    from pygeode.tools import point as safe_point
-    # Unsafe casting from pointer to integer (easier for extensions)
-    point = lambda x: safe_point(x).value
 
 #    print 'common_map:'
 #    print self
@@ -241,9 +233,7 @@ class Time (TAxis):
     b_map = np.empty(nmap, 'int32')
 
     # Call the C routine
-    nmap = np.array(nmap, dtype='int32')
-    ier = lib.common_map(len(self_f), na, point(a), nb, point(b), point(nmap), point(a_map), point(b_map))
-    nmap = int(nmap)
+    nmap = lib.common_map(len(self_f), na, a, nb, b, a_map, b_map)
 
     # filter out unmapped indices
     a_map = a_map[:nmap]
@@ -588,9 +578,6 @@ class CalendarTime(Time):
   def val_as_date (self, vals = None, startdate = None, units = None, allfields=False):
   # {{{
     import numpy as np
-    from pygeode.tools import point as safe_point
-    # Unsafe casting from pointer to integer (easier for extensions)
-    point = lambda x: safe_point(x).value
 
     if vals is None: vals = self.values
     if startdate is None: startdate = self.startdate
@@ -608,9 +595,9 @@ class CalendarTime(Time):
     second = np.empty(n, dtype='int32')
 
     self._val_as_date (n, iyear, imonth, iday, ihour, iminute, isecond,
-                        point(values),
-                        point(year), point(month), point(day),
-                        point(hour), point(minute), point(second))
+                        values,
+                        year, month, day,
+                        hour, minute, second)
 
     date = {'year':year, 'month':month, 'day':day, 'hour':hour, 'minute':minute, 'second':second}
     if not allfields:
@@ -625,9 +612,6 @@ class CalendarTime(Time):
   def date_as_val (self, dates = None, startdate = None, units = None):
   # {{{
     import numpy as np
-    from pygeode.tools import point as safe_point
-    # Unsafe casting from pointer to integer (easier for extensions)
-    point = lambda x: safe_point(x).value
 
     if dates is None: dates = self.auxarrays
     if startdate is None: startdate = self.startdate
@@ -646,9 +630,9 @@ class CalendarTime(Time):
     vals = np.empty(n, dtype='int64')
 
     ret = self._date_as_val (n, iyear, imonth, iday, ihour, iminute, isecond,
-                        point(year), point(month), point(day),
-                        point(hour), point(minute), point(second),
-                        point(vals))
+                        year, month, day,
+                        hour, minute, second,
+                        vals)
 
     assert ret == 0
 
