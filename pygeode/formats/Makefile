@@ -1,5 +1,0 @@
-LIBS = 
-
-include ../rules.mk
-
-
