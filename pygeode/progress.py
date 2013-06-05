@@ -32,7 +32,11 @@ try:
       if not self.start_time: self.start_time = time.time()
       self.seconds_elapsed = time.time() - self.start_time
       if self.seconds_elapsed < _NOSHOWTIME: return False
-      return ProgressBar._need_update(self)
+      if not ProgressBar._need_update(self): return False
+      if not self.printed_message:
+        print self.message
+        self.printed_message = True
+      return True
 
     def finish(self): # Overloaded to fix unneccesary newlines when not displayed
       if self.finished: return

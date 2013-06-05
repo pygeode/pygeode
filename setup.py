@@ -5,7 +5,7 @@ from distutils.core import setup
 # PyGeode installation script
 
 setup (	name="pygeode",
-	version="0.7.0",
+	version="0.7.1",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="",
         url="http://sparc01.atmosp.physics.utoronto.ca/pygeode/docs",
@@ -13,6 +13,6 @@ setup (	name="pygeode",
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
-	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins"]
+	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins", "pygeode.plot"]
 )
 
