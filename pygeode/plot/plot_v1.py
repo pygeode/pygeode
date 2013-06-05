@@ -95,6 +95,7 @@ def plotvar (var, **kwargs):
   from numpy import ma
   from numpy import isnan, isinf, where
   from pygeode.progress import PBar
+  from copy import copy
 
   # Get # of dimensions - can only do 1D or 2D
   nd = len([s for s in var.shape if s > 1])
@@ -152,7 +153,7 @@ def plotvar (var, **kwargs):
   # 1D case:
   if nd == 1:
     from pygeode.axis import ZAxis, Pres, Hybrid
-    xaxis = [a for a in axes if len(a)>1][0]
+    xaxis = [copy(a) for a in axes if len(a)>1][0]
     
     # adjust axis scaling
     #if xaxis.atts['units'] != xaxis.plotatts['plotunits']:
@@ -221,7 +222,7 @@ def plotvar (var, **kwargs):
     # Patch for some versions of matplotlib, which leave gaps between polygons
     kwargs.setdefault('antialiased',False)
 
-    yaxis, xaxis = [a for a in axes if len(a) > 1]
+    yaxis, xaxis = [copy(a) for a in axes if len(a) > 1]
     
     # adjust x-axis scaling
     #if xaxis.atts['units'] != xaxis.plotatts['plotunits']:
