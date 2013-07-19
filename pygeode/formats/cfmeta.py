@@ -241,7 +241,7 @@ def decode_cf (dataset, ignore=[]):
     # Check specific standard names, and also units?
     #TODO: don't *pop* the standard_name, units, etc. until the end of this routine - in case we didn't end up mapping them to an axis
     _ln = atts.get('long_name', a.name).lower()
-    _st = atts.pop('standard_name',_ln).lower()
+    _st = atts.get('standard_name',_ln).lower()
     _units = atts.pop('units','')
     if _st == 'latitude' or _units == 'degrees_north': cls = Lat
     if _st == 'longitude' or _units == 'degrees_east': cls = Lon
