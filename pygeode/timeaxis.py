@@ -188,6 +188,8 @@ class Time (TAxis):
       nfields = len(self_f)
 
     indices = np.empty(len(other), 'int32')
+    myvalues = np.ascontiguousarray(myvalues, dtype='int32')
+    othervalues = np.ascontiguousarray(othervalues, dtype='int32')
     ret = lib.get_indices (nfields, myvalues, len(myvalues),
                            othervalues, len(othervalues),
                            indices)
