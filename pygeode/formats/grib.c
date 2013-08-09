@@ -1154,42 +1154,6 @@ static PyObject *gribcore_read_data_loop (PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-static PyObject *opendapcore_str2int8 (PyObject *self, PyObject *args) {
-  unsigned char *str;
-  int slen;
-  npy_intp n;
-  PyArrayObject *x;
-  if (!PyArg_ParseTuple(args, "s#", &str, &slen)) return NULL;
-  n = slen;
-  x = (PyArrayObject*)PyArray_SimpleNew(1,&n,NPY_INT8);
-
-  // Call the C function
-  str2int8 (str, (unsigned char*)x->data, n);
-
-  return (PyObject*)x;
-}
-
-static PyObject *opendapcore_int8toStr (PyObject *self, PyObject *args) {
-  npy_intp n;
-  PyObject *obj;
-  PyArrayObject *x;
-  if (!PyArg_ParseTuple(args, "O", &obj)) return NULL;
-  x = (PyArrayObject*)PyArray_ContiguousFromObject(obj,NPY_INT8,0,0);
-  if (x == NULL) return NULL;
-  n = 1;
-  for (int i = 0; i < x->nd; i++) n *= x->dimensions[i];
-  char str[n];
-
-  // Call the C function
-  int8toStr ((unsigned char*)x->data, str, n);
-
-  // Clean up local objects
-  Py_DECREF (x);
-
-  return Py_BuildValue("s#", str, n);
-}
-
-
 
 static PyMethodDef GribMethods[] = {
   {"make_index", gribcore_make_index, METH_VARARGS, ""},
