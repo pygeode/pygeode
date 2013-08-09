@@ -43,9 +43,6 @@ class UfuncVar (Var):
 
     # TODO: Type check arguments. numpy arrays probably shouldn't be allowed
 
-    # Copy any common generic metadata
-    combine_meta(vars, self)
-
     # Generate a default name
     symbol = self.symbol
     names = [(arg.name or '??') if isinstance(arg,Var) else str(arg) for arg in args]
@@ -70,6 +67,10 @@ class UfuncVar (Var):
 #    self.plotatts = common_dict(v.plotatts for v in vars)
 
     Var.__init__(self, axes, dtype=dtype)
+
+    # Copy any common generic metadata
+    combine_meta(vars, self)
+
   # }}}
 
   def getview (self, view, pbar):
