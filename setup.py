@@ -14,7 +14,7 @@ gribcore = Extension ('pygeode.formats.gribcore', sources=['pygeode/formats/grib
 # PyGeode installation script
 
 setup (	name="pygeode",
-	version="0.7.1",
+	version="0.7.2",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="",
         url="http://sparc01.atmosp.physics.utoronto.ca/pygeode/docs",
