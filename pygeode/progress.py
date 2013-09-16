@@ -34,7 +34,7 @@ try:
       if self.seconds_elapsed < _NOSHOWTIME: return False
       if not ProgressBar._need_update(self): return False
       if not self.printed_message:
-        print self.message
+        if self.message is not None: print self.message
         self.printed_message = True
       return True
 
