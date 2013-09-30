@@ -1,3 +1,30 @@
+1.0.0 - UNRELEASED
+
+  General updates to the code:
+  - Converted C shared libraries to Python extension modules, to improve
+    portability of the package.
+
+  New modules:
+  - New 'spectral' module, which defines a Spectral axis.
+
+  Updates to the plot module:
+  - Can output to PDF.
+  - Improved support for Basemap.
+  - Support for scatter plots and significance masks.
+
+  Updates to the old (v1) plot module:
+  - Added hatching option for old significance mask.
+
+  Updates to the stats module:
+  - Added option to scale effective degrees of freedom in regress().
+
+  Updates to the reduce module:
+  - Added argmin() operator.
+
+  Updates to the formats.cfmeta module:
+  - Better detection and handling of (malformed) time axes.
+
+
 0.7.2 - 2013/09/16
   - Fix ufunc operators dropping metadata (issue 39).
 
