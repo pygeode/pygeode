@@ -45,6 +45,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
   '''
 
   from pygeode.timeaxis import Time, StandardTime
+  from pygeode.timeutils import reltime, delta
   from pygeode.dataset import Dataset
   from pygeode.tools import common_dict
   import numpy as np
@@ -105,7 +106,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
   del file
 
   # Generate a lower-resolution time axis (the start of *each* file)
-  faxis = T(**dates)
+  faxis = T(units='days',**dates)
 
   # Re-sort the files, if they weren't in order
   S = faxis.argsort()
@@ -134,15 +135,15 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
     # One timestep per file? (check for an offset for the var time compared
     #  to the file time)
     if max(len(t1),len(t2)) == 1:
-      offset = t1.reltime(startdate=faxis.startdate, units=faxis.units)[0]
+      offset = reltime(t1, startdate=faxis.startdate, units=faxis.units)[0]
       taxis = faxis.withnewvalues(faxis.values + offset)
     # At least one of first/last files has multiple timesteps?
     else:
       assert t1.units == t2.units
-      dt = max(t1.delta(),t2.delta())
+      dt = max(delta(t1),delta(t2))
       assert dt > 0
       val1 = t1.values[0]
-      val2 = t2.reltime(startdate=t1.startdate)[-1]
+      val2 = reltime(t2, startdate=t1.startdate)[-1]
       nt = (val2-val1)/dt + 1
       assert round(nt) == nt
       nt = int(round(nt))
@@ -192,6 +193,7 @@ class Multifile_Var (Var):
 
   def getview (self, view, pbar):
     from pygeode.timeaxis import Time
+    from pygeode.timeutils import reltime
     import numpy as np
     from warnings import warn
 
@@ -205,7 +207,7 @@ class Multifile_Var (Var):
 #    print times
 
     # Map these times to values along the 'file' axis
-    x = times.reltime(startdate=self.faxis.startdate, units=self.faxis.units)
+    x = reltime(times, startdate=self.faxis.startdate, units=self.faxis.units)
     file_indices = np.searchsorted(self.faxis.values, x, side='right') - 1 # -1 because we want the file that has a date *before* the specified timestep
 
     diff = np.diff(file_indices)
