@@ -3,7 +3,7 @@
 #     from the file names.
 
 # Expand globbed file expressions to a flat list of files
-def expand_file_list (file_list):
+def expand_file_list (file_list, sort=True):
 #  from glob import iglob
   from glob import iglob
   from os.path import exists
@@ -11,7 +11,7 @@ def expand_file_list (file_list):
   files = [ f for file_glob in file_list for f in iglob(file_glob)]
   assert len(files) > 0, 'No matches found'
   for f in files: assert exists(f), str(f)+" doesn't exist"
-  files.sort()
+  if sort: files.sort()
   return files
 
 
@@ -21,8 +21,8 @@ def expand_file_list (file_list):
 #NOTE: for a large number of homogeneous files, use the alternative interface below
 def openall (files, format, *args, **kwargs):
   from pygeode.dataset import concat
-  files = expand_file_list (files)
-  sort = kwargs.pop('sorted', False)
+  sort = kwargs.pop('sorted', True)
+  files = expand_file_list (files, sort)
   datasets = [ format.open(f, *args, **kwargs) for f in files]
   if sort: datasets = [d.sorted() for d in datasets]
   return concat(*datasets)
