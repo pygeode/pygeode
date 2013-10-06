@@ -10,7 +10,8 @@
   Updates to the plot module:
   - Can output to PDF.
   - Improved support for Basemap.
-  - Support for scatter plots and significance masks.
+  - Support for scatter plots, quiver plots, and significance masks.
+  - Various usability improvements
 
   Updates to the old (v1) plot module:
   - Added hatching option for old significance mask.
