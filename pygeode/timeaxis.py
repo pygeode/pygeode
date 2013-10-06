@@ -127,12 +127,12 @@ class Time (TAxis):
   # }}}
 
 
-  def formatter(self):
+  def formatter(self, fmt=None):
   # {{{
     ''' formatter()
         Returns a matplotlib axis Formatter object; by default a FuncFormatter which calls formatvalue(). '''
     from timeticker import TimeFormatter
-    return TimeFormatter(self)
+    return TimeFormatter(self, fmt)
   # }}}
 
   def locator(self):
