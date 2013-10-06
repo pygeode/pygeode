@@ -68,7 +68,8 @@ class AxesWrapper:
 
   def render(self, fig = None, show = True, **kwargs):
 # {{{
-    pyl.ioff()
+    wason = pyl.isinteractive()
+    if wason: pyl.ioff()
 
     if not isinstance(fig, mpl.figure.Figure):
       figparm = dict(figsize = self.size)
@@ -83,11 +84,12 @@ class AxesWrapper:
 
     self._do_plots(fig)
 
-    pyl.ion()
+    if wason:
+      pyl.ion()
 
-    if show:
-      pyl.show()
-      pyl.draw()
+      if show:
+        pyl.show()
+        pyl.draw()
 
     return fig
 # }}}
@@ -242,12 +244,12 @@ class Legend(PlotOp):
 class Text(PlotOp):
 # {{{
   def render (self, axes):
-    if self.plot_kwargs.has_key('transform'):
-       tr = self.plot_kwargs.pop('transform')
-       #if tr == 'Ax': self.plot_kwargs['transform'] = axes.transAxes
-       #if tr == 'Data': self.plot_kwargs['transform'] = axes.transData
+    kwargs = self.plot_kwargs.copy()
+    tr = kwargs.pop('transform', 'Data')
+    if tr == 'Axes': kwargs['transform'] = axes.transAxes
+    if tr == 'Data': kwargs['transform'] = axes.transData
        
-    pyl.figtext (*self.plot_args, **self.plot_kwargs)
+    axes.text (*self.plot_args, **kwargs)
 # }}}
 
 # Contour
@@ -278,7 +280,7 @@ class ModifyContours(PlotOp):
     else: pyl.setp([coll[i] for i in self.ind], **self.plot_kwargs)
 # }}}
 
-# Op to modify contours
+# Op to add contour labels
 class CLabel(PlotOp):
 # {{{
   def __init__(self, cnt, **kwargs):
@@ -287,6 +289,24 @@ class CLabel(PlotOp):
 
   def render (self, axes):
     pyl.clabel(self.cnt._cnt, **self.plot_kwargs)
+# }}}
+
+# Quiver
+class Quiver(PlotOp):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.quiver (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+# Op to add a quiver key
+class QuiverKey(PlotOp):
+# {{{
+  def __init__(self, cnt, *args, **kwargs):
+    self.cnt = cnt
+    PlotOp.__init__(self, *args, **kwargs)
+
+  def render (self, axes):
+    pyl.quiverkey(self.cnt._cnt, *self.plot_args, **self.plot_kwargs)
 # }}}
 
 # Colorbar
@@ -314,9 +334,9 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
       size = axes.size[0], height
 
       if rect is None:
-        l = kwargs.pop('rl', 0.05)
+        l = kwargs.pop('rl', 0.15)
         b = kwargs.pop('rb', 0.5)
-        r = kwargs.pop('rr', 0.9)
+        r = kwargs.pop('rr', 0.75)
         t = kwargs.pop('rt', 0.4)
         rect = [l, b, r, t]
     else: 
@@ -324,9 +344,9 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
       size = width, axes.size[1]
       if rect is None:
         l = kwargs.pop('rl', 0.1)
-        b = kwargs.pop('rb', 0.05)
+        b = kwargs.pop('rb', 0.15)
         r = kwargs.pop('rr', 0.2)
-        t = kwargs.pop('rt', 0.9)
+        t = kwargs.pop('rt', 0.75)
         rect = [l, b, r, t]
 
     cax = AxesWrapper(size=size, rect=rect, make_axis=True)
@@ -338,7 +358,16 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
 
   else: ret = None
 
+  ticklabels = kwargs.pop('ticklabels', None)
+
   cnt.axes.add_plot(Colorbar(cnt, cax, *args, **kwargs))
+
+  if ticklabels is not None:
+    if orient == 'horizontal':
+      cax.setp(xticklabels = ticklabels)
+    else:
+      cax.setp(yticklabels = ticklabels)
+
   return ret
 # }}}
 
@@ -364,8 +393,10 @@ contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 modifycontours = make_plot_func(ModifyContours)
 clabel = make_plot_func(CLabel)
+quiver = make_plot_func(Quiver)
+quiverkey = make_plot_func(QuiverKey)
 
-__all__ = ['plot', 'scatter', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'colorbar']
+__all__ = ['AxesWrapper', 'plot', 'scatter', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'quiver', 'quiverkey', 'colorbar']
 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.scatter = make_plot_member(scatter)
@@ -376,6 +407,8 @@ AxesWrapper.text = make_plot_member(text)
 AxesWrapper.contour = make_plot_member(contour)
 AxesWrapper.contourf = make_plot_member(contourf)
 AxesWrapper.modifycontours = make_plot_member(modifycontours)
+AxesWrapper.quiver = make_plot_member(quiver)
+AxesWrapper.quiverkey = make_plot_member(quiverkey)
 AxesWrapper.clabel = make_plot_member(clabel)
 
 # Routine for saving this plot to a file

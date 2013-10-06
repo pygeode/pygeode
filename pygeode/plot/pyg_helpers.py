@@ -4,46 +4,26 @@
 import wrappers as wr
 import numpy as np
 
-def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
+def _buildaxistitle(name = None, plotname = None, plottitle = None, plotunits = None, **dummy):
 # {{{
-  if name is None: name = ''
-  if plotname is None: plotname = ''
-  if plottitle is None: plottitle = ''
-  if plotunits is None: plotunits = ''
-
-  assert type(plotname) is str
-  assert type(plottitle) is str
-  assert type(plotunits) is str
-  assert type(name) is str
-  
-  if plotname is not '': title = plotname # plotname is shorter, hence more suitable for axes
-  elif plottitle is not '': title = plottitle
-  elif name is not '': title = name
+  if plotname is not None: title = plotname # plotname is shorter, hence more suitable for axes
+  elif plottitle is not None: title = plottitle
+  elif name is not None: title = name
   else: title = ''
 
-  if plotunits is not '': title += ' [%s]' % plotunits
+  if plotunits not in [None, '']: title += ' [%s]' % plotunits
 
   return title
 # }}}
 
-def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotunits = '', **dummy):
+def _buildvartitle(axes = None, name = None, plotname = None, plottitle = None, plotunits = None, **dummy):
 # {{{
-  if name is None: name = ''
-  if plotname is None: plotname = ''
-  if plottitle is None: plottitle = ''
-  if plotunits is None: plotunits = ''
-  
-  assert type(plotname) is str
-  assert type(plottitle) is str
-  assert type(plotunits) is str
-  assert type(name) is str
+  if plottitle is not None: title = plottitle # plottitle is longer, hence more suitable for axes
+  elif plotname is not None: title = plotname
+  elif name is not None: title = name
+  else: title = ''
 
-  if plottitle is not '': title = plottitle # plottitle is longer, hence more suitable for axes
-  elif plotname is not '': title = plotname
-  elif name is not '': title = name
-  else: title = 'Unnamed Var'
-
-  if plotunits is not '': title += ' (%s)' % plotunits
+  if plotunits not in [None, '']: title += ' [%s]' % plotunits
     
   # Add information on degenerate axes to the title
   if axes is not None:
@@ -67,9 +47,11 @@ def axes_parm(axis):
 # {{{
   vals = scalevalues(axis).ravel()
   lims = min(vals), max(vals)
-  return axis.plotatts.get('plotscale', 'linear'), \
-         _buildaxistitle(**axis.plotatts), \
-         lims[::axis.plotatts.get('plotorder', 1)], \
+  plt = axis.plotatts.copy()
+  name = plt.pop('name', axis.name)
+  return plt.get('plotscale', 'linear'), \
+         _buildaxistitle(name = name, **plt), \
+         lims[::plt.get('plotorder', 1)], \
          axis.formatter(), \
          axis.locator()
 # }}}
@@ -81,11 +63,14 @@ def set_xaxis(axes, axis, lbl):
   if lbl:
      axes.setp(xscale = scale, xlabel = label, xlim = lim)
      axes.setp_xaxis(major_formatter = form, major_locator = loc)
-     axes.pad = [pl, 0.25, pr, 0.3]
   else:
      axes.setp(xscale = scale, xlim = lim, xticklabels=[])
      axes.setp_xaxis(major_locator = loc)
-     axes.pad = [pl, 0.1, pr, 0.3]
+
+  if len(label) > 0 and lbl:
+     axes.pad = [pl, 0.5, pr, 0.3]
+  else:
+     axes.pad = [pl, 0.3, pr, 0.3]
  # }}}
 
 def set_yaxis(axes, axis, lbl):
@@ -108,7 +93,8 @@ def build_basemap(lons, lats, **kwargs):
   proj = prd['projection']
   bnds = {}
 
-  if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', 'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq']:
+  if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
+                        'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho']:
     bnds = {'llcrnrlat':lats.min(), 
             'urcrnrlat':lats.max(),
             'llcrnrlon':lons.min(),
@@ -139,13 +125,14 @@ def decorate_basemap(axes, **kwargs):
   merd.update(kwargs.pop('meridians', {}))
   pard.update(kwargs.pop('parallels', {}))
 
+  axes.pad=(0.6, 0.1, 0.1, 0.1)
   axes.drawcoastlines(**cld)
   axes.drawmeridians(**merd)
   axes.drawparallels(**pard)
 # }}}
 
 # Do a 1D line plot
-def vplot(var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
+def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwargs):
 # {{{
   ''' 
   Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
@@ -170,6 +157,9 @@ def vplot(var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
   if isinstance(X, ZAxis):
     X, Y = Y, X
 
+  if transpose:
+    X, Y = Y, X
+
   x = scalevalues(X)
   y = scalevalues(Y)
 
@@ -179,7 +169,9 @@ def vplot(var, fmt='', axes=None, lblx=True, lbly=True, **kwargs):
   axes.pad = (0.1, 0.1, 0.1, 0.1)
   set_xaxis(axes, X, lblx)
   set_yaxis(axes, Y, lbly)
-  lbl = _buildvartitle(var.axes, var.name, **var.plotatts)
+  plt = var.plotatts.copy()
+  name = plt.pop('name', var.name)
+  lbl = _buildvartitle(var.axes, name, **plt)
   axes.setp(title=lbl, label=lbl)
 
   return axes
@@ -241,7 +233,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   z = scalevalues(Z.transpose(Y, X))
 
   if axes is None: 
-    if isinstance(X, Lon) and isinstance(Y, Lat):
+    if isinstance(X, Lon) and isinstance(Y, Lat) and kwargs.get('map', None) is not False:
       axes = build_basemap(x, y, **kwargs)
     else:
       axes = wr.AxesWrapper()
@@ -260,20 +252,22 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   if not clines is None:
     axes.contour(x, y, z, clines, **kwargs)
 
-  if isinstance(axes, wr.BasemapAxes):
-    decorate_basemap(axes, **kwargs)
-
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    set_xaxis(axes, X, lblx)
-    set_yaxis(axes, Y, lbly)
-    axes.setp(title = _buildvartitle(var.axes, var.name, **var.plotatts))
+    if isinstance(axes, wr.BasemapAxes):
+      decorate_basemap(axes, **kwargs)
+    else:
+      set_xaxis(axes, X, lblx)
+      set_yaxis(axes, Y, lbly)
+    plt = var.plotatts.copy()
+    name = plt.pop('name', var.name)
+    axes.setp(title = _buildvartitle(var.axes, name, **plt))
 
   return axes
 # }}}
 
-# Do a 2D contour plot
+# Do a 2D significance mask
 def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9', mnalpha=1., transpose=None):
 # {{{
   Z = var.squeeze()
@@ -297,18 +291,67 @@ def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9',
   if mnsig is None:
     cl = [-1.1, -mjsig, mjsig, 1.1]
     clr = ['w', mjc, 'w']
-    axes.contourf(x, y, z, cl, colors=clr, zorder=-1)
+    axes.contourf(x, y, z, cl, colors=clr)#, zorder=-1)
     cnt = axes.plots[-1]
     axes.modifycontours(cnt, ind=[0, 2], visible=False)
     axes.modifycontours(cnt, ind=[1], edgecolor='none', alpha=mjalpha)
   else:
     cl = [-1.1, -mnsig,-mjsig, mjsig, mnsig, 1.1]
     clr = ['w', mnc, mjc, mnc, 'w']
-    axes.contourf(x, y, z, cl, colors=clr, zorder=-1)
+    axes.contourf(x, y, z, cl, colors=clr)#, zorder=-1)
     cnt = axes.plots[-1]
     axes.modifycontours(cnt, ind=[0,4], visible=False)
     axes.modifycontours(cnt, ind=[1,3], edgecolor='none', alpha=mnalpha)
     axes.modifycontours(cnt, ind=[2], edgecolor='none', alpha=mjalpha)
+
+  return axes
+# }}}
+
+# Do a quiver plot
+def vquiver(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
+# {{{
+  U = varu.squeeze()
+  V = varv.squeeze()
+  assert U.naxes == 2 and V.naxes == 2, 'Variables to quiver must have two non-degenerate axes.'
+  X, Y = U.axes
+
+  from pygeode.axis import Lat, Lon
+  # If a vertical axis is present transpose the plot
+  from pygeode.axis import ZAxis, Lat, Lon
+  if transpose is None:
+    if isinstance(X, ZAxis):
+      X, Y = Y, X
+    if isinstance(X, Lat) and isinstance(Y, Lon):
+      X, Y = Y, X
+  elif transpose:
+    X, Y = Y, X
+
+  x = scalevalues(X)
+  y = scalevalues(Y)
+  u = scalevalues(U.transpose(Y, X))
+  v = scalevalues(V.transpose(Y, X))
+
+  map = kwargs.pop('map', None)
+
+  if axes is None: 
+    if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
+      axes = build_basemap(x, y, map = map, **kwargs)
+    else:
+      axes = wr.AxesWrapper()
+
+  axes.quiver(x, y, u, v, **kwargs)
+
+  # Apply the custom axes args
+  if label:
+    axes.pad = (0.1, 0.1, 0.1, 0.1)
+    if isinstance(axes, wr.BasemapAxes):
+      decorate_basemap(axes, **kwargs)
+    else:
+      set_xaxis(axes, X, lblx)
+      set_yaxis(axes, Y, lbly)
+    plt = varu.plotatts.copy()
+    name = plt.pop('name', varu.name)
+    axes.setp(title = _buildvartitle(varu.axes, name, **plt))
 
   return axes
 # }}}
@@ -412,7 +455,7 @@ def showcol(vs, size=(4.1,2), **kwargs):
   return Ax
 # }}}
 
-def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), **kwargs):
+def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
 # {{{
   ''' 
   Plot contours
@@ -469,9 +512,14 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), **kwargs):
   nrow = np.ceil(nV / float(ncol))
 
   axpad = 0.2
-  axpadl = 0.9
   aypad = 0.4
-  aypadl = 0.55
+  if lbl:
+    axpadl = 0.9
+    aypadl = 0.55
+  else:
+    axpadl = axpad
+    aypadl = aypad
+
   axw, axh = size
   ypad = ypad + aypadl + aypad * (nrow-1)
   xpad = xpad + axpadl + axpad * (ncol-1)
@@ -581,4 +629,4 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vscatter', 'vcontour', 'vsigmask', 'savepages']
+__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vscatter', 'vcontour', 'vsigmask', 'vquiver', 'savepages']

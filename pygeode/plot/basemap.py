@@ -1,4 +1,4 @@
-from wrappers import AxesWrapper, PlotOp, Contour, Contourf, make_plot_func, make_plot_member
+from wrappers import AxesWrapper, PlotOp, Contour, Contourf, Quiver, make_plot_func, make_plot_member
 
 from mpl_toolkits.basemap import Basemap
 class BasemapAxes(AxesWrapper):
@@ -11,7 +11,7 @@ class BasemapAxes(AxesWrapper):
     self.bm = Basemap(ax = self.ax, **proj)
 # }}}
 
-  def setp(self, **kwargs):
+  def setp(self, children=True, **kwargs):
 # {{{
     proj = self.axes_args.get('projection', 'cyl')
     if proj in ['cyl', 'merc', 'mill', 'gall']:
@@ -30,24 +30,30 @@ class BasemapAxes(AxesWrapper):
     kwargs.pop('yscale', None)
 
     self.args.update(kwargs)
+    if children:
+      for a in self.axes: a.setp(children, **kwargs)
 # }}}
 
-  def setp_xaxis(self, **kwargs):
+  def setp_xaxis(self, children=True, **kwargs):
 # {{{
     kwargs.pop('major_locator', None)
     kwargs.pop('minor_locator', None)
     kwargs.pop('major_formatter', None)
     kwargs.pop('minor_formatter', None)
     AxesWrapper.setp_xaxis(self, **kwargs)
+    if children:
+      for a in self.axes: a.setp(children, **kwargs)
 # }}}
 
-  def setp_yaxis(self, **kwargs):
+  def setp_yaxis(self, children=True, **kwargs):
 # {{{
     kwargs.pop('major_locator', None)
     kwargs.pop('minor_locator', None)
     kwargs.pop('major_formatter', None)
     kwargs.pop('minor_formatter', None)
     AxesWrapper.setp_yaxis(self, **kwargs)
+    if children:
+      for a in self.axes: a.setp(children, **kwargs)
 # }}}
 
 # Contour
@@ -91,6 +97,31 @@ class BMContourf(Contourf):
     self._cnt = bm.contourf (*args, **self.plot_kwargs)
 # }}}
 
+class BMQuiver(Quiver):
+# {{{
+  @staticmethod
+  def transform(bm, args):
+    from numpy import meshgrid, ndarray
+    from mpl_toolkits.basemap import shiftgrid
+    from warnings import warn
+    # X, Y, U, V
+    if len(args) == 4:
+      X, Y, U, V = args
+      U, newX = shiftgrid(180, U, X, start=False)
+      V, newX = shiftgrid(180, V, X, start=False)
+      #newX, Y = meshgrid(newX, Y)
+      UP, VP, XX, YY = bm.transform_vector(U, V, newX, Y, 31, 31, returnxy=True)
+      return XX, YY, UP, VP
+    #TODO: finish the rest of the cases
+    warn("Don't know what to do for the coordinate transformation")
+    return args
+
+  def render (self, axes):
+    bm = self.axes.bm
+    args = BMQuiver.transform(bm, self.plot_args)
+    self._cnt = bm.quiver (*args, **self.plot_kwargs)
+# }}}
+
 class BMDrawCoast(PlotOp):
 # {{{
   def render (self, axes):
@@ -114,14 +145,16 @@ class BMDrawParallels(PlotOp):
 
 bmcontour = make_plot_func(BMContour)
 bmcontourf = make_plot_func(BMContourf)
+bmquiver = make_plot_func(BMQuiver)
 drawcoastlines = make_plot_func(BMDrawCoast)
 drawmeridians = make_plot_func(BMDrawMeridians)
 drawparallels = make_plot_func(BMDrawParallels)
 
 BasemapAxes.contour = make_plot_member(bmcontour)
 BasemapAxes.contourf = make_plot_member(bmcontourf)
+BasemapAxes.quiver = make_plot_member(bmquiver)
 BasemapAxes.drawcoastlines = make_plot_member(drawcoastlines)
 BasemapAxes.drawmeridians = make_plot_member(drawmeridians)
 BasemapAxes.drawparallels = make_plot_member(drawparallels)
 
-__all__ = ['BasemapAxes', 'bmcontour', 'bmcontourf', 'drawcoastlines', 'drawmeridians', 'drawparallels']
+__all__ = ['BasemapAxes', 'bmcontour', 'bmcontourf', 'bmquiver', 'drawcoastlines', 'drawmeridians', 'drawparallels']
