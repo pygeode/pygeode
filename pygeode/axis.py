@@ -13,7 +13,6 @@ class AxisFormatter(pyl.Formatter):
     self.units = units
 
   def format(self, val, units=False):
-    val = val*self.plotatts['scalefactor'] + self.plotatts['offset'] # apply scalefactor and offset 
     strval = self.plotatts['formatstr'] % val # convert to string
     if units:
       if self.plotatts['plotunits']: strval += self.plotatts['plotunits'] # properly formatted units
