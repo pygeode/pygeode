@@ -37,13 +37,14 @@ class ConcatVar(Var):
       else:
         iaxis = iaxis.pop()
 
-    # Get a numerical dimension number
-    iaxis = vars[0].whichaxis(iaxis)
+    if not iaxis is naxes:
+      # Get a numerical dimension number
+      iaxis = vars[0].whichaxis(iaxis)
 
-    # Update the list of axes with the concatenated axis included
-    values = [v.axes[iaxis].values for v in vars]
-    values = np.concatenate(values)
-    axes[iaxis] = axes[iaxis].withnewvalues(values)
+      # Update the list of axes with the concatenated axis included
+      values = [v.axes[iaxis].values for v in vars]
+      values = np.concatenate(values)
+      axes[iaxis] = axes[iaxis].withnewvalues(values)
 
     # Get the data type
     dtype = common_dtype(vars)
@@ -75,8 +76,10 @@ class ConcatVar(Var):
     # Degenerate case: separate concat axis
     # (would be appended to the end of the axis list)
     if self.iaxis == self.vars[0].naxes:
-      N = len(self.vars)
-      chunks = [view.get(v,pbar=pbar.part(i,N)) for i,v in enumerate(self.vars)]
+      N = len(view.integer_indices[self.iaxis])
+      subview = view.remove(self.iaxis)
+      chunks = [np.expand_dims(subview.get(self.vars[i], pbar=pbar.part(n,N)), self.iaxis)
+              for n,i in enumerate(view.integer_indices[self.iaxis])]
       return np.concatenate(chunks, axis=self.iaxis)
     #TODO: fix this, once there's a common_map
     chunks = [view.get(v,strict=True,conform=False) for v in self.vars]
