@@ -94,10 +94,11 @@ def correlate(X, Y, axes=None, pbar=None):
   return Rho, P
 # }}}
 
-def regress(X, Y, axes=None, pbar=None, N_fac=None):
+def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
 # {{{
   ''' regress(X, Y) - returns correlation between variables X and Y
-      computed over axes. Returns rho_xy, and p values
+      computed over axes. Outputs can be requested by a comma seperated
+      string Returns rho_xy, and p values
       for rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
       section 8.2.3.'''
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
@@ -153,16 +154,33 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None):
   if N_fac is None: N_eff = N
   else: N_eff = N / N_fac
   sige = (yy - m * xy) / (N_eff - 2.)
-  t = np.abs(m) * np.sqrt(xx / sige)
+  sigm = np.sqrt(sige / xx)
+  t = np.abs(m) / sigm
   p = tdist.cdf(t, N-2) * np.sign(m)
   xn = X.name if X.name != '' else 'X'
   yn = Y.name if Y.name != '' else 'Y'
 
   from pygeode.var import Var
-  M = Var(oaxes, values=m, name='%s vs. %s' % (yn, xn))
-  B = Var(oaxes, values=b, name='Intercept (%s vs. %s)' % (yn, xn))
-  P = Var(oaxes, values=p, name='P(%s vs. %s != 0)' % (yn, xn))
-  return M, B, P
+  output = output.split(',')
+  ret = []
+
+  if 'm' in output:
+    M = Var(oaxes, values=m, name='%s vs. %s' % (yn, xn))
+    ret.append(M)
+  if 'b' in output:
+    B = Var(oaxes, values=b, name='Intercept (%s vs. %s)' % (yn, xn))
+    ret.append(B)
+  if 'r' in output:
+    ret.append(Var(oaxes, values=xy**2/(xx*yy), name='R2(%s vs. %s)' % (yn, xn)))
+  if 'p' in output:
+    P = Var(oaxes, values=p, name='P(%s vs. %s != 0)' % (yn, xn))
+    ret.append(P)
+  if 'sm' in output:
+    ret.append(Var(oaxes, values=sigm, name='Sig. Intercept (%s vs. %s != 0)' % (yn, xn)))
+  if 'se' in output:
+    ret.append(Var(oaxes, values=np.sqrt(sige), name='Sig. Resid. (%s vs. %s != 0)' % (yn, xn)))
+
+  return ret
 # }}}
 
 def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
