@@ -683,6 +683,23 @@ typedef int (val_as_date_func) (int n, int iyear, int imonth, int iday,
                      int *year, int *month, int *day,
                      int *hour, int *minute, int *second);
 
+int checkArray(PyArrayObject *a, const char *name, int np_type)
+{
+  if (a->descr->type_num != np_type) { 
+    char err[100];
+    sprintf(err, "%s array type wrong.", name);
+    PyErr_SetString(PyExc_TypeError, err); 
+    return 0; 
+  }
+  if (!PyArray_ISCONTIGUOUS(a)) {
+    char err[100];
+    sprintf(err, "%s array not contiguous.", name);
+    PyErr_SetString(PyExc_TypeError, err);
+    return 0; 
+  }
+  return 1;
+}
+
 static PyObject *val_as_date_wrapper (PyObject *args, val_as_date_func *f) {
 
   int n, iyear, imonth, iday, ihour, iminute, isecond, *year, *month, *day, *hour, *minute, *second;
@@ -692,20 +709,13 @@ static PyObject *val_as_date_wrapper (PyObject *args, val_as_date_func *f) {
   if (!PyArg_ParseTuple(args, "iiiiiiiO!O!O!O!O!O!O!", &n, &iyear, &imonth, &iday, &ihour, &iminute, &isecond, &PyArray_Type, &val_array, &PyArray_Type, &year_array, &PyArray_Type, &month_array, &PyArray_Type, &day_array, &PyArray_Type, &hour_array, &PyArray_Type, &minute_array, &PyArray_Type, &second_array)) return NULL;
 
   // Make sure the arrays are contiguous and of the right type
-  if (val_array->descr->type_num != NPY_INT64) return NULL;
-  if (year_array->descr->type_num != NPY_INT) return NULL;
-  if (month_array->descr->type_num != NPY_INT) return NULL;
-  if (day_array->descr->type_num != NPY_INT) return NULL;
-  if (hour_array->descr->type_num != NPY_INT) return NULL;
-  if (minute_array->descr->type_num != NPY_INT) return NULL;
-  if (second_array->descr->type_num != NPY_INT) return NULL;
-  if (!PyArray_ISCONTIGUOUS(val_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(year_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(month_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(day_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(hour_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(minute_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(second_array)) return NULL;
+  if (!checkArray(val_array, "Val", NPY_INT64)) return NULL;
+  if (!checkArray(year_array, "Year", NPY_INT)) return NULL;
+  if (!checkArray(month_array, "Month", NPY_INT)) return NULL;
+  if (!checkArray(day_array, "Day", NPY_INT)) return NULL;
+  if (!checkArray(hour_array, "Hour", NPY_INT)) return NULL;
+  if (!checkArray(minute_array, "Minute", NPY_INT)) return NULL;
+  if (!checkArray(second_array, "Second", NPY_INT)) return NULL;
 
   val = (long long int*)(val_array->data);
   year   = (int*)(year_array->data);
@@ -757,20 +767,13 @@ static PyObject *date_as_val_wrapper (PyObject *args, date_as_val_func *f) {
   if (!PyArg_ParseTuple(args, "iiiiiiiO!O!O!O!O!O!O!", &n, &iyear, &imonth, &iday, &ihour, &iminute, &isecond, &PyArray_Type, &year_array, &PyArray_Type, &month_array, &PyArray_Type, &day_array, &PyArray_Type, &hour_array, &PyArray_Type, &minute_array, &PyArray_Type, &second_array, &PyArray_Type, &val_array)) return NULL;
 
   // Make sure the arrays are contiguous and of the right type
-  if (val_array->descr->type_num != NPY_INT64) return NULL;
-  if (year_array->descr->type_num != NPY_INT) return NULL;
-  if (month_array->descr->type_num != NPY_INT) return NULL;
-  if (day_array->descr->type_num != NPY_INT) return NULL;
-  if (hour_array->descr->type_num != NPY_INT) return NULL;
-  if (minute_array->descr->type_num != NPY_INT) return NULL;
-  if (second_array->descr->type_num != NPY_INT) return NULL;
-  if (!PyArray_ISCONTIGUOUS(val_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(year_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(month_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(day_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(hour_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(minute_array)) return NULL;
-  if (!PyArray_ISCONTIGUOUS(second_array)) return NULL;
+  if (!checkArray(val_array, "Val", NPY_INT64)) return NULL;
+  if (!checkArray(year_array, "Year", NPY_INT)) return NULL;
+  if (!checkArray(month_array, "Month", NPY_INT)) return NULL;
+  if (!checkArray(day_array, "Day", NPY_INT)) return NULL;
+  if (!checkArray(hour_array, "Hour", NPY_INT)) return NULL;
+  if (!checkArray(minute_array, "Minute", NPY_INT)) return NULL;
+  if (!checkArray(second_array, "Second", NPY_INT)) return NULL;
 
   val = (long long int*)(val_array->data);
   year   = (int*)(year_array->data);
