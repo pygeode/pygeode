@@ -9,6 +9,7 @@ class Spectral(Axis):
   name = 'spharm' 
   plotatts = Axis.plotatts.copy()
   plotatts['formatstr'] = '%d'
+  plotatts['plottitle'] = 'Spherical Harm.'
 
   def __init__ (self, values, trunc = None, M=None, N=None, **kwargs):
   # {{{
