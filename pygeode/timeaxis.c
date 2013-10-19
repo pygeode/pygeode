@@ -598,11 +598,11 @@ static PyObject *timeaxiscore_get_indices (PyObject *self, PyObject *args) {
   int ret;
   if (!PyArg_ParseTuple(args, "iOiOiO!", &natts, &invalues_obj, &n_in, &outvalues_obj, &n_out, &PyArray_Type, &indices_array)) return NULL;
   // Make sure input arrays are contiguous and of the right type
-  invalues_array = (PyArrayObject*)PyArray_ContiguousFromObject(invalues_obj,NPY_INT,0,0);
+  invalues_array = (PyArrayObject*)PyArray_ContiguousFromObject(invalues_obj,NPY_INT32,0,0);
   if (invalues_array == NULL) return NULL;
-  outvalues_array = (PyArrayObject*)PyArray_ContiguousFromObject(outvalues_obj,NPY_INT,0,0);
+  outvalues_array = (PyArrayObject*)PyArray_ContiguousFromObject(outvalues_obj,NPY_INT32,0,0);
   if (outvalues_array == NULL) return NULL;
-  if (indices_array->descr->type_num != NPY_INT) return NULL;
+  if (indices_array->descr->type_num != NPY_INT32) return NULL;
   if (!PyArray_ISCONTIGUOUS(indices_array)) return NULL;
   invalues = (int*)(invalues_array->data);
   outvalues = (int*)(outvalues_array->data);
@@ -623,10 +623,10 @@ static PyObject *timeaxiscore_uniquify (PyObject *self, PyObject *args) {
   int ret;
   if (!PyArg_ParseTuple(args, "iOiO!", &natts, &in_atts_obj, &n_in, &PyArray_Type, &out_atts_array)) return NULL;
   // Make sure input array is contiguous and of the right type
-  in_atts_array = (PyArrayObject*)PyArray_ContiguousFromObject(in_atts_obj,NPY_INT,0,0);
+  in_atts_array = (PyArrayObject*)PyArray_ContiguousFromObject(in_atts_obj,NPY_INT32,0,0);
   if (in_atts_array == NULL) return NULL;
   // Make sure the output arrays are contiguous and of the right type
-  if (out_atts_array->descr->type_num != NPY_INT) return NULL;
+  if (out_atts_array->descr->type_num != NPY_INT32) return NULL;
   if (!PyArray_ISCONTIGUOUS(out_atts_array)) return NULL;
 
   in_atts = (int*)(in_atts_array->data);
@@ -650,15 +650,15 @@ static PyObject *timeaxiscore_common_map (PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "iiOiOO!O!", &natts, &na, &a_obj, &nb, &b_obj, &PyArray_Type, &a_map_array, &PyArray_Type, &b_map_array)) return NULL;
 
   // Make sure input arrays are contiguous and of the right type
-  a_array = (PyArrayObject*)PyArray_ContiguousFromObject(a_obj,NPY_INT,0,0);
+  a_array = (PyArrayObject*)PyArray_ContiguousFromObject(a_obj,NPY_INT32,0,0);
   if (a_array == NULL) return NULL;
-  b_array = (PyArrayObject*)PyArray_ContiguousFromObject(b_obj,NPY_INT,0,0);
+  b_array = (PyArrayObject*)PyArray_ContiguousFromObject(b_obj,NPY_INT32,0,0);
   if (b_array == NULL) return NULL;
 
   // Make sure the output arrays are contiguous and of the right type
-  if (a_map_array->descr->type_num != NPY_INT) return NULL;
+  if (a_map_array->descr->type_num != NPY_INT32) return NULL;
   if (!PyArray_ISCONTIGUOUS(a_map_array)) return NULL;
-  if (b_map_array->descr->type_num != NPY_INT) return NULL;
+  if (b_map_array->descr->type_num != NPY_INT32) return NULL;
   if (!PyArray_ISCONTIGUOUS(b_map_array)) return NULL;
 
   a = (int*)(a_array->data);
@@ -710,12 +710,12 @@ static PyObject *val_as_date_wrapper (PyObject *args, val_as_date_func *f) {
 
   // Make sure the arrays are contiguous and of the right type
   if (!checkArray(val_array, "Val", NPY_INT64)) return NULL;
-  if (!checkArray(year_array, "Year", NPY_INT)) return NULL;
-  if (!checkArray(month_array, "Month", NPY_INT)) return NULL;
-  if (!checkArray(day_array, "Day", NPY_INT)) return NULL;
-  if (!checkArray(hour_array, "Hour", NPY_INT)) return NULL;
-  if (!checkArray(minute_array, "Minute", NPY_INT)) return NULL;
-  if (!checkArray(second_array, "Second", NPY_INT)) return NULL;
+  if (!checkArray(year_array, "Year", NPY_INT32)) return NULL;
+  if (!checkArray(month_array, "Month", NPY_INT32)) return NULL;
+  if (!checkArray(day_array, "Day", NPY_INT32)) return NULL;
+  if (!checkArray(hour_array, "Hour", NPY_INT32)) return NULL;
+  if (!checkArray(minute_array, "Minute", NPY_INT32)) return NULL;
+  if (!checkArray(second_array, "Second", NPY_INT32)) return NULL;
 
   val = (long long int*)(val_array->data);
   year   = (int*)(year_array->data);
@@ -768,12 +768,12 @@ static PyObject *date_as_val_wrapper (PyObject *args, date_as_val_func *f) {
 
   // Make sure the arrays are contiguous and of the right type
   if (!checkArray(val_array, "Val", NPY_INT64)) return NULL;
-  if (!checkArray(year_array, "Year", NPY_INT)) return NULL;
-  if (!checkArray(month_array, "Month", NPY_INT)) return NULL;
-  if (!checkArray(day_array, "Day", NPY_INT)) return NULL;
-  if (!checkArray(hour_array, "Hour", NPY_INT)) return NULL;
-  if (!checkArray(minute_array, "Minute", NPY_INT)) return NULL;
-  if (!checkArray(second_array, "Second", NPY_INT)) return NULL;
+  if (!checkArray(year_array, "Year", NPY_INT32)) return NULL;
+  if (!checkArray(month_array, "Month", NPY_INT32)) return NULL;
+  if (!checkArray(day_array, "Day", NPY_INT32)) return NULL;
+  if (!checkArray(hour_array, "Hour", NPY_INT32)) return NULL;
+  if (!checkArray(minute_array, "Minute", NPY_INT32)) return NULL;
+  if (!checkArray(second_array, "Second", NPY_INT32)) return NULL;
 
   val = (long long int*)(val_array->data);
   year   = (int*)(year_array->data);

@@ -357,7 +357,7 @@ def vquiver(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=N
 # }}}
 
 # Generic catch all interface (plotvar replacement)
-def showvar(var, **kwargs):
+def showvar(var, *args, **kwargs):
 # {{{
   ''' 
   Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
@@ -367,10 +367,22 @@ def showvar(var, **kwargs):
   var :  :class:`Var`
      The variable to plot. Should have either 1 or 2 non-degenerate axes.
 
+  *args, **kwargs : arguments to pass on to underlying plotting routines, see
+      Notes.
+
   Notes
   -----
-  This function is intended as the simplest way to display the contents of a variable,
-  choosing appropriate parameter values as automatically as possible.
+  This function is intended as the simplest way to display the contents of a
+  variable, choosing appropriate parameter values as automatically as possible.
+  For 1d variables it calls :func:`Var.vplot()`, and for 2d variables
+  :func:`Var.vcontour`. In the latter case, if filled contours were produced, it
+  calls `AxesWrapper.colorbar()'. A dictionary ``colorbar`` can be provided to
+  pass arguments through. Setting ``colorbar`` to ``False`` suppresses the
+  colorbar.
+
+  See Also
+  --------
+  vplot, vcontour, colorbar
   '''
 
   Z = var.squeeze()
@@ -379,10 +391,10 @@ def showvar(var, **kwargs):
   fig = kwargs.pop('fig', None)
 
   if Z.naxes == 1:
-    ax = vplot(var, **kwargs)
+    ax = vplot(var, *args, **kwargs)
 
   elif Z.naxes == 2:
-    ax = vcontour(var, **kwargs)
+    ax = vcontour(var, *args, **kwargs)
 
     cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
     cf = ax.find_plot(wr.Contourf)

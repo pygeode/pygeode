@@ -240,11 +240,9 @@ class Axis(Var):
     --------
     >>> from pygeode import Lat
     >>> x = Lat([30,20,10])
-    >>> print x
-    lat <Lat>      :  30 N to 10 N (3 values)
-    >>> y = x.sorted()
+    >>> print x 
+    >>> y = x.sorted() 
     >>> print y
-    lat <Lat>      :  10 N to 30 N (3 values)
 
     See Also
     --------

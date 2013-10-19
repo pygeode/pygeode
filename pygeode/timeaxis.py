@@ -589,12 +589,12 @@ class CalendarTime(Time):
 
     values = np.ascontiguousarray(np.round(vals * self.unitfactor[units]), dtype='int64')
     n = len(values)
-    year   = np.empty(n, dtype='i')
-    month  = np.empty(n, dtype='i')
-    day    = np.empty(n, dtype='i')
-    hour   = np.empty(n, dtype='i')
-    minute = np.empty(n, dtype='i')
-    second = np.empty(n, dtype='i')
+    year   = np.empty(n, dtype='int32')
+    month  = np.empty(n, dtype='int32')
+    day    = np.empty(n, dtype='int32')
+    hour   = np.empty(n, dtype='int32')
+    minute = np.empty(n, dtype='int32')
+    second = np.empty(n, dtype='int32')
 
     self._val_as_date (n, iyear, imonth, iday, ihour, iminute, isecond,
                         values,
