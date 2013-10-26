@@ -6,28 +6,22 @@ class SmoothVar (Var):
   '''Smoothing variable. Convolves source variable along 
       given axis with the specified smoothing kernel.'''
 
-  def __init__ (self, var, saxis, kernel='hann', klen=None):
+  def __init__ (self, var, saxis, kernel):
   # {{{
     ''' __init__()'''
     import numpy as np
 
-    # Moved this here temporarily, otherwise pygeode won't start on sparc01 (no scipy available)
-    ktypes = {'hann': np.hanning, 'flat': np.ones, 'bartlett': np.bartlett, 'hamm': np.hamming}
+    assert len(kernel) <= var.shape[saxis], 'Kernel must not be longer than dimension being smoothed.'
 
     # Construct new variable
     self.saxis = saxis
     self.var = var
-    if kernel in ktypes.keys():
-      self.kernel = ktypes[kernel](klen)
-    else:
-      self.kernel = kernel
-
-    assert klen <= var.shape[saxis], 'Kernel must be shorter than dimension being smoothed.'
-    self.klen = klen
+    self.kernel = kernel
+    self.klen = len(kernel)
 
     # Normalize and reshape kernel
     self.kernel /= np.sum(self.kernel)
-    self.kernel.shape = [klen if i == saxis else 1 for i in range(var.naxes)]
+    self.kernel.shape = [self.klen if i == saxis else 1 for i in range(var.naxes)]
 
     Var.__init__(self, var.axes, var.dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
   # }}}
@@ -47,13 +41,13 @@ class SmoothVar (Var):
     loffs = self.klen / 2
     roffs = self.klen - loffs
     src_shape = view.shape[:saxis] + (sp - st + self.klen,) + view.shape[saxis+1:]
-    src = np.empty(src_shape, self.var.dtype)
+    src = np.zeros(src_shape, self.var.dtype)
     
     # Construct slices for mirroring pre-convolved data
     ssli = [slice(None) for i in range(self.naxes)]
     sslo = [slice(None) for i in range(self.naxes)]
     mleft_len = max(loffs - st, 0)
-    mright_len = max(sp + roffs + 1, self.shape[saxis]) - self.shape[saxis]
+    mright_len = max(sp + roffs, self.shape[saxis]) - self.shape[saxis]
 
     # Construct slice into source variable
     insl = slice(max(st - loffs, 0), min(sp + roffs, self.shape[saxis]), 1)
@@ -63,18 +57,18 @@ class SmoothVar (Var):
     outsl = [ind - (st - loffs) if i == saxis else slice(None) for i in range(self.naxes)]
 
     # Get source data
-    sslo[saxis] = slice(mleft_len, src_shape[saxis] - mright_len + 1)
+    sslo[saxis] = slice(mleft_len, src_shape[saxis] - mright_len)
     src[sslo] = aview.get(self.var, pbar=pbar)
 
     # Mirror boundaries, if necessary
     if mleft_len > 0:
-      ssli[saxis] = slice(2*mleft_len, mleft_len,-1)
+      ssli[saxis] = slice(2*mleft_len-1, mleft_len-1,-1)
       sslo[saxis] = slice(0, mleft_len)
       src[sslo] = src[ssli]
 
     # Mirror boundaries, if necessary
     if mright_len > 0:
-      ssli[saxis] = slice(-mright_len,-2*mright_len,-1)
+      ssli[saxis] = slice(-mright_len-1,-2*mright_len-1,-1)
       sslo[saxis] = slice(-mright_len, None)
       src[sslo] = src[ssli]
 
@@ -86,7 +80,44 @@ class SmoothVar (Var):
        return sg.convolve(src, self.kernel, 'same')[outsl].astype(self.dtype)
   # }}}
 
-def smooth(var, saxis, klen=15, kernel='hann'):
-  if klen <= 2:
+def smooth(var, saxis, kernel=15):
+  ''' Smooths this variable along ``saxis`` by convolving it with an averaging
+      kernel. The returned variable is defined on the same axes.
+
+      Parameters
+      ----------
+      saxis : any axis identifier (string, :class:`Axis`, or int)
+        Axis over which the smoothing should be performed
+
+      kernel : sequence or int (optional)
+        Averaging kernel with which to convolve this variable. Does not need to
+        be normalized.  If an integer is provided, a Hanning window is used of
+        length ``kernel`` (:numpy:function:`hanning`)
+
+      Returns
+      -------
+      out : :class:`Var`
+        Smoothed variable.
+
+      Notes
+      -----
+      When the convolution is performed, the source data is extended on either
+      end of the axis being smoothed by reflecting the data by enough to ensure
+      the returned variable is defined on the same grid as the source variable.
+      That is, if the original data is t1, t2, .., tN, and the kernel is L
+      items long, the convolved sequence is tj, t_j-1, t1, t1, t2, .. tN-1, tN,
+      tN, tN-1, .. tN-l, where j = floor(L/2) and l = L - j - 1.
+
+      Examples
+      --------
+  '''
+  import numpy as np
+  if hasattr(kernel, '__len__'):
+    kernel = np.array(kernel, dtype='d')
+  else:
+    kernel = np.hanning(kernel)
+
+  if len(kernel) <= 2:
     return var
-  return SmoothVar(var, saxis=var.whichaxis(saxis), kernel=kernel, klen=klen)
+
+  return SmoothVar(var, var.whichaxis(saxis), kernel)
