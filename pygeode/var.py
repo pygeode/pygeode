@@ -40,16 +40,11 @@ class Var(object):
   # Default attributes
   name = '' # default name (blank)
   units = '' # default units (none)
+  formatstr = '%g' # Formatting code to use for printint values
   atts = {} # shared dictionary - replace this in init!
-  # attributes for plotting
-  plotatts = {'formatstr': '%g',  # default format string for display
-              'plotscale': 'linear',  # default scale for plotting
-              'plotorder': 1,  # By default, plot with axis values increasing away from origin
-              # Formatting attributes for axis labels and ticks (see formatter method for application)
-              'plottitle': None, # name displayed in plots (axis label)
-              'plotunits': '', # displayed units (after offset and scalefactor have been applied)
-              'scalefactor': 1, # a multiplicative factor applied before display
-              'offset': 0} # an additive offset applied before display
+  # attributes for plotting; see plotting documentation
+  plotatts = {'plotscale': 'linear',  # default scale for plotting
+              'plotorder': 1}  # By default, plot with axis values increasing away from origin
 
   # This method should be called by all subclasses
   def __init__ (self, axes, dtype=None, name=None, values=None, atts=None, plotatts=None):
@@ -297,16 +292,21 @@ class Var(object):
 
   # Avoid accidentally iterating over vars
   def __iter__ (self):
-    raise Exception ("Vars cannot be iterated over")
+# {{{
+    raise Exception ("Var instances cannot be iterated over")
+# }}}
 
   # Include axes names
   def __dir__(self):
+# {{{
     l = self.__dict__.keys() + dir(self.__class__)
     return l + [a.name for a in self.axes]
+# }}}
 
   # Shortcuts to axes
   # (handled dynamically, in case some fudging is done to the var)
   def __getattr__(self, name):
+# {{{
     # Disregard metaclass stuff
     if name.startswith('__'): raise AttributeError
 
@@ -320,30 +320,39 @@ class Var(object):
     except KeyError: raise AttributeError ("'%s' not found in %s"%(name,repr(self)))
 
     raise AttributeError (name)
+# }}}
 
 
   # Modifies __setattr__ and __delattr__ to avoid further modifications to the Var
   # (should be called by any Var subclasses at the end of their __init__)
   def _finalize (self):
+# {{{
     if self.__setattr__ == self._dont_setattr:
       from warnings import warn
       warn ("already finalized the var", stacklevel=2)
       return
     self.__delattr__ = self._dont_delattr
     self.__setattr__ = self._dont_setattr
+# }}}
+
   # Send all attribute requests through here, to enforce immutability
   def _dont_setattr(self,name,value):
+# {{{
     # Can only modify the var name
     if name != 'name':
 #      raise TypeError ("can't modify an immutable Var")
       from warnings import warn
       warn ("shouldn't be modifying an immutable Var", stacklevel=2)
     object.__setattr__(self,name,value)
+# }}}
+
   def _dont_delattr(self,name):
+# {{{
 #    raise TypeError ("can't modify an immutable Var")
     from warnings import warn
     warn ("shouldn't be modifying an immutable Var", stacklevel=2)
     object.__delattr__(self,name)
+# }}}
 
   # Get an axis based on its class
   # ie, somevar.getaxis(ZAxis)
@@ -433,6 +442,43 @@ class Var(object):
     return True
   # }}}
 
+  def formatvalue(self, value, fmt=None, units=True, unitstr=None):
+  # {{{
+    '''
+    Returns formatted string representation of ``value``.
+      
+    Parameters
+    ----------
+    value : float or int
+      Value to format.
+    fmt : string (optional)
+      Format specification. If the default ``None`` is specified, 
+      ``self.formatstr`` is used.
+    units : boolean (optional)
+      If ``True``, will include the units in the string returned.
+      Default is ``True``.
+    unitstr : string (optional)
+      String to use for the units; default is ``self.units``.
+
+    Returns
+    -------
+    If units is True, fmt % value + ' ' + unitstr. Otherwise fmt % value.
+
+    Notes
+    -----
+    This is overridden in a number of Axis classes for more sophisticated formatting.
+    '''
+
+    if fmt is None: fmt = self.formatstr
+    strval = fmt % value
+
+    if units: 
+      if unitstr is None: unitstr = self.units
+      strval += ' ' + unitstr
+
+    return strval
+  # }}}
+
   # Pretty printing
   def __str__ (self):
   # {{{
@@ -457,6 +503,7 @@ class Var(object):
     s += '  Type:  %s (dtype="%s")' % (self.__class__.__name__, self.dtype.name)
     return s
   # }}}
+
   def __repr__ (self):
   # {{{
     if self.name != '':
@@ -465,8 +512,6 @@ class Var(object):
     return '<Var>'
   # }}}
 
-
-  # Get a (subset) of this data as a numpy array
   def get (self, pbar=None, **kwargs):
   # {{{
     """
@@ -536,17 +581,6 @@ class Var(object):
     return View(var.axes).get(var,pbar=pbar)
   # }}}
 
-  """
-  # Get all values (deprecated - use 'get')
-  def getallvalues (self, pbar=False):
-    from warnings import warn
-    warn ("getallvalues() is deprecated.  Please use get()", stacklevel=2)
-    return self.get(pbar=pbar)
-  """
-
-  # Get weights variable corresponding to given axes
-  # Axes without explicit weights are skipped, so this probably won't
-  # give you the same shape as the input var.
   def getweights (self, iaxes = None):
   # {{{
     ''' Returns weights associated with the axes of this variable.
@@ -593,16 +627,17 @@ class Var(object):
     return var
   # }}}
 
+  # Plotting helper functions
   def formatter(self):
   # {{{
-    ''' formatter(self) - returns a matplotlib axis Formatter object; by default returns None. '''
-    import pylab as pyl
-    return pyl.ScalarFormatter()
+    '''Returns a matplotlib formatter (pygeode.AxisFormatter) for use in plotting. '''
+    from pygeode.axis import AxisFormatter
+    return AxisFormatter(self)
   # }}}
 
   def locator(self):
   # {{{
-    ''' locator(self) - returns locator object (if any) specific to this axis. By default returns None. '''
+    '''Returns a matplotlib locator object for use in plotting.'''
     import pylab as pyl
     scl = self.plotatts.get('plotscale', 'linear')
     if scl == 'log': return pyl.LogLocator()
@@ -612,14 +647,17 @@ class Var(object):
 
 # a function to copy metadata from one variable to another
 def copy_meta (invar, outvar, plotatts=True):
+# {{{
   outvar.name = invar.name
   outvar.units = invar.units
   outvar.atts = invar.atts.copy()
   if plotatts: outvar.plotatts = invar.plotatts.copy()
+# }}}
 
 # a function to try and combine metadata from multiple inputs into an output
 # (similar to copy_meta, but takes multiple input variables)
 def combine_meta (invars, outvar):
+# {{{
   from pygeode.tools import common_dict
   # Intrinsic attributes
   for att in 'name', 'units':
@@ -632,6 +670,7 @@ def combine_meta (invars, outvar):
   # be a shared dictionary!
   outvar.atts = common_dict([v.atts for v in invars])
   outvar.plotatts = common_dict([v.plotatts for v in invars])
+# }}}
 
 
 ##################################################

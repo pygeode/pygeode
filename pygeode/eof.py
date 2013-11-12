@@ -5,9 +5,10 @@
 from pygeode.axis import Axis
 class order(Axis): 
   name = 'eof'
+  formatstr = '%d'
+
   plotatts = Axis.plotatts.copy()
-  plotatts['plottitle'] = 'EOF'
-  plotatts['formatstr'] = 'EOF %d'
+  plotatts['plotname'] = 'EOF'
 del Axis
 
 

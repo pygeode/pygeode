@@ -59,7 +59,6 @@ class Time (TAxis):
   name = 'time'
   plotatts = TAxis.plotatts.copy()
   plotatts['plottitle'] = ''
-  plotatts['plotfmt'] = '$v'
   plotatts['plotofsfmt'] = ''
 
   # List of valid *possible* field names for this class.
@@ -125,7 +124,6 @@ class Time (TAxis):
     self.units = units
     self.startdate = startdate
   # }}}
-
 
   def formatter(self, fmt=None):
   # {{{
@@ -203,7 +201,6 @@ class Time (TAxis):
     # It's ok to not have a match
     return indices
   # }}}
-
 
   def common_map (self, other):
 # {{{
@@ -310,8 +307,12 @@ class CalendarTime(Time):
 # {{{
 
   # Format of time axis used for str/repr functions
-  plotatts = Time.plotatts.copy()
-  plotatts['formatstr'] = '$b $d, $Y $H:$M:$S'
+  formatstr = '$b $d, $Y $H:$M:$S'
+  autofmts = [(365., '$Y',        ''),   # Range larger than 1 year
+          (30. , '$b $Y',     ''),   # Larger than 1 month
+          (1., '$d $b',     '$Y'), # Larger than 1 day
+          (1/24., '$H:$M',     '$d $b $Y'),  # Larger than 1 hour
+          (0.  , '$H:$M:$S',  '$d $b $Y')] # Less than 1 hour
 
   # Regular expression used to parse times
   parse_pattern = '((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)'
@@ -404,33 +405,59 @@ class CalendarTime(Time):
                             dates={'year':yr,'month':mn+1}, units='days')
   # }}}
 
-
-  def formatvalue (self, val, fmt = None, units=True):
+  def formatvalue (self, value, fmt=None, units=True, unitstr=None):
   # {{{
-    ''' Returns formatted value where fmt is a strftime-like formatting string. The 
-        following codes ($$ will yield the character $):
-          $b - short month name
-          $B - full month name
-          $d - day of the month
-          $D - 2-digit day of the month, zero-padded
-          $H - hour (24 hr clock)
-          $I - hour (12 hr clock)
-          $j - day of the year
-          $m - month number (Jan=1, ..., Dec=12)
-          $M - minute
-          $p - am/pm
-          $P - AM/PM
-          $S - second
-          $y - 2 digit year
-          $a - 4 digit year
-          $Y - full year; if less than 100, preceeded by 'y'
-          $v - value formatted with %d
-          $V - value formatted with str()
-     '''
+    ''' 
+    Returns formatted string representation of ``value``, using a strftime-like
+    specification.
+
+    Parameters
+    ----------
+    value : float or int
+      Value to format, in calendar defined by this time axis.
+    fmt : string (optional)
+      Format specification. If the default ``None`` is specified, 
+      ``self.formatstr`` is used.
+    units : boolean (optional)
+      Not used;, included for consistency with :func:`Var.formatvalue`    
+    unitstr : string (optional)
+      Not used;, included for consistency with :func:`Var.formatvalue`    
+
+    Notes
+    -----
+    The following codes ($$ will yield the character $):
+      $b - short month name
+      $B - full month name
+      $d - day of the month
+      $D - 2-digit day of the month, zero-padded
+      $H - hour (24 hr clock)
+      $I - hour (12 hr clock)
+      $j - day of the year
+      $m - month number (Jan=1, ..., Dec=12)
+      $M - minute
+      $p - am/pm
+      $P - AM/PM
+      $S - second
+      $y - 2 digit year
+      $a - 4 digit year
+      $Y - full year; if less than 100, preceeded by 'y'
+      $v - value formatted with %d
+      $V - value formatted with str()
+
+    Examples
+    --------
+    >>> from pygeode.tutorial import t2
+    >>> print t2.time.formatvalue(17.25)
+      Jan 18, 2011 06:00:00
+    >>> print t2.time.formatvalue(0, '$B $d')
+      January 1
+    >>> print t2.time.formatvalue(512, '$d/$m/$y')
+      28/5/12
+    '''
     import numpy as np
     from string import Template
 
-    dt = self.val_as_date(val)
+    dt = self.val_as_date(value)
 
     subs = {}
 
@@ -484,37 +511,14 @@ class CalendarTime(Time):
     else:
       subs['S'] = ''
 
-    subs['v'] = '%d' % val
-    subs['V'] = str(val)
+    subs['v'] = '%d' % value
+    subs['V'] = str(value)
 
     if fmt is None:
-      fmt = self.plotatts['formatstr']
+      fmt = self.formatstr
 
-    #print Template(fmt).substitute(subs)
     return Template(fmt).substitute(subs)
   # }}}
-
-  # Simple little text output.
-  # Should *not* depend on plot attributes (i.e. plotatts['formatstr'])
-  def _val2str (self, val):
-    s = ''
-    dt = self.val_as_date (val)
-    if 'month' in dt:
-      s += months_full[dt['month']]
-    if 'day' in dt:
-      if len(s) == 0: s = 'day'
-      s += ' '
-      s += str(dt['day'])
-    if 'year' in dt:
-      if len(s) > 0: s += ', '
-      s += str(dt['year'])
-    if 'hour' in dt:
-      hour = dt['hour']
-      minute = dt.get('minute',0)
-      second = dt.get('second',0)
-      if len(s) > 0: s += ' '
-      s += '%02d:%02d:%02d'%(hour,minute,second)
-    return s
 
   def str_as_val(self, key, s):
 # {{{
@@ -673,10 +677,14 @@ class ModelTime365(CalendarTime):
 # Model time (360-day calendar)
 class ModelTime360(CalendarTime):
 # {{{
+  autofmts = [(360., '$Y',        ''),   # Range larger than 1 year
+          (30. , '$b $Y',     ''),   # Larger than 1 month
+          (1., '$d $b',     '$Y'), # Larger than 1 day
+          (1/24., '$H:$M',     '$d $b $Y'),  # Larger than 1 hour
+          (0.  , '$H:$M:$S',  '$d $b $Y')] # Less than 1 hour
 
   _date_as_val = lib.date_as_val_360
   _val_as_date = lib.val_as_date_360
-
 # }}} 
 
 # Seasonal time axis
@@ -688,6 +696,10 @@ def makeSeasonalAxis(Base):
     import numpy as np
     allowed_fields = ('year','season')
 
+    formatstr = '$s $y'
+    autofmts = [(360., '$Y',    ''), # Range larger than 1 year
+                (0.  , '$s $Y', '')] # Less than 1 year
+
     # For now seasonal definitions are hard coded
     nseasons = 4
     seasons = ['DJF', 'MAM', 'JJA', 'SON']
@@ -696,7 +708,6 @@ def makeSeasonalAxis(Base):
               'month':np.array([1,4,7,10]), 
               'day':np.array([16, 15, 16, 16])}
     plotatts = Base.plotatts.copy()
-    plotatts['formatstr'] = '$s $y'
 
     # Generate year and season array
     # Note: year gets fudged for Decembers, to keep the seasons together
@@ -780,20 +791,37 @@ def makeSeasonalAxis(Base):
         assert k in self.allowed_fields, "%s is not an allowed field for %s"%(k,type(self))
     # }}}
 
-    def formatvalue (self, val, fmt = None, units=True):
+    def formatvalue (self, value, fmt=None, units=True, unitstr=None):
     # {{{
-      ''' Returns formatted value where fmt is a strftime-like formatting string. The 
-          following codes ($$ will yield the character $):
-            $s - season name
-            $y - 2 digit year
-            $Y - 4 digit year
-            $v - value formatted with %d
-            $V - value formatted with str()
-       '''
+      '''
+      Returns formatted string representation of ``value``, using a strftime-like
+      specification.
+
+      Parameters
+      ----------
+      value : float or int
+        Value to format, in calendar defined by this time axis.
+      fmt : string (optional)
+        Format specification. If the default ``None`` is specified, 
+        ``self.formatstr`` is used.
+      units : boolean (optional)
+        Not used;, included for consistency with :func:`Var.formatvalue`    
+      unitstr : string (optional)
+        Not used;, included for consistency with :func:`Var.formatvalue`    
+
+      Notes
+      -----
+      The following codes ($$ will yield the character $):
+        $s - season name
+        $y - 2 digit year
+        $Y - 4 digit year
+        $v - value formatted with %d
+        $V - value formatted with str()
+      '''
       import numpy as np
       from string import Template
 
-      dt = self.val_as_date(val)
+      dt = self.val_as_date(value)
 
       subs = {}
 
@@ -812,13 +840,12 @@ def makeSeasonalAxis(Base):
         s = 0
         subs['s'] = ''
 
-      subs['v'] = '%d' % val
-      subs['V'] = str(val)
+      subs['v'] = '%d' % value
+      subs['V'] = str(value)
 
       if fmt is None:
-        fmt = self.plotatts['formatstr']
+        fmt = self.formatstr
 
-      #print Template(fmt).substitute(subs)
       return Template(fmt).substitute(subs)
     # }}}
 
@@ -861,7 +888,10 @@ class Yearless(CalendarTime):
   # Format of time axis used for str/repr functions
   plotatts = CalendarTime.plotatts.copy()
   plotatts['plotfmt'] = '$d'
-  plotatts['formatstr'] = 'day $d, $H:$M:$S' 
+  formatstr = 'day $d, $H:$M:$S' 
+  autofmts = [(1., '$d',         ''),   # Larger than 1 day
+              (1/24., '$H:$M',   'day $d'), # Larger than 1 hour
+              (0.  , '$H:$M:$S', 'day $d')] # Less than 1 hour
 
   allowed_fields = ('day', 'hour', 'minute', 'second')
 

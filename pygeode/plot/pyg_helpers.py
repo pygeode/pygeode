@@ -4,11 +4,18 @@
 import wrappers as wr
 import numpy as np
 
-def _buildaxistitle(name = None, plotname = None, plottitle = None, plotunits = None, **dummy):
+def _getplotatts(var):
 # {{{
-  if plotname is not None: title = plotname # plotname is shorter, hence more suitable for axes
-  elif plottitle is not None: title = plottitle
-  elif name is not None: title = name
+  ''' Builds plotatts dictionary, using variable attributes as suitable defaults. '''
+  plt = dict(plotname = var.name, plotunits = var.units, plotfmt = var.formatstr)
+  plt.update([(k, v) for k, v in var.plotatts.iteritems() if v is not None])
+  return plt
+# }}}
+
+def _buildaxistitle(plotname=None, plottitle=None, plotunits=None, **dummy):
+# {{{
+  if plottitle is not None: return plottitle
+  elif plotname is not None: title = plotname
   else: title = ''
 
   if plotunits not in [None, '']: title += ' [%s]' % plotunits
@@ -16,11 +23,10 @@ def _buildaxistitle(name = None, plotname = None, plottitle = None, plotunits = 
   return title
 # }}}
 
-def _buildvartitle(axes = None, name = None, plotname = None, plottitle = None, plotunits = None, **dummy):
+def _buildvartitle(axes=None, plotname=None, plottitle=None, plotunits=None, **dummy):
 # {{{
-  if plottitle is not None: title = plottitle # plottitle is longer, hence more suitable for axes
+  if plottitle is not None: return plottitle
   elif plotname is not None: title = plotname
-  elif name is not None: title = name
   else: title = ''
 
   if plotunits not in [None, '']: title += ' [%s]' % plotunits
@@ -47,10 +53,9 @@ def axes_parm(axis):
 # {{{
   vals = scalevalues(axis).ravel()
   lims = min(vals), max(vals)
-  plt = axis.plotatts.copy()
-  name = plt.pop('name', axis.name)
+  plt = _getplotatts(axis)
   return plt.get('plotscale', 'linear'), \
-         _buildaxistitle(name = name, **plt), \
+         _buildaxistitle(**plt), \
          lims[::plt.get('plotorder', 1)], \
          axis.formatter(), \
          axis.locator()
@@ -169,9 +174,8 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   axes.pad = (0.1, 0.1, 0.1, 0.1)
   set_xaxis(axes, X, lblx)
   set_yaxis(axes, Y, lbly)
-  plt = var.plotatts.copy()
-  name = plt.pop('name', var.name)
-  lbl = _buildvartitle(var.axes, name, **plt)
+  plt = _getplotatts(var)
+  lbl = _buildvartitle(var.axes, **plt)
   axes.setp(title=lbl, label=lbl)
 
   return axes
@@ -260,9 +264,8 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
-    plt = var.plotatts.copy()
-    name = plt.pop('name', var.name)
-    axes.setp(title = _buildvartitle(var.axes, name, **plt))
+    plt = _getplotatts(var)
+    axes.setp(title = _buildvartitle(var.axes, **plt))
 
   return axes
 # }}}
@@ -349,9 +352,8 @@ def vquiver(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=N
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
-    plt = varu.plotatts.copy()
-    name = plt.pop('name', varu.name)
-    axes.setp(title = _buildvartitle(varu.axes, name, **plt))
+    plt = _getplotatts(varu)
+    axes.setp(title = _buildvartitle(varu.axes, **plt))
 
   return axes
 # }}}

@@ -514,21 +514,45 @@ from pylab import Formatter
 ## most formatting work is done by the time axis itself
 class TimeFormatter(Formatter):
 # {{{
-  def __init__(self, taxis, fmt=None):
+  def __init__(self, taxis, fmt=None, ofsfmt=None, auto=True):
+    if fmt is None: 
+      if not auto: 
+        fmt = taxis.plotatts.get('plotfmt', None)
+        if fmt is None: fmt = taxis.formatstr
+    else: # If fmt is set explicitly, turn off auto-formatting
+      auto = False
+
+    if ofsfmt is None and not auto:
+      ofsfmt = taxis.plotatts.get('plotofsfmt', None)
+
     self.taxis = taxis
-    self.offset = ''
     self.fmt = fmt
+    self.ofsfmt = ofsfmt
+    self.auto = auto
+
+    self.offset = ''
 
   def __call__(self, x, pos=0):
-    fmt = self.fmt
-    if fmt is None: fmt = self.taxis.plotatts['plotfmt']
-    return self.taxis.formatvalue(x, fmt=fmt, units=False)
+    return self.taxis.formatvalue(x, fmt=self.fmt)
 
   def set_locs(self, locs):
-    if len(locs) > 0 and self.taxis.plotatts['plotofsfmt'] is not None:
-      self.offset = self.taxis.formatvalue(locs[0], self.taxis.plotatts['plotofsfmt'], units=False)
+    if len(locs) > 0:
+      if self.auto:
+        delt = max(locs) - min(locs)
+        delt = delt * self.taxis.unitfactor[self.taxis.units] / ((len(locs)-1) * 86400.)
+        self.fmt, self.ofsfmt = self.autoformat_range(delt)
+      self.offset = self.taxis.formatvalue(locs[0], self.ofsfmt)
     else:
       self.offset = ''
+
+  def autoformat_range(self, delt):
+    ''' Returns a format string approriate for a date/time range of size delt days. '''
+    import numpy as np
+
+    for d, f, o in self.taxis.autofmts:
+      if np.abs(delt) * 1.1 >= d: return f, o
+    
+    return f, o
 
   def get_offset(self):
     return self.offset

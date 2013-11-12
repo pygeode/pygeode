@@ -5,53 +5,29 @@
 
 from pygeode.var import Var
 
-import pylab as pyl
-class AxisFormatter(pyl.Formatter):
-# {{{
-  def __init__(self, plotatts, units):
-    self.plotatts = plotatts
-    self.units = units
+try:
+  import pylab as pyl
+  class AxisFormatter(pyl.Formatter):
+  # {{{
+    def __init__(self, axis, fmt=None, unitstr=None, units=False):
+      if fmt is None:
+        fmt = axis.plotatts.get('plotfmt', None)
+        if fmt is None: fmt = axis.formatstr
+      if unitstr is None:
+        unitstr = axis.plotatts.get('plotunits', None)
+        if unitstr is None: unitstr = axis.units
 
-  def format(self, val, units=False):
-    strval = self.plotatts['formatstr'] % val # convert to string
-    if units:
-      if self.plotatts['plotunits']: strval += self.plotatts['plotunits'] # properly formatted units
-      elif self.plotatts['scalefactor']==1 and self.plotatts['offset']==0: strval += self.units # fallback option
-      else: pass # warn('no unit specified') # should I have a warning here?
-    return strval
+      self.fmt = fmt
+      self.unitstr = unitstr
+      self.showunits = units
+      self.pygaxis = axis
 
-  def __call__(self, x, pos=None):
-    return self.format(x, units=False)
-# }}}
-
-class LatFormatter(AxisFormatter):
-# {{{
-  def format(self, val, units=False):
-    if val > 0: return self.plotatts['formatstr'] % val + ' N'
-    elif val < 0: return self.plotatts['formatstr'] % -val + ' S'
-    else: return 'EQ' 
-# }}}
-
-class LonFormatter(AxisFormatter):
-# {{{
-  def format(self, val, units=False):
-    v = (val + 180.) % 360. - 180.
-    if v >= 0: return self.plotatts['formatstr'] % v + ' E'
-    elif v < 0: return self.plotatts['formatstr'] % -v + ' W'
-# }}}
-
-class PresFormatter(AxisFormatter):
-# {{{
-  def format(self, val, units=False):
-    su = ''
-    if units: 
-      if self.plotatts.has_key('plotunits'): su = ' ' + self.plotatts['plotunits']
-      elif self.units != '': su = ' ' + self.units
-
-    if val >= 10: return '%d ' % val + su
-    #elif val >= 1: return '%.1g ' % val + su
-    else: return '%.1g ' % val + su
-# }}}
+    def __call__(self, x, pos=None):
+      return self.pygaxis.formatvalue(x, fmt=self.fmt, unitstr=self.unitstr, units=self.showunits)
+  # }}}
+except ImportError:
+  from warnings import warn
+  warn ("Matplotlib not available; plotting functionality will be absent.")
 
 # Axis parent class
 class Axis(Var):
@@ -84,8 +60,6 @@ class Axis(Var):
   auxarrays = {}
   # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
   auxatts = {}  
-
-  _formatter = AxisFormatter
     
   def __init__(self, values, name=None, atts=None, plotatts=None, **kwargs):
 # {{{ 
@@ -121,8 +95,6 @@ class Axis(Var):
     
     # name defaults
     if self.name == '': self.name = self.__class__.__name__.lower()
-    if self.plotatts['plottitle'] is None: self.plotatts['plottitle'] = self.name
-
 # }}}
 
   # Determine if one axis object is from a base class (or same class) of another axis
@@ -468,18 +440,14 @@ class Axis(Var):
     return Var([self], values=self.auxarrays[name], name=name)
 # }}}
 
-  # How the axis is represented as a string
+  # Pretty printing
   def __repr__ (self): return '<' + self.__class__.__name__ + '>'
-
-  # Convert an axis value to a string representation
-  def _val2str (self, val):
-    return '%g %s'%(val,self.units) if self.units != '' else '%g'%val
 
   def __str__ (self):
   # {{{
     if len(self) > 0:
-      first = self._val2str(self.values[0])
-      last = self._val2str(self.values[-1])
+      first = self.formatvalue(self.values[0])
+      last = self.formatvalue(self.values[-1])
     else: first = last = "<empty>"
     num = str(len(self.values))
     if self.name != '': head = self.name + ' ' + repr(self)
@@ -530,26 +498,6 @@ class Axis(Var):
     return self.class_has_alias(name)
   # }}}
 
-  # Plotting functions
-
-  # Helper function to format values nicely (should be overridden in child classes)
-  # By default, it uses self.plotatts['formatstr'] to format the value
-  def formatvalue(self, val, units=True):
-  # {{{
-    ''' formatvalue(val)
-        Returns an appropriately formatted string representation of val in the axis space. '''    
-    fmt = self._formatter(self.plotatts, self.units)
-    return fmt.format(val, units)
-  # }}}
-
-  # Returns a matplotlib axis Formatter object
-  # By default, it uses self.plotatts['formatstr'] to format the value
-  def formatter(self):
-  # {{{
-    ''' Returns a matplotlib axis Formatter object; by default a FuncFormatter which calls formatvalue(). '''
-    return self._formatter(self.plotatts, self.units)
-  # }}}
-
   # Concatenate multiple axes together
   # Use numpy arrays
   # Assume the segments are pre-sorted
@@ -594,17 +542,13 @@ class Axis(Var):
     return cls(values, name=name, atts=atts, **aux)
   # }}}
 
-
   # Replace the values of an axis
   # (any auxiliary arrays from the old axis are ignored)
   def withnewvalues (self, values):
   # {{{
-
     # Assume any auxiliary scalars are the same for the new axis
     return type(self)(values, name=self.name, atts=self.atts, **self.auxatts)
   # }}}
-
-
 # }}}
 
 # Useful axis subclasses
@@ -618,7 +562,6 @@ class NamedAxis (Axis):
   # {{{
     Axis.__init__(self, values, **kwargs)
     self.name = name
-    self.plotatts['plottitle'] = name
   # }}}
 
   def __eq__ (self, other):
@@ -630,7 +573,9 @@ class NamedAxis (Axis):
     # If the names match, check the values
     return Axis.__eq__(self,other)
   # }}}
+
   def __repr__ (self): return "<%s '%s'>"%(self.__class__.__name__, self.name)
+
   # Need more restrictions on mapping for named axes
   # (not only do both axes need to be a NamedAxis, but they need to have the same name)
   # (The name is the only way to uniquely identify them)
@@ -646,29 +591,84 @@ class YAxis (Axis): pass
 class Lon (XAxis): 
 # {{{
   name = 'lon'
+  formatstr = '%.3g E<360'
+
   plotatts = XAxis.plotatts.copy()
-  plotatts['formatstr'] = '%d'
   plotatts['plottitle'] = ''
-  _formatter = LonFormatter
+  plotatts['plotfmt'] = '%.3g E'
+
+  def formatvalue(self, value, fmt=None, units=False, unitstr=None):
+# {{{
+    '''
+    Returns formatted string representation of longitude ``value``.
+      
+    Parameters
+    ----------
+    value : float or int
+      Value to format.
+    fmt : string (optional)
+      Format specification; see Notes. If the default ``None`` is specified, 
+      ``self.formatstr`` is used.
+    units : boolean (optional)
+      If ``True``, will include the units in the string returned.
+      Default is ``False``.
+    unitstr : string (optional)
+      String to use for the units; default is ``self.units``.
+
+    Returns
+    -------
+    Formatted representation of the latitude. See notes.
+
+    Notes
+    -----
+    If fmt is includes the character 'E', the hemisphere ('E' or 'W') is
+    appended to the string. The value is wrapped to lie between 0 and 360., and
+    the eastern hemisphere is defined as values less than 180. Optionally, the
+    boundary between the hemispheres can be specified by adding, for example,
+    '<360' after the 'E'; in this case all values less than 360 would have 'E'
+    appended. Otherwise the behaviour is like :func:`Var.formatvalue`.
+    
+    Examples
+    --------
+    >>> from pygeode.tutorial import t1
+    >>> print t1.lon.formatvalue(270)
+      270 E
+    >>> print t1.lon.formatvalue(-20.346, '%.4gE')
+      20.35W
+    >>> print t1.lon.formatvalue(-192.4, '%.3g')
+      -192
+    '''
+    if fmt is None: fmt = self.formatstr
+    if 'E' in fmt:
+      fmt, orig = fmt.split('E')
+      try: orig = 360. - float(orig[1:])
+      except ValueError: orig = 180.
+
+      v = (value + orig) % 360. - orig
+      if v >= 0: strval = fmt % v + 'E'
+      elif v < 0: strval = fmt % -v + 'W'
+    else:
+      strval = fmt % value
+
+    if units:
+      strval += ' ' + self.units
+
+    return strval
+# }}}
 
   def locator(self):
   # {{{
     import pylab as pyl
     return pyl.MaxNLocator(nbins=9, steps=[1, 3, 6, 10])
   # }}}
-
-  @staticmethod
-  def _val2str (val):
-    return '%g '%val + ('W' if val<0 else 'E')
 # }}}
 
 class Lat (YAxis):
 # {{{
   name = 'lat'
+  formatstr = '%.2g N'
   plotatts = YAxis.plotatts.copy() 
-  plotatts['formatstr'] = '%d'
   plotatts['plottitle'] = ''
-  _formatter = LatFormatter
 
   # Make sure we get some weights
   def __init__(self, values, weights=None, **kwargs):
@@ -684,10 +684,65 @@ class Lat (YAxis):
     Axis.__init__(self, values, weights=weights, **kwargs)
   # }}}
 
-  @staticmethod
-  def _val2str (val):
+  def formatvalue(self, value, fmt=None, units=False, unitstr=None):
+# {{{
+    '''
+    Returns formatted string representation of latitude ``value``.
+      
+    Parameters
+    ----------
+    value : float or int
+      Value to format.
+    fmt : string (optional)
+      Format specification; see Notes. If the default ``None`` is specified, 
+      ``self.formatstr`` is used.
+    units : boolean (optional)
+      If ``True``, will include the units in the string returned.
+      Default is ``False``.
+    unitstr : string (optional)
+      String to use for the units; default is ``self.units``.
+
+    Returns
+    -------
+    Formatted representation of the latitude. See notes.
+
+    Notes
+    -----
+    If the last character of fmt is 'N', then the absolute value of ``value``
+    is formatted using the fmt[:-1] as the format specification, and the hemisphere is 
+    added, using 'N' for values greater than 0 and 'S' for values less than 0. The value
+    0 is formatted as 'EQ'. Otherwise the behaviour is like :func:`Var.formatvalue`.
+    
+    Examples
+    --------
+    >>> from pygeode.tutorial import t1
+    >>> print t1.lat.formatvalue(0)
+      EQ
+    >>> print t1.lat.formatvalue(-43.61, '%.3gN')
+      43.6S
+    >>> print t1.lat.formatvalue(-43.61, '%.3g')
+      -43.6
+    '''
+
+    if fmt is None: fmt = self.formatstr
+    if fmt[-1] == 'N': 
+      fmt = fmt[:-1]
+      if value > 0: strval = fmt % value + 'N'
+      elif value < 0: strval = fmt % -value + 'S'
+      else: strval = 'EQ' 
+    else:
+      strval = fmt % value
+
+    if units:
+      strval += ' ' + self.units
+
+    return strval
+# }}}
+
+  def locator(self):
   # {{{
-    return '%g N'%val if val>0 else '%g S'%-val if val<0 else 'EQ'
+    import pylab as pyl
+    return pyl.MaxNLocator(nbins=9, steps=[1, 1.5, 3, 5, 10])
   # }}}
 # }}}
 
@@ -709,8 +764,6 @@ def gausslat (n, order=1, axis_dict={}):
   return axis
 # }}}
 
-
-
 # Spectral axes
 # Note: XAxis/YAxis is used by cccma code to put these in the proper order (XAxis is fastest-increasing)
 class SpectralM(YAxis): name = 'm'
@@ -720,8 +773,7 @@ class SpectralN(XAxis): name = 'n'
 class ZAxis (Axis): 
 # {{{
   name = 'lev'
-  plotatts = Axis.plotatts.copy()
-  plotatts['formatstr'] = '%3g'
+  formatstr = '%3g'
 # }}}
 
 # Geometric height
@@ -730,13 +782,10 @@ class ZAxis (Axis):
 class Height(ZAxis):
 # {{{  
   name = 'z' # default name
+  formatstr = '%d' 
   units = 'm'
   plotatts = ZAxis.plotatts.copy()
-  plotatts['formatstr'] = '%d' # just print integers
-  # Formatting attributes for axis labels and ticks (see formatter method for application)
-  plotatts['plottitle'] = 'Height' # name displayed in plots (axis label)
-  plotatts['plotunits'] = 'km' # displayed units (after offset and scalefactor have been applied)
-  plotatts['scalefactor'] = 1e-3 # conversion factor; assumed units are meters 
+  plotatts['plotname'] = 'Height' # name displayed in plots (axis label)
 # }}}
 
 # Model hybrid levels
@@ -744,8 +793,8 @@ class Height(ZAxis):
 class Hybrid (ZAxis):
 # {{{
   name = 'eta'  #TODO: rename this to 'hybrid'?  (keep 'eta' for now, for compatibility with existing code)
+  formatstr = '%g'
   plotatts = ZAxis.plotatts.copy()
-  plotatts['formatstr'] = '%g'
   plotatts['plotorder'] = -1
   plotatts['plotscale'] = 'log'
 
@@ -777,28 +826,86 @@ class Pres (ZAxis):
 # {{{
   name = 'pres'
   units = 'hPa'
+  formatstr = '%.2g<100'
   plotatts = ZAxis.plotatts.copy() 
-  plotatts['plottitle'] = 'Pressure'
-  plotatts['plotunits'] = 'hPa'
+  plotatts['plotname'] = 'Pressure'
   plotatts['plotscale'] = 'log'
   plotatts['plotorder'] = -1
-  _formatter = PresFormatter
 
   def logPAxis(self, p0=1000., H=7.1):
+# {{{
     '''logPAxis(p0, H) - returns a pygeode axis with log pressure heights
           corresponding to this axis. By default p0 = 1000 hPa and H = 7.1 (km).'''
     import numpy as np
     z = ZAxis(H * np.log(p0 / self.values))
-    z.plotatts['plottitle'] = 'Log-p Height (km)'
+    z.plotatts['plotname'] = 'Log-p Height'
     return z
+# }}}
 
   def locator(self):
+# {{{
     import pylab as pyl, numpy as np
     ndecs = np.log10(np.max(self.values) / np.min(self.values))
     if ndecs < 1.2: return pyl.LogLocator(subs=[1., 2., 4., 7.])
     elif ndecs < 3.: return pyl.LogLocator(subs=[1., 3.])
     else: return pyl.LogLocator()
+# }}}
 
+  def formatvalue(self, value, fmt=None, units=True, unitstr=None):
+# {{{
+    '''
+    Returns formatted string representation of pressure ``value``.
+      
+    Parameters
+    ----------
+    value : float or int
+      Value to format.
+    fmt : string (optional)
+      Format specification; see Notes. If the default ``None`` is specified, 
+      ``self.formatstr`` is used.
+    units : boolean (optional)
+      If ``True``, will include the units in the string returned.
+      Default is ``True``.
+    unitstr : string (optional)
+      String to use for the units; default is ``self.units``.
+
+    Returns
+    -------
+    Formatted representation of the pressure. See notes.
+
+    Notes
+    -----
+    If ``fmt`` includes the character '<', it is interpreted as 'fmt<break',
+    such that values less than float(break) are formatted using the format
+    string fmt, while those greater than float(break) are formatted as integers.
+    Otherwise the behaviour is like :func:`Var.formatvalue`. 
+    
+    Examples
+    --------
+    >>> from pygeode.tutorial import t2
+    >>> print t2.pres.formatvalue(1000)
+      1000 hPa
+    >>> print t2.pres.formatvalue(1.52)
+      1.5 hPa
+    >>> print t2.pres.formatvalue(20, '%.1g')
+      2e+01 hPa
+    >>> print t2.pres.formatvalue(20, '%.1g<10')
+      20 hPa
+    '''
+
+    if fmt is None: fmt = self.formatstr
+    if '<' in fmt:
+      lfmt, brk = fmt.split('<')
+      if value >= float(brk): strval = '%d' % value
+      else: strval = lfmt % value
+    else: 
+      strval = fmt % value
+
+    if units:
+      strval += ' ' + self.units
+
+    return strval
+# }}}
 # }}}
 
 class TAxis(Axis): pass

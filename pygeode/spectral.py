@@ -7,11 +7,11 @@ import numpy as np
 class Spectral(Axis):
 # {{{
   name = 'spharm' 
+  formatstr = '%d'
   plotatts = Axis.plotatts.copy()
-  plotatts['formatstr'] = '%d'
-  plotatts['plottitle'] = 'Spherical Harm.'
+  plotatts['plotname'] = 'Spherical Harm.'
 
-  def __init__ (self, values, trunc = None, M=None, N=None, **kwargs):
+  def __init__ (self, values, trunc=None, M=None, N=None, **kwargs):
   # {{{
     if isinstance(values, int):
       trunc = values
