@@ -150,31 +150,62 @@ class Lag(Yearless):
 
 # Remove leap days from data on a standard calendar, coerce the data onto a
 # 365-day calendar.
-def removeleapyears(data):
-  from pygeode.timeaxis import StandardTime, ModelTime365
+from pygeode.timeaxis import ModelTime365
+def removeleapyears(data, omitdoy_leap=[60], omitdoy_noleap=[], new_axis_type=ModelTime365):
+  from pygeode.timeaxis import Time, StandardTime
   import numpy as np
 
-  taxis = data.getaxis(StandardTime)
+  taxis = data.getaxis(Time)
 
   # Determine which times to keep
   year = taxis.year
-  isleapyear = (year % 4 == 0) & ( (year % 100 != 0) | (year % 400 == 0) )
-  isleapday = isleapyear & (taxis.month == 2) & (taxis.day == 29)
-  indices = np.nonzero(~isleapday)
+  isleapyear = isinstance(taxis,StandardTime) & (year % 4 == 0) & ( (year % 100 != 0) | (year % 400 == 0) )
 
-  # Remove the leap days from the time axis
-  taxis = taxis._getitem_asvar(indices)
+  doy = []
+  for y in sorted(set(taxis.year)):
+    doy.extend(reltime(taxis(year=y), startdate={'year':y, 'month':1, 'day':1}, units='days')+1)
+  doy = np.array(np.floor(doy),dtype=int)
 
-  # Re-init as a 365-day calendar (use the absolute date fields, not the relative values)
-  taxis = ModelTime365(units=taxis.units, **taxis.auxarrays)
+  omit_on_leap = [False] * len(taxis)
+  for d in omitdoy_leap:
+    omit_on_leap |= (doy == d)
+
+  omit_on_noleap = [False] * len(taxis)
+  for d in omitdoy_noleap:
+    omit_on_noleap |= (doy == d)
+
+  omit = (isleapyear & omit_on_leap) | ((~isleapyear) & omit_on_noleap)
+  indices = np.nonzero(~omit)
 
   # Remove the leap days from the data
   slices = [slice(None)] * data.naxes
-  slices[data.whichaxis(StandardTime)] = indices
+  slices[data.whichaxis(Time)] = indices
   data = data._getitem_asvar(*slices)
 
+  # Recreate the axis as the new type.
+  # Convert doy (old axis) to doy (new axis)
+  new_taxis_pieces = []
+  for y in sorted(set(taxis.year)):
+    # Check for leap year - use one list of omitted days or the other
+    if isleapyear[taxis.year==y][0]:
+      omitted_days = sorted(omitdoy_leap, reverse=True)
+    else:
+      omitted_days = sorted(omitdoy_noleap, reverse=True)
+    # Start with the old doy
+    doy = reltime(taxis(year=y), startdate={'year':y, 'month':1, 'day':1}, units='days')+1
+    # Strip out the omitted days, and re-index the other days
+    for d in omitted_days:
+      doy = doy[np.floor(doy) != d]
+      doy[doy>d] -= 1
+    # Create an axis of the new type
+    new_taxis_pieces.append(new_axis_type(values=doy-1, units='days', startdate={'year':y, 'month':1, 'day':1}))
+
+  # Rebuild the final new axis
+  # (Had to break it down by year, to do the doy arithmetic)
+  new_taxis = new_axis_type.concat(new_taxis_pieces)
+
   # Replace the time axis of the data
-  data = data.replace_axes(time = taxis)
+  data = data.replace_axes(time = new_taxis)
 
   return data
 
