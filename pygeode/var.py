@@ -181,9 +181,16 @@ class Var(object):
   # Subset by integer indices
   def __getitem__ (self, slices):
 # {{{
-#    raise Exception, "ambiguous use of [].  Try using .slice[] or .get[]"
-    # Default is to return the raw numpy array
-    return self._getitem_asvar(slices).get()
+    # Get the raw numpy array (with degenerate axes intact)
+    array = self._getitem_asvar(slices).get()
+    # If any single integer indices were passed, then reduce out those
+    # dimensions.  This is consistent with what would happen with numpy slicing.
+    if isinstance(slices,tuple):
+      extra_slicing = tuple(0 if isinstance(sl,int) else slice(None) for sl in slices)
+      array = array[extra_slicing]
+    elif isinstance(slices,int):
+      array = array[0]
+    return array
 # }}}
 
   # Select a subset by keyword arguments (i.e., lat = (-45.0, 45.0))
