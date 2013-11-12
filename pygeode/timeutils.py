@@ -208,6 +208,8 @@ def removeleapyears(data, omitdoy_leap=[60], omitdoy_noleap=[], new_axis_type=Mo
   data = data.replace_axes(time = new_taxis)
 
   return data
+del ModelTime365
+
 
 class LagVar(Var):
   def __init__(self, var, iaxis, lags, reverse=False):
