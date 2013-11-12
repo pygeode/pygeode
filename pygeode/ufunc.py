@@ -52,15 +52,15 @@ class UfuncVar (Var):
         names[0] = names[0][1:-1]
 
     if symbol is None:
-      self.name = self.op.__name__ + '(' + ','.join(names) + ')'
+      name = self.op.__name__ + '(' + ','.join(names) + ')'
 
     elif isinstance(symbol,(list,tuple)):
       assert len(names) == 1
-      self.name = symbol[0] + names[0] + symbol[1]
+      name = symbol[0] + names[0] + symbol[1]
 
     else:
       assert isinstance(symbol, str)
-      self.name = '(' + symbol.join(names) + ')'
+      name = '(' + symbol.join(names) + ')'
 
 #    # Copy any common generic metadata
 #    self.atts = common_dict(v.atts for v in vars)
@@ -70,6 +70,8 @@ class UfuncVar (Var):
 
     # Copy any common generic metadata
     combine_meta(vars, self)
+    # Use our locally derived name (override combine_meta)
+    self.name = name
 
   # }}}
 
