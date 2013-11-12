@@ -62,6 +62,13 @@ class UfuncVar (Var):
       assert isinstance(symbol, str)
       name = '(' + symbol.join(names) + ')'
 
+    # Special case: applying a scalar to a Var object with a simple name.
+    # In this case, keep the original name.
+    if len(args) == 2 and len(vars) == 1:  # One scalar, one var
+      if '(' not in vars[0].name and ')' not in vars[0].name:
+        if self.symbol in ('+','-','*','/'):  # Basic arithmetic only
+          name = vars[0].name
+
 #    # Copy any common generic metadata
 #    self.atts = common_dict(v.atts for v in vars)
 #    self.plotatts = common_dict(v.plotatts for v in vars)
