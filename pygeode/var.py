@@ -666,6 +666,7 @@ def copy_meta (invar, outvar, plotatts=True):
 def combine_meta (invars, outvar):
 # {{{
   from pygeode.tools import common_dict
+  from pygeode import Axis
   # Intrinsic attributes
   for att in 'name', 'units':
     s = list(set([getattr(v,att) for v in invars]))
@@ -674,9 +675,9 @@ def combine_meta (invars, outvar):
   # *Set* these attributes, don't 'update' the dictionaries!
   # This method may be called from the __init__ of a Var subclass, before the
   # dictionaries are properly created - the existing 'atts' and 'plotatts' may
-  # be a shared dictionary!
+  # be a shared dictionary! Skip Axis objects for the plotatts dict (see issue 53)
   outvar.atts = common_dict([v.atts for v in invars])
-  outvar.plotatts = common_dict([v.plotatts for v in invars])
+  outvar.plotatts = common_dict([v.plotatts for v in invars if not isinstance(v, Axis)])
 # }}}
 
 
