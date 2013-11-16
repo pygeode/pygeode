@@ -663,6 +663,17 @@ class Lon (XAxis):
   # }}}
 # }}}
 
+def regularlon(n, origin=0., order=1, repeat_origin=False):
+# {{{
+  '''Constructs a regularly spaced :class:`Lon` axis with n longitudes, from
+  origin to origin + 360. If repeat_origin is set to True, the final point is
+  equal to origin + 360. '''
+  import numpy as np
+  vals = np.linspace(0., 360, n, endpoint=repeat_origin)[::order] + origin
+
+  return Lon(vals)
+# }}}
+
 class Lat (YAxis):
 # {{{
   name = 'lat'
@@ -762,6 +773,17 @@ def gausslat (n, order=1, axis_dict={}):
   axis = Lat (x, weights=w)
   axis_dict[(n,order)] = axis
   return axis
+# }}}
+
+def regularlat(n, order=1, inc_poles=True):
+# {{{
+  '''Constructs a regularly spaced :class:`Lat` axis with n latitudes.
+  If inc_poles is set to True, the grid includes the poles. '''
+  import numpy as np
+  if inc_poles: vals = np.linspace(-90, 90, n)[::order]
+  else: vals = np.linspace(-90, 90, n+2)[1:-1][::order]
+
+  return Lat(vals)
 # }}}
 
 # Spectral axes
@@ -956,4 +978,4 @@ def concat (axes):
 
 
 # List of axes provided in this module (for easy importing)
-standard_axes = [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis, Lon, Lat, gausslat, Pres, Hybrid, Height, SpectralM, SpectralN, Freq, Index]
+standard_axes = [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis, Lon, regularlon, Lat, gausslat, regularlat, Pres, Hybrid, Height, SpectralM, SpectralN, Freq, Index]
