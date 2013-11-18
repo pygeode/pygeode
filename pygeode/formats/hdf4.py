@@ -139,11 +139,11 @@ class HDF4_Var (Var):
     return out
 
 
-def open (filename):
+def open (filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [], cfmeta = True):
   from numpy import empty
   from ctypes import c_long, byref
-  from pygeode.formats.cfmeta import decode_cf
   from pygeode.dataset import asdataset
+  from pygeode.formats import finalize_open
 
   f = HDF4_File (filename)
 
@@ -206,7 +206,5 @@ def open (filename):
   d = asdataset(vars)
   d.atts = global_atts
 
-  d = decode_cf(d)
-
-  return d
+  return finalize_open(d, dimtypes, namemap, varlist, cfmeta)
 

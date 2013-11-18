@@ -37,7 +37,7 @@ try:
   from pygeode.formats import netcdf
 except Exception:
   print "Warning: can't import netcdf module"
-from pygeode.formats.multifile import openall, open_multi
+from pygeode.formats import *
 
 # Classes
 from pygeode.dataset import Dataset

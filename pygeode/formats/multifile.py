@@ -19,11 +19,22 @@ def expand_file_list (file_list, sort=True):
 # Inputs: the format, the glob, and any additional keywords to pass
 # I.e.: openall(files = "file???.nc", format = netcdf)
 #NOTE: for a large number of homogeneous files, use the alternative interface below
-def openall (files, format, *args, **kwargs):
+def openall (files, format=None, **kwargs):
   from pygeode.dataset import concat
+
   sort = kwargs.pop('sorted', True)
   files = expand_file_list (files, sort)
-  datasets = [ format.open(f, *args, **kwargs) for f in files]
+
+  if format is None: format = autodetectformat(files[0])
+
+  if not hasattr(format, 'open'): 
+    try:
+      format = __import__("pygeode.formats.%s" % format, fromlist=["pygeode.formats"])
+    except ImportError:
+      raise ValueError('Unrecognized format module %s.' % format)
+
+  datasets = [ format.open(f, **kwargs) for f in files]
+
   if sort: datasets = [d.sorted() for d in datasets]
   return concat(*datasets)
 
@@ -48,14 +59,23 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
   from pygeode.timeutils import reltime, delta
   from pygeode.dataset import Dataset
   from pygeode.tools import common_dict
+  from pygeode.formats import open
   import numpy as np
 
   files = expand_file_list(files)
   nfiles = len(files)
   assert nfiles > 0
 
-  assert format is not None or opener is not None, "Don't know how to open the files!"
-  if opener is None: opener = format.open
+  if opener is None: 
+    if format is None: format = autodetectformat(files[0])
+
+    if not hasattr(format, 'open'): 
+      try:
+        format = __import__("pygeode.formats.%s" % format, fromlist=["pygeode.formats"])
+      except ImportError:
+        raise ValueError('Unrecognized format module %s.' % format)
+
+    opener = format.open
 
   # Apply keyword arguments
   if len(kwargs) > 0:
@@ -159,12 +179,13 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
 
 
   return Dataset(vars,atts=global_atts)
-# }}}
-
+# }}} 
 
 from pygeode.var import Var
 class Multifile_Var (Var):
+# {{{
   def __init__ (self, v1, opener, files, faxis, timedict):
+# {{{
     # v1 - var chunk from the first file
     # opener - method for opening a file given a filename
     # files - list of filenames
@@ -190,8 +211,10 @@ class Multifile_Var (Var):
     else: axes = [taxis] + axes
 
     Var.__init__ (self, axes, dtype=v1.dtype, name=v1.name, atts=v1.atts, plotatts=v1.plotatts)
+# }}}
 
   def getview (self, view, pbar):
+# {{{
     from pygeode.timeaxis import Time
     from pygeode.timeutils import reltime
     import numpy as np
@@ -247,8 +270,10 @@ class Multifile_Var (Var):
       ))
       raise
     return out
-del Var
+# }}}
+# }}}
 
+del Var
 
 # Decorator for turning an 'open' method into a multifile open method
 def multifile (opener):
@@ -257,4 +282,3 @@ def multifile (opener):
     return open_multi (files, pattern=pattern, file2date=file2date, opener=o)
   new_opener.__doc__ = opener.__doc__
   return new_opener
-

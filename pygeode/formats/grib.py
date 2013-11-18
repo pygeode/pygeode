@@ -146,15 +146,21 @@ class GribVar(Var):
     return out
 
 
-def open(filename):
+def open(filename, value_override = {}, dimtypes = {}, namemap = {}, varlist = [], cfmeta = True, **kwargs):
+# {{{
   from pygeode.dataset import Dataset
+  from pygeode.formats import finalize_open
+
   file = GribFile(filename)
   vars = [GribVar(file,i) for i in range(lib.get_nvars(file.index))]
   # append level type to vars with the same name
   names = [v.name for v in vars]
   for i, v in enumerate(vars):
     if names.count(v.name) > 1: v.name = v.name + '_' + level_types[v.level_type][1]
-  return Dataset(vars)
+  d = Dataset(vars)
+
+  return finalize_open(d, dimtypes, namemap, varlist, cfmeta)
+# }}}
 
 # stolen from http://www.nco.ncep.noaa.gov/pmb/docs/on388/table3.html
 

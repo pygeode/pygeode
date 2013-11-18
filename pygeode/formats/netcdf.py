@@ -200,6 +200,7 @@ def makedim (f, dimid, dimdict={}):
 # A netcdf variable
 from pygeode.var import Var
 class NCVar(Var):
+# {{{
   # Read variable info (name, dimension ids, attributes)
   def __init__(self, f, varid):
   # {{{
@@ -235,7 +236,6 @@ class NCVar(Var):
 
   # }}}
 
-
   #TODO: a more general (non-contiguous) read routine
   def getvalues (self, start, count):
   # {{{
@@ -249,13 +249,14 @@ class NCVar(Var):
 
     return out
   # }}}
+# }}}
 del Var
-
 
 ### internal data filters ###
 
 # Override values from the source?
 def override_values (dataset, value_override):
+# {{{
   from warnings import warn
   import numpy as np
   from pygeode.var import Var, copy_meta
@@ -272,10 +273,12 @@ def override_values (dataset, value_override):
     vardict[name] = var
   dataset = dataset.replace_vars(vardict)
   return dataset
+# }}}
 
 
 # Find axes (1D vars with the same name as a dimension)
 def dims2axes (dataset):
+# {{{
   from pygeode.axis import NamedAxis
   from pygeode.var import copy_meta
   # Loop over current set of generic "dimensions"  
@@ -295,68 +298,10 @@ def dims2axes (dataset):
   # Remove the axes from the list of variables
   dataset = dataset.remove(*replacements.keys())
   return dataset
-
-# Coerce axes into particular types
-# (useful if there's no existing ruleset for detecting your axes)
-# (based on deprecated tools.make_axis)
-def set_axistypes (dataset, dimtypes):
-# {{{
-
-  from pygeode.axis import Axis
-  from pygeode.var import copy_meta
-  from types import FunctionType
-  assert isinstance(dimtypes, dict)
-
-  replacements = {}
-
-  for oldaxis in dataset.axes:
-    name = oldaxis.name
-    if name not in dimtypes: continue
-    dt = dimtypes[name]
-    # Determine axis type      
-    if isinstance(dt, Axis):   # Axis instance
-      if len(dt) != len(oldaxis):
-        raise ValueError('Provided axis instance %s is the wrong length (expected length %d, got length %d)' % (repr(dt),len(oldaxis),len(dt)))
-      axis = dt 
-    elif hasattr(dt, '__bases__') and issubclass(dt, Axis): # Axis class
-      dimclass = dt
-      axis = dimclass(values=oldaxis.values)
-      # Copy the file metadata (but discard plot attributes from the old axis)
-      # (See issue 22)
-      copy_meta (oldaxis, axis, plotatts=False)
-    elif hasattr(dt, '__len__'):
-      if len(dt) != 2: raise ValueError('Got a list/tuple for dimtypes, but did not have 2 elements as expected (Axis class, parameters).  Instead, got %s.'%dt)
-      dimclass, dimargs = dt
-      dimargs = dimargs.copy()
-      assert issubclass (dimclass, Axis), "expected an Axis subclass, got %s instead."%dimclass
-      assert isinstance (dimargs, dict)
-      if 'values' not in dimargs:  dimargs['values'] = oldaxis.values
-      axis = dimclass(**dimargs)
-    # Axis-creating function?
-    elif isinstance (dt, FunctionType):
-      axis = dt(oldaxis)
-    else: raise ValueError('Unrecognized dimtypes parameter. Expected a dictionary, axis class, or axis instance.  Got %s instead.'%type(dt))
-
-    assert len(axis) == len(oldaxis), "expected axis of length %s, ended up with axis of length %s"%(len(oldaxis),len(axis))
-    replacements[name] = axis
-
-  return dataset.replace_axes(axisdict=replacements)
-
 # }}}
 
-
-# Apply variable whitelist to a dataset (only keep specific variables)
-def whitelist (dataset, varlist):
-  from pygeode.dataset import Dataset
-  assert isinstance(varlist,(list,tuple))
-  vars = [dataset[v] for v in varlist if dataset.vardict.has_key(v)]
-  dataset = Dataset(vars, atts=dataset.atts)
-  return dataset
-######
-
-
-def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [],
-         cfmeta = True):
+def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [], cfmeta = True):
+# {{{
   ''' open (filename, [value_override = {}, dimtypes = {}, namemap = {}, varlist = [] ])
 
   Returns a Dataset of PyGeode variables contained in the specified files. The axes of the 
@@ -385,7 +330,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   from os.path import exists
   from ctypes import c_int, byref
   from pygeode.dataset import asdataset
-  from pygeode.formats.cfmeta import decode_cf
+  from pygeode.formats import finalize_open
   from pygeode.axis import Axis
   if not filename.startswith('http://'):
     assert exists(filename)
@@ -432,30 +377,8 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   # with the same name as the dimension)
   dataset = dims2axes(dataset)
 
-  # Process CF-metadata?
-  if cfmeta is True:
-    # Skip anything that we're going to override in dimtypes
-    # (so we don't get any meaningless warnings or other crap from cfmeta)
-    dataset = decode_cf(dataset, ignore=dimtypes.keys())
-
-  # Apply custom axis types?
-  if len(dimtypes) > 0:
-    dataset = set_axistypes(dataset, dimtypes)
-
-  # Keep only specific variables?
-  if len(varlist) > 0:
-    dataset = whitelist(dataset, varlist)
-
-  # Rename variables?
-  if len(namemap) > 0:
-    # Check both axes and variables
-    dataset = dataset.rename_vars(vardict=namemap)
-    dataset = dataset.rename_axes(axisdict=namemap)
-
-  return dataset
-
+  return finalize_open(dataset, dimtypes, namemap, varlist, cfmeta)
 # }}}
-
 
 #TODO: factor out cf-meta encoding and other processing steps
 # Write a dataset to netcdf
@@ -467,20 +390,16 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   from pygeode.axis import Axis
   import numpy as np
   from pygeode.progress import PBar, FakePBar
-  from pygeode.formats import cfmeta as cf
+  from pygeode.formats import finalize_save
   from pygeode.dataset import asdataset
 
   assert isinstance(filename,str)
 
+  dataset = finalize_save(in_dataset, cfmeta)
+
   # Version?
   if compress: version = 4
   assert version in (3,4)
-
-  # Encode standard axes back into netcdf metadata?
-  if cfmeta is True:
-    dataset = cf.encode_cf(in_dataset)
-  else:
-    dataset = asdataset(in_dataset)
 
   fileid = c_int()
 
