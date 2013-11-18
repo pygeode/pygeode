@@ -2,6 +2,8 @@ syntax: glob
 *.pyc
 *.so
 *.dll
+tests/*.nc
+tests/issues/*.nc
 syntax: regexp
 ^\.project$
 syntax: regexp
