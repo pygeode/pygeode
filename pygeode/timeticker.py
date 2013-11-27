@@ -521,6 +521,7 @@ class TimeFormatter(Formatter):
         if fmt is None: fmt = taxis.formatstr
     else: # If fmt is set explicitly, turn off auto-formatting
       auto = False
+      if ofsfmt is None: ofsfmt = ''
 
     if ofsfmt is None and not auto:
       ofsfmt = taxis.plotatts.get('plotofsfmt', None)
