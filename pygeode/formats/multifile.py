@@ -21,6 +21,7 @@ def expand_file_list (file_list, sort=True):
 #NOTE: for a large number of homogeneous files, use the alternative interface below
 def openall (files, format=None, **kwargs):
   from pygeode.dataset import concat
+  from pygeode.formats import autodetectformat
 
   sort = kwargs.pop('sorted', True)
   files = expand_file_list (files, sort)
@@ -59,7 +60,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
   from pygeode.timeutils import reltime, delta
   from pygeode.dataset import Dataset
   from pygeode.tools import common_dict
-  from pygeode.formats import open
+  from pygeode.formats import open, autodetectformat
   import numpy as np
 
   files = expand_file_list(files)
