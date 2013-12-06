@@ -1,7 +1,7 @@
 __all__ = ('correlate', 'regress', 'difference', 'isnonzero')
 
 import numpy as np
-from scipy.stats import t as tdist
+from scipy.stats import norm, t as tdist
 
 sigs = (-1.1, -0.05, -0.01, 0., 0.01, 0.05, 1.1)
 sigs_c = (  (1.0, 1.0, 1.0),
@@ -326,23 +326,131 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
     return x, p, ci
 # }}}
 
-"""
-def regress_old(y, xs, resid=False):
+def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
 # {{{
-   ''' regress(y, xs) - performs a multiple-linear regression of the variable y against
-         the predictors xs. returns the coefficients of the fit and the residuals. 
-         xs must be a single-dimensioned variable.'''
-   from np import linalg as la
+  ''' Returns least-squares fit of y to a linear combination of Xs, computed over axes.
+      Outputs can be requested by a comma seperated string, options are 'b,r,p,sm,se'.'''
 
-   xy = [(y * x).sum(x.axes[0].__class__) for x in xs]
-   xx = np.array([[(xi * xj).sum() for xi in xs] for xj in xs])
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
+  from pygeode.view import View
 
-   xxi = la.inv(xx)
-   
-   beta = numpy.dot(xxi, xy)
-   if resid: return beta, y - sum([b*x for b,x in zip(beta, xs)])
-   else: return beta
+  Nr = len(Xs)
+
+  Xaxes = combine_axes(Xs)
+
+  srcaxes = combine_axes([Xaxes, Y])
+  oiaxes, riaxes = shared_axes(srcaxes, [Xaxes, Y.axes])
+  if axes is not None:
+    ri_new = []
+    for a in axes:
+      ia = whichaxis(srcaxes, a)
+      if ia in riaxes: ri_new.append(ia)
+      else: raise KeyError('One of the Xs or Y does not have the axis %s.' % a)
+    oiaxes.extend([r for r in riaxes if r not in ri_new])
+    riaxes = ri_new
+    
+  oaxes = [srcaxes[i] for i in oiaxes]
+  inaxes = oaxes + [srcaxes[i] for i in riaxes]
+  oview = View(oaxes) 
+  siaxes = range(len(oaxes), len(srcaxes))
+
+  if pbar is None:
+    from pygeode.progress import PBar
+    pbar = PBar()
+
+  assert len(riaxes) > 0, 'Regressors and %s share no axes to be regressed over' % (Y.name)
+
+  # Construct work arrays
+  os = oview.shape
+  os1 = os + (Nr,)
+  os2 = os + (Nr,Nr)
+  y = np.zeros(os, 'd')
+  yy = np.zeros(os, 'd')
+  xy = np.zeros(os1, 'd')
+  x = np.zeros(os1, 'd')
+  xx = np.zeros(os2, 'd')
+  xxinv = np.zeros(os2, 'd')
+
+  # Accumulate data
+  for outsl, datatuple in loopover(Xs + [Y], oview, inaxes, pbar=pbar):
+    ydata = datatuple[-1].astype('d')
+    xdata = [datatuple[i].astype('d') for i in range(Nr)]
+    y[outsl] += npsum(ydata, siaxes)
+    yy[outsl] += npsum(ydata**2, siaxes)
+    for i in range(Nr):
+      x[outsl+(i,)] += npsum(xdata[i], siaxes)
+      xy[outsl+(i,)] += npsum(xdata[i]*ydata, siaxes)
+      for j in range(i+1):
+        xx[outsl+(i,j)] += npsum(xdata[i]*xdata[j], siaxes)
+
+  N = np.prod([len(srcaxes[i]) for i in riaxes])
+
+  # Centre data (assumes mean is not >> std. dev.)
+  yy -= y**2/N
+  for i in range(Nr):
+    xy[..., i] -= x[..., i]*y/N
+    for j in range(i+1):
+      xx[..., i, j] -= x[..., i]*x[...,j]/N
+    for j in range(i):
+      xx[..., i, j] = xx[..., j, i]
+
+
+  # Compute inverse of covariance matrix (could be done more intellegently? certainly the python
+  # loop over oview does not help)
+  xx = xx.reshape(-1, Nr, Nr)
+  xxinv = xxinv.reshape(-1, Nr, Nr)
+  for i in xrange(xx.shape[0]):
+    xxinv[i,:,:] = np.linalg.inv(xx[i,:,:])
+  xx = xx.reshape(os2)
+  xxinv = xxinv.reshape(os2)
+
+  beta = np.sum(xy.reshape(os + (1, Nr)) * xxinv, -1)
+  vare = np.sum(xy * beta, -1)
+
+  if N_fac is None: N_eff = N
+  else: N_eff = N / N_fac
+
+  sigbeta = [np.sqrt(vare * xxinv[..., i, i] / N_eff) for i in range(Nr)]
+
+  xns = [X.name if X.name != '' else 'X%d' % i for i, X in enumerate(Xs)]
+  yn = Y.name if Y.name != '' else 'Y'
+
+  from pygeode.var import Var
+  output = output.split(',')
+  ret = []
+
+  if 'B' in output:
+    if len(oaxes) == 0:
+      ret.append(beta)
+    else:
+      ret.append([Var(oaxes, values=beta[...,i], name='beta_%s' % xns[i]) for i in range(Nr)])
+  if 'r' in output:
+    R2 = vare / yy
+    if len(oaxes) == 0:
+      ret.append(R2)
+    else:
+      ret.append(Var(oaxes, values=R2, name='R2'))
+  if 'p' in output:
+    ps = [tdist.cdf(np.abs(beta[...,i]/sigbeta[i]), N_eff-Nr) * np.sign(beta[...,i]) for i in range(Nr)]
+    if len(oaxes) == 0:
+      ret.append(ps)
+    else:
+      ret.append([Var(oaxes, values=ps[i], name='p_%s' % xns[i]) for i in range(Nr)])
+  if 'sb' in output:
+    if len(oaxes) == 0:
+      ret.append(sigbeta)
+    else:
+      ret.append([Var(oaxes, values=sigbeta[i], name='sig_%s' % xns[i]) for i in range(Nr)])
+  if 'se' in output:
+    se = np.sqrt((yy - vare) / N_eff)
+    if len(oaxes) == 0:
+      ret.append(se)
+    else:
+      ret.append(Var(oaxes, values=se, name='sig_resid'))
+
+  return ret
 # }}}
+"""
 
 # Linear trend
 class Trend (ReducedVar):
