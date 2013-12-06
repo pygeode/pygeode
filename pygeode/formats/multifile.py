@@ -19,7 +19,7 @@ def expand_file_list (file_list, sort=True):
 # Inputs: the format, the glob, and any additional keywords to pass
 # I.e.: openall(files = "file???.nc", format = netcdf)
 #NOTE: for a large number of homogeneous files, use the alternative interface below
-def openall (files, format=None, **kwargs):
+def openall (files, format=None, opener=None, **kwargs):
   from pygeode.dataset import concat
   from pygeode.formats import autodetectformat
 
@@ -34,10 +34,14 @@ def openall (files, format=None, **kwargs):
     except ImportError:
       raise ValueError('Unrecognized format module %s.' % format)
 
-  datasets = [ format.open(f, **kwargs) for f in files]
+  if opener is None:
+    opener = format.open
+  
+  datasets = [ opener(f, **kwargs) for f in files]
 
-  if sort: datasets = [d.sorted() for d in datasets]
-  return concat(*datasets)
+  ds = concat(*datasets)
+  if sort: ds = ds.sorted()
+  return ds
 
 def open_multi (files, format=None, opener=None, pattern=None, file2date=None, **kwargs):
 # {{{

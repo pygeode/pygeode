@@ -34,10 +34,11 @@ def open(filename, format = None, value_override = {}, dimtypes = {}, namemap = 
     except ImportError:
       raise ValueError('Unrecognized format module %s.' % format)
 
-  return format.open(filename, value_override=value_override, **kwargs)
+  return format.open(filename, value_override=value_override, dimtypes=dimtypes, \
+              namemap=namemap, varlist=varlist, cfmeta=cfmeta, **kwargs)
 # }}}
 
-def save(filename, in_dataset, format=None, cfmeta=True, **kwargs):
+def save(filename, dataset, format=None, cfmeta=True, **kwargs):
 # {{{
   if format is None: format = autodetectformat(filename)
 
@@ -47,7 +48,7 @@ def save(filename, in_dataset, format=None, cfmeta=True, **kwargs):
     except ImportError:
       raise ValueError('Unrecognized format module %s.' % format)
 
-  format.save(filename, dataset, cfmeta, **kwargs)
+  format.save(filename, dataset, cfmeta=cfmeta, **kwargs)
 # }}}
 
 # Coerce axes into particular types
