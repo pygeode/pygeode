@@ -60,8 +60,8 @@ class Axis(Var):
   auxarrays = {}
   # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
   auxatts = {}  
-    
-  def __init__(self, values, name=None, atts=None, plotatts=None, **kwargs):
+
+  def __init__(self, values, name=None, atts=None, plotatts=None, rtol=None, **kwargs):
 # {{{ 
     import numpy as np
 
@@ -76,6 +76,17 @@ class Axis(Var):
     # (__getattr__ is overridden to call getaxis, which assumes axes are defined, otherwise __getattr__ is called to find an 'axes' property, ....)
     Var.__init__(self, [self], values=values, name=name, atts=atts, plotatts=plotatts)
  
+    # Compute size of spacing relative to magnitude for relative tolerances when mapping
+    if rtol is None:
+      rtol = 1e-5
+      inz = np.where(values != 0.)[0]
+      if len(inz) > 1:
+        vnz = np.sort(values[inz]).astype('d')
+        logr = np.floor(np.min( np.log10(np.abs(np.diff(vnz) / vnz[:-1])) ))
+        if not np.isinf(logr) and 10**logr < rtol: rtol = 10**logr
+    
+    self.rtol = rtol
+
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
     auxarrays = {}; auxatts = {}
@@ -187,9 +198,9 @@ class Axis(Var):
     if self == other: return np.arange(len(self))
 
     # Use less conservative tolerance?
-    rtol = max(self.auxatts.get('rtol', 1e-5), other.auxatts.get('rtol', 1e-5))
+    #rtol = max(self.auxatts.get('rtol', 1e-5), other.auxatts.get('rtol', 1e-5))
 
-    return map_to(self.values, other.values, rtol)
+    return map_to(self.values, other.values, self.rtol)
   # }}}
 
   def sorted (self, reverse=None):
