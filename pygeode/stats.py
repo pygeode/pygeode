@@ -364,10 +364,8 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
   os = oview.shape
   os1 = os + (Nr,)
   os2 = os + (Nr,Nr)
-  y = np.zeros(os, 'd')
   yy = np.zeros(os, 'd')
   xy = np.zeros(os1, 'd')
-  x = np.zeros(os1, 'd')
   xx = np.zeros(os2, 'd')
   xxinv = np.zeros(os2, 'd')
 
@@ -375,25 +373,18 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
   for outsl, datatuple in loopover(Xs + [Y], oview, inaxes, pbar=pbar):
     ydata = datatuple[-1].astype('d')
     xdata = [datatuple[i].astype('d') for i in range(Nr)]
-    y[outsl] += npsum(ydata, siaxes)
     yy[outsl] += npsum(ydata**2, siaxes)
     for i in range(Nr):
-      x[outsl+(i,)] += npsum(xdata[i], siaxes)
       xy[outsl+(i,)] += npsum(xdata[i]*ydata, siaxes)
       for j in range(i+1):
         xx[outsl+(i,j)] += npsum(xdata[i]*xdata[j], siaxes)
 
   N = np.prod([len(srcaxes[i]) for i in riaxes])
 
-  # Centre data (assumes mean is not >> std. dev.)
-  yy -= y**2/N
+  # Fill in opposite side of xTx
   for i in range(Nr):
-    xy[..., i] -= x[..., i]*y/N
-    for j in range(i+1):
-      xx[..., i, j] -= x[..., i]*x[...,j]/N
     for j in range(i):
-      xx[..., i, j] = xx[..., j, i]
-
+      xx[..., j, i] = xx[..., i, j]
 
   # Compute inverse of covariance matrix (could be done more intellegently? certainly the python
   # loop over oview does not help)
@@ -419,34 +410,37 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
   output = output.split(',')
   ret = []
 
-  if 'B' in output:
-    if len(oaxes) == 0:
-      ret.append(beta)
+  for o in output:
+    if o == 'B':
+      if len(oaxes) == 0:
+        ret.append(beta)
+      else:
+        ret.append([Var(oaxes, values=beta[...,i], name='beta_%s' % xns[i]) for i in range(Nr)])
+    elif o == 'r':
+      R2 = vare / yy
+      if len(oaxes) == 0:
+        ret.append(R2)
+      else:
+        ret.append(Var(oaxes, values=R2, name='R2'))
+    elif o == 'p':
+      ps = [tdist.cdf(np.abs(beta[...,i]/sigbeta[i]), N_eff-Nr) * np.sign(beta[...,i]) for i in range(Nr)]
+      if len(oaxes) == 0:
+        ret.append(ps)
+      else:
+        ret.append([Var(oaxes, values=ps[i], name='p_%s' % xns[i]) for i in range(Nr)])
+    elif o == 'sb':
+      if len(oaxes) == 0:
+        ret.append(sigbeta)
+      else:
+        ret.append([Var(oaxes, values=sigbeta[i], name='sig_%s' % xns[i]) for i in range(Nr)])
+    elif o == 'se':
+      se = np.sqrt((yy - vare) / N_eff)
+      if len(oaxes) == 0:
+        ret.append(se)
+      else:
+        ret.append(Var(oaxes, values=se, name='sig_resid'))
     else:
-      ret.append([Var(oaxes, values=beta[...,i], name='beta_%s' % xns[i]) for i in range(Nr)])
-  if 'r' in output:
-    R2 = vare / yy
-    if len(oaxes) == 0:
-      ret.append(R2)
-    else:
-      ret.append(Var(oaxes, values=R2, name='R2'))
-  if 'p' in output:
-    ps = [tdist.cdf(np.abs(beta[...,i]/sigbeta[i]), N_eff-Nr) * np.sign(beta[...,i]) for i in range(Nr)]
-    if len(oaxes) == 0:
-      ret.append(ps)
-    else:
-      ret.append([Var(oaxes, values=ps[i], name='p_%s' % xns[i]) for i in range(Nr)])
-  if 'sb' in output:
-    if len(oaxes) == 0:
-      ret.append(sigbeta)
-    else:
-      ret.append([Var(oaxes, values=sigbeta[i], name='sig_%s' % xns[i]) for i in range(Nr)])
-  if 'se' in output:
-    se = np.sqrt((yy - vare) / N_eff)
-    if len(oaxes) == 0:
-      ret.append(se)
-    else:
-      ret.append(Var(oaxes, values=se, name='sig_resid'))
+      print 'multiple_regress: unrecognized output "%s"' % o
 
   return ret
 # }}}
