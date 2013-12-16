@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.core import setup, Extension
+import numpy as np
 
 interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'], libraries=['gsl','gslcblas'])
 timeaxiscore = Extension ('pygeode.timeaxiscore', sources=['pygeode/timeaxis.c'], extra_compile_args=['-std=c99'])
@@ -41,6 +42,7 @@ the underlying computations and to create plots.
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
 	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins", "pygeode.plot"],
+	include_dirs = [np.get_include()],
 	ext_modules=[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore, opendapcore, gribcore]
 )
 
