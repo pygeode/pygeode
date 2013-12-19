@@ -14,7 +14,7 @@ gribcore = Extension ('pygeode.formats.gribcore', sources=['pygeode/formats/grib
 
 # PyGeode installation script
 
-setup (	name="pygeode",
+setup (	name="python-pygeode",
 	version="1.0.0~alpha2",
         description = "Gridded data manipulator for Python",
 	long_description = """\
@@ -33,9 +33,9 @@ for visualizing these datasets in a scientifically useful way. The library is
 written in Python, and makes use of a number of existing packages to perform
 the underlying computations and to create plots.
 """,
-        license = "GPLv3",
+        license = "GPL-3",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
-        author_email="pygeode-dev@googlegroups.com",
+        author_email="pygeode-users@googlegroups.com",
         url="http://sparc01.atmosp.physics.utoronto.ca/pygeode/docs/v1.0/",
 	requires=['numpy','matplotlib','progressbar'], # NOTE: distutils doesn't ever check this!
         # Note: When building Windows version, pre-compile the libraries
