@@ -10,25 +10,37 @@ del c_char_p
 # Map netcdf types to numpy types
 import numpy as np
 numpy_type = {1:np.int8, 2:np.dtype('|S1'), 3:np.int16, 4:np.int32,
-              5:np.float32, 6:np.float64}
+              5:np.float32, 6:np.float64, 7:np.uint8, 8:np.uint16,
+              9:np.uint32, 10:np.int64, 11:np.uint64}
 del np
 
 NC_MAX_NAME = 256
 NC_MAX_DIMS = 1024
 NC_MAX_VAR_DIMS = NC_MAX_DIMS
 
-# note: int64 currently converted to float64, since netcdf doesn't have an int64?
-nc_type = {'int8':1, 'string8':2, 'int16':3, 'int32':4,
-           'float32':5, 'float64':6, 'int64':6}
+nc_type_v3 = {'int8':1, 'string8':2, 'int16':3, 'int32':4,
+           'float32':5, 'float64':6, 'uint8':3, 'uint16':4,
+           'uint32':4, 'int64':6, 'uint64':6}
 
+nc_type_v4 = {'int8':1, 'string8':2, 'int16':3, 'int32':4,
+           'float32':5, 'float64':6, 'uint8':7, 'uint16':8,
+           'uint32':9, 'int64':10, 'uint64':11}
 
-get_att_f = {1:lib.nc_get_att_uchar, 2:lib.nc_get_att_text,
+nc_type = {3:nc_type_v3, 4:nc_type_v4}
+
+get_att_f = {1:lib.nc_get_att_schar, 2:lib.nc_get_att_text,
              3:lib.nc_get_att_short, 4:lib.nc_get_att_int,
-             5:lib.nc_get_att_float, 6:lib.nc_get_att_double}
+             5:lib.nc_get_att_float, 6:lib.nc_get_att_double,
+             7:lib.nc_get_att_uchar, 8:lib.nc_get_att_ushort,
+             9:lib.nc_get_att_uint, 10:lib.nc_get_att_longlong,
+            11:lib.nc_get_att_ulonglong}
 
-put_att_f = {1:lib.nc_put_att_uchar, 2:lib.nc_put_att_text,
+put_att_f = {1:lib.nc_put_att_schar, 2:lib.nc_put_att_text,
              3:lib.nc_put_att_short, 4:lib.nc_put_att_int,
-             5:lib.nc_put_att_float, 6:lib.nc_put_att_double}
+             5:lib.nc_put_att_float, 6:lib.nc_put_att_double,
+             7:lib.nc_put_att_uchar, 8:lib.nc_put_att_ushort,
+             9:lib.nc_put_att_uint, 10:lib.nc_put_att_longlong,
+            11:lib.nc_put_att_ulonglong}
 
 # Read global/variable attributes, return a dictionary
 def get_attributes (fileid, varid):
@@ -81,7 +93,7 @@ def get_attributes (fileid, varid):
 # }}}
 
 # Write global/variable attributes from a dictionary
-def put_attributes (fileid, varid, atts):
+def put_attributes (fileid, varid, atts, version):
 # {{{
   from numpy import asarray
 #  from ctypes import c_long
@@ -100,14 +112,14 @@ def put_attributes (fileid, varid, atts):
       if isinstance(oldvalue,int) and oldvalue >= -2147483648 and oldvalue <= 2147483647:
         value = asarray(value, dtype='int32')
       # Drop unsupported data types
-      if value.dtype.name not in nc_type:
+      if value.dtype.name not in nc_type[version]:
         if value.dtype.name.startswith('string'):
           warn ("no support for writing attributes containing an array of strings", stacklevel=3)
         warn ("skipping attribute %s = %s  (unsupported type %s)"%(name,value,value.dtype.name), stacklevel=3)
         return
       # Scalar?
       if value.shape == (): value = value.reshape([1])
-      vtype = nc_type[value.dtype.name]
+      vtype = nc_type[version][value.dtype.name]
       # Get the dtype again, but this time it should be compatible with the function we're writing to
       # (in case there is an implicit cast involved, i.e. int64's need to be cast to something else for netcdf)
       dtype = numpy_type[vtype]
@@ -126,9 +138,11 @@ def load_values (fileid, varid, vartype, start, count, out=None):
   from pygeode.tools import point
   import numpy as np
   if out is None: out = np.empty(count, dtype = numpy_type[vartype])
-  f = {1:lib.nc_get_vara_uchar, 2:lib.nc_get_vara_text, 3:lib.nc_get_vara_short,
+  f = {1:lib.nc_get_vara_schar, 2:lib.nc_get_vara_text, 3:lib.nc_get_vara_short,
        4:lib.nc_get_vara_int, 5:lib.nc_get_vara_float,
-       6:lib.nc_get_vara_double}
+       6:lib.nc_get_vara_double, 7:lib.nc_get_vara_uchar,
+       8:lib.nc_get_vara_ushort, 9:lib.nc_get_vara_uint,
+      10:lib.nc_get_vara_longlong, 11:lib.nc_get_vara_ulonglong}
   A = c_long * len(start)
   _start = A(*start)
   _count = A(*count)
@@ -414,14 +428,18 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   assert len(set([v.name for v in vars])) == len(vars), "vars must have unique names: %s"% [v.name for v in vars]
 
   # Functions for writing entire array
-  allf = {1:lib.nc_put_var_uchar, 2:lib.nc_put_var_text, 3:lib.nc_put_var_short,
+  allf = {1:lib.nc_put_var_schar, 2:lib.nc_put_var_text, 3:lib.nc_put_var_short,
        4:lib.nc_put_var_int, 5:lib.nc_put_var_float,
-       6:lib.nc_put_var_double}
+       6:lib.nc_put_var_double, 7:lib.nc_put_var_uchar,
+       8:lib.nc_put_var_ushort, 9:lib.nc_put_var_uint,
+      10:lib.nc_put_var_longlong, 11:lib.nc_put_var_ulonglong}
 
   # Functions for writing chunks
-  chunkf = {1:lib.nc_put_vara_uchar, 2:lib.nc_put_vara_text, 3:lib.nc_put_vara_short,
+  chunkf = {1:lib.nc_put_vara_schar, 2:lib.nc_put_vara_text, 3:lib.nc_put_vara_short,
        4:lib.nc_put_vara_int, 5:lib.nc_put_vara_float,
-       6:lib.nc_put_vara_double}
+       6:lib.nc_put_vara_double, 7:lib.nc_put_vara_uchar,
+       8:lib.nc_put_vara_ushort, 9:lib.nc_put_vara_uint,
+      10:lib.nc_put_vara_longlong, 11:lib.nc_put_vara_ulonglong}
 
   # Create the file
   if version == 3:
@@ -443,7 +461,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   chunks = [None] * len(vars)
   varids = [None] * len(vars)
   for i, var in enumerate(vars):
-    t = nc_type[var.dtype.name]
+    t = nc_type[version][var.dtype.name]
     # Generate the array of dimension ids for this var
     d = [dimids[list(axes).index(a)] for a in var.axes]
     # Make it C-compatible
@@ -459,12 +477,12 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   # Write the attributes
 
   # global attributes
-  put_attributes (fileid, -1, dataset.atts)
+  put_attributes (fileid, -1, dataset.atts, version)
 
   # variable attributes
   for i, var in enumerate(vars):
     # modify axes to be netcdf friendly (CF-compliant, etc.)
-    put_attributes (fileid, varids[i], var.atts)
+    put_attributes (fileid, varids[i], var.atts, version)
 
   # Don't pre-fill the file
   oldmode = c_int()
@@ -483,7 +501,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 #  pbar = FakePBar()
   # Write the data
   for i, var in enumerate(vars):
-    t = nc_type[var.dtype.name]
+    t = nc_type[version][var.dtype.name]
     dtype = numpy_type[t]
 
 #    print 'writing', var.name
