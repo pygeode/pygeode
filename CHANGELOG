@@ -1,3 +1,7 @@
+0.7.3 - 2014/01/13
+  - Add support for more netcdf data types (issue 54).
+  - Minor bugfix for ufunc (var name was not being set properly).
+
 0.7.2 - 2013/09/16
   - Fix ufunc operators dropping metadata (issue 39).
 
