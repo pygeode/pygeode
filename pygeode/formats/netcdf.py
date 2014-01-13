@@ -10,25 +10,32 @@ del c_char_p
 # Map netcdf types to numpy types
 import numpy as np
 numpy_type = {1:np.int8, 2:np.dtype('|S1'), 3:np.int16, 4:np.int32,
-              5:np.float32, 6:np.float64}
+              5:np.float32, 6:np.float64, 7:np.uint8, 8:np.uint16,
+              9:np.uint32, 10:np.int64, 11:np.uint64}
 del np
 
 NC_MAX_NAME = 256
 NC_MAX_DIMS = 1024
 NC_MAX_VAR_DIMS = NC_MAX_DIMS
 
-# note: int64 currently converted to float64, since netcdf doesn't have an int64?
 nc_type = {'int8':1, 'string8':2, 'int16':3, 'int32':4,
-           'float32':5, 'float64':6, 'int64':6}
+           'float32':5, 'float64':6, 'uint8':7, 'uint16':8,
+           'uint32':9, 'int64':10, 'uint64':11}
 
 
-get_att_f = {1:lib.nc_get_att_uchar, 2:lib.nc_get_att_text,
+get_att_f = {1:lib.nc_get_att_schar, 2:lib.nc_get_att_text,
              3:lib.nc_get_att_short, 4:lib.nc_get_att_int,
-             5:lib.nc_get_att_float, 6:lib.nc_get_att_double}
+             5:lib.nc_get_att_float, 6:lib.nc_get_att_double,
+             7:lib.nc_get_att_uchar, 8:lib.nc_get_att_ushort,
+             9:lib.nc_get_att_uint, 10:lib.nc_get_att_longlong,
+            11:lib.nc_get_att_ulonglong}
 
-put_att_f = {1:lib.nc_put_att_uchar, 2:lib.nc_put_att_text,
+put_att_f = {1:lib.nc_put_att_schar, 2:lib.nc_put_att_text,
              3:lib.nc_put_att_short, 4:lib.nc_put_att_int,
-             5:lib.nc_put_att_float, 6:lib.nc_put_att_double}
+             5:lib.nc_put_att_float, 6:lib.nc_put_att_double,
+             7:lib.nc_put_att_uchar, 8:lib.nc_put_att_ushort,
+             9:lib.nc_put_att_uint, 10:lib.nc_put_att_longlong,
+            11:lib.nc_put_att_ulonglong}
 
 # Read global/variable attributes, return a dictionary
 def get_attributes (fileid, varid):
