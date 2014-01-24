@@ -7,7 +7,7 @@ def expand_file_list (file_list, sort=True):
 #  from glob import iglob
   from glob import iglob
   from os.path import exists
-  if not isinstance(file_list, list): file_list = [file_list]
+  if not isinstance(file_list, (list,tuple)): file_list = [file_list]
   files = [ f for file_glob in file_list for f in iglob(file_glob)]
   assert len(files) > 0, 'No matches found'
   for f in files: assert exists(f), str(f)+" doesn't exist"
