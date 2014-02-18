@@ -36,7 +36,7 @@ the underlying computations and to create plots.
         license = "GPL-3",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="pygeode-users@googlegroups.com",
-        url="http://sparc01.atmosp.physics.utoronto.ca/pygeode/docs/v1.0/",
+        url="http://pygeode.bitbucket.org/",
 	requires=['numpy','matplotlib','progressbar'], # NOTE: distutils doesn't ever check this!
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
