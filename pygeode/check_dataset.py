@@ -1,5 +1,6 @@
 # Iterates over a dataset, checks for any I/O problems.
 # Summarizes any Exceptions caught along the way.
+#NOTE: This is not (yet) part of the official PyGeode API, and may be changed/moved/removed at any time!
 
 def check_dataset (dataset):
   from pygeode.view import View
