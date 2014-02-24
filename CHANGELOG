@@ -1,8 +1,20 @@
-1.0.0 - UNRELEASED
+1.0.0 - BETA 2014/02/24
 
   General updates to the code:
   - Converted C shared libraries to Python extension modules, to improve
     portability of the package.
+  - New top-level "open" and "save" commands, which guess the appropriate file
+    format to use.
+
+  Updates to Var class:
+  - Change the behaviour of Var.__getitem__, so that degenerate axes are
+    removed.  This brings our array slicing behaviour closer to numpy.
+
+  Updates to axis module:
+  - For axes, added in a tolerance autodetection for closeness of matches,
+    based on spacing in axis.
+  - New functions "regularlat" & "regularlon" to create regularly spaced
+    latitude and longitude axes.
 
   New modules:
   - New 'spectral' module, which defines a Spectral axis.
@@ -18,12 +30,25 @@
 
   Updates to the stats module:
   - Added option to scale effective degrees of freedom in regress().
+  - Regress now takes a comma-separated string to specify outputs, like EOF.
+  - New function "multiple_regress" - code to do multiple linear regression.
 
   Updates to the reduce module:
   - Added argmin() operator.
 
+  Updates to the ufunc module:
+  - We now keep the original variable name if we're doing an arithmetic scalar
+    operation on the variable.
+
   Updates to the formats.cfmeta module:
   - Better detection and handling of (malformed) time axes.
+
+  Bug fixes:
+  - Correct portability issue with timeaxiscore module; also improved its error 
+    reporting.
+  - Fixed issue with concatenating along dummy axis.
+  - Fixed issue with "smooth" module (issue 44), and changed the smooth
+    interface a bit to make it easier to use your own kernels.
 
 
 0.7.3 - 2014/01/13
@@ -95,7 +120,7 @@
   - Moved _uniquify, modify, reltime, delta, wrapdate, and date_diff from
     timeaxis module to timeutils module.
   - New operator removeleapyears() to convert a standard time axis to a 365-day
-    axis.
+    or 360-day axis.
   - New operator splittimeaxis() to split a time axis into 2 dimensions (e.g.
     year, day-of-year).
   - New function conform_values() to make 2 time axes have the same units and
