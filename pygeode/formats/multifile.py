@@ -231,6 +231,7 @@ class Multifile_Var (Var):
     # Get the times
     itime = view.index(Time)
     times = view.subaxis(Time)
+    handled_times = np.zeros([len(times)], dtype='bool')
 
 #    print times
 
@@ -246,9 +247,13 @@ class Multifile_Var (Var):
 
     # Loop over each file, git 'er done
     for i,p in enumerate(newfile_pos):
-     try:
       file_index = file_indices[p]
-      file = self.opener(self.files[file_index])
+      try:
+        file = self.opener(self.files[file_index])
+      except Exception as e:
+        raise Exception("Multifile: error encountered with file '%s': %s"%(self.files[file_index], str(e)))
+      if self.name not in file:
+        raise Exception("Multifile: var '%s' was expected to be in file '%s', but it's not there!"%(self.name, self.files[file_index]))
       var = file[self.name] # abandon all hope, ye who use non-unique variable names
       # How does this var map to the overall time axis?
       if var.hasaxis(Time):
@@ -261,19 +266,23 @@ class Multifile_Var (Var):
           var = var.squeeze()
       bigmap, smallmap = times.common_map(timechunk)
       # Check for any funky problems with the map
-      assert len(bigmap) > 0, "?? %s <-> %s"%(times,timechunk)
+#      assert len(bigmap) > 0, "?? %s <-> %s"%(times,timechunk)
+      if len(bigmap) == 0:
+        raise Exception("Multifile: Can't find an entire chunk of data for variable '%s'.  Perhaps a file is missing?"%self.name)
+
       slices = [slice(None)] * self.naxes
       slices[itime] = bigmap
       newview = view.replace_axis(Time, times, bigmap)
-      data = newview.get(var, pbar=pbar.part(i,len(newfile_pos)))
+      try:
+        data = newview.get(var, pbar=pbar.part(i,len(newfile_pos)))
+      except Exception as e:
+        raise Exception("Multifile: problem fetching variable '%s' from file '%s': %s"%(self.name, self.files[file_index], str(e)))
       # Stick this data into the output
       out[slices] = data
-     except Exception:
-      from warnings import warn
-      warn ("error encountered with file '%s', var '%s'"%(
-        self.files[file_index], self.name
-      ))
-      raise
+      handled_times[bigmap] = True
+
+    if not np.all(handled_times):
+      raise Exception("Multifile: Can't find some data for variable '%s'.  Perhaps a file is missing?"%self.name)
     return out
 # }}}
 # }}}
