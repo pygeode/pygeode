@@ -326,7 +326,7 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
     return x, p, ci
 # }}}
 
-def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
+def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 # {{{
   ''' Returns least-squares fit of y to a linear combination of Xs, computed over axes.
       Outputs can be requested by a comma seperated string, options are 'b,r,p,sm,se'.'''
@@ -364,22 +364,24 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
   os = oview.shape
   os1 = os + (Nr,)
   os2 = os + (Nr,Nr)
+  y = np.zeros(os, 'd')
   yy = np.zeros(os, 'd')
   xy = np.zeros(os1, 'd')
   xx = np.zeros(os2, 'd')
   xxinv = np.zeros(os2, 'd')
 
+  N = np.prod([len(srcaxes[i]) for i in riaxes])
+
   # Accumulate data
   for outsl, datatuple in loopover(Xs + [Y], oview, inaxes, pbar=pbar):
     ydata = datatuple[-1].astype('d')
     xdata = [datatuple[i].astype('d') for i in range(Nr)]
+    y[outsl] += npsum(ydata, siaxes)
     yy[outsl] += npsum(ydata**2, siaxes)
     for i in range(Nr):
       xy[outsl+(i,)] += npsum(xdata[i]*ydata, siaxes)
       for j in range(i+1):
         xx[outsl+(i,j)] += npsum(xdata[i]*xdata[j], siaxes)
-
-  N = np.prod([len(srcaxes[i]) for i in riaxes])
 
   # Fill in opposite side of xTx
   for i in range(Nr):
@@ -401,7 +403,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
   if N_fac is None: N_eff = N
   else: N_eff = N / N_fac
 
-  sigbeta = [np.sqrt(vare * xxinv[..., i, i] / N_eff) for i in range(Nr)]
+  sigbeta = [np.sqrt((yy - vare) * xxinv[..., i, i] / N_eff) for i in range(Nr)]
 
   xns = [X.name if X.name != '' else 'X%d' % i for i, X in enumerate(Xs)]
   yn = Y.name if Y.name != '' else 'Y'
@@ -417,7 +419,8 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='b,p'):
       else:
         ret.append([Var(oaxes, values=beta[...,i], name='beta_%s' % xns[i]) for i in range(Nr)])
     elif o == 'r':
-      R2 = vare / yy
+      vary = (yy - y**2/N)
+      R2 = 1 - (yy - vare) / vary
       if len(oaxes) == 0:
         ret.append(R2)
       else:
