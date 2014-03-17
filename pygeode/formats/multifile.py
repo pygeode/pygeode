@@ -53,9 +53,9 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
                format.open() is used by default; if any custom behaviour is needed it can
                be provided here.
       pattern - a regex pattern to extract date stamps from the filename; used by default file2date.
-                Matching patterns must be named <year>, <month>, <day>, <hour> or <minute>.
-                Abbreviations are available for the above; $Y matches a four digit year, $m, $d, $H,
-                and $M match a two-digit month, day, hour and minute, respectively.
+               Matching patterns must be named <year>, <month>, <day>, <hour> or <minute>.
+               Abbreviations are available for the above; $Y matches a four digit year, $m, $d, $H,
+               and $M match a two-digit month, day, hour and minute, respectively.
       file2date - a function which returns a date dictionary given a filename. By default a regex pattern is
                used.
   '''

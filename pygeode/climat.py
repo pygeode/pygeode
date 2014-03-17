@@ -256,8 +256,8 @@ class Trend(TimeOp):
 
 class climatology(Clim,Mean):
   """
-  Computes a climatology.  Averages over all years, returning a single value
-  for each distinct month, day, hour, etc.
+  Computes a climatological mean.  Averages over all years, returning a single
+  value for each distinct month, day, hour, etc.
   """
 class dailymean(Daily,Mean):
   """
