@@ -215,6 +215,7 @@ class Plot(PlotOp):
 # {{{
   def render (self, axes):
     axes.plot (*self.plot_args, **self.plot_kwargs)
+    axes.autoscale()
 # }}}
 
 class Scatter(PlotOp):
