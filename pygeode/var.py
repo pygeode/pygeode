@@ -38,10 +38,18 @@ class Var(object):
   """
 
   # Default attributes
+
+  #: A description of the variable (may not be set).  Usually determined at the
+  #: data source (e.g. input file), and may be used to identify the variable
+  #: when saving to an output file.
   name = '' # default name (blank)
+
+  #: A string representation of the units of the variable
   units = '' # default units (none)
+
   formatstr = '%g' # Formatting code to use for printint values
   atts = {} # shared dictionary - replace this in init!
+
   # attributes for plotting; see plotting documentation
   plotatts = {'plotscale': 'linear',  # default scale for plotting
               'plotorder': 1}  # By default, plot with axis values increasing away from origin
@@ -91,7 +99,7 @@ class Var(object):
     # changing the variable itself
     # Do this before calling 'hasattr', or you're in for a world of pain
     assert all(isinstance(a,Axis) for a in axes)
-    self.axes = tuple(axes)
+    self.axes = tuple(axes) #: Stuff
     self.naxes = len(axes)
     
     # If we're given a Var as the input data, then we need to grab the data.
@@ -787,7 +795,7 @@ for f in unary_flist:
     def newf(self):
       return _f(self)
     newf.__name__ = f.__name__
-    newf.__doc__ = "Wrapper to call :func:`pygeode.ufunc.%s` on the Var object"%f.__name__
+    newf.__doc__ = f.__doc__ + ' Called on the Var object.'
     return newf
 
   setattr(Var,f.__name__,newf_creator(f))

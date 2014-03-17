@@ -210,9 +210,9 @@ rad2deg = wrap_unary (_rad2deg, "Converts values from radians to degress")
 arccosd = chain(_rad2deg,np.arccos); arccosd.__name__ = 'arccosd'
 arcsind = chain(_rad2deg,np.arcsin); arcsind.__name__ = 'arcsind'
 arctand = chain(_rad2deg,np.arctan); arctand.__name__ = 'arctand'
-arccosd = wrap_unary (arccosd, "Inverse cosine (in degrees)")
-arcsind = wrap_unary (arcsind, "Inverse sine (in degrees)")
-arctand = wrap_unary (arctand, "Inverse tangent (in degrees)")
+arccosd = wrap_unary (arccosd, "Inverse cosine (in degrees).")
+arcsind = wrap_unary (arcsind, "Inverse sine (in degrees).")
+arctand = wrap_unary (arctand, "Inverse tangent (in degrees).")
 arctand2 = chain(_rad2deg,np.arctan2); arctand2.__name__ = 'arctand2'
 arctand2 = wrap_binary (arctand2, "Inverse tangent.  Explicit x/y given.  Returns degrees.")
 

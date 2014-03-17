@@ -254,7 +254,10 @@ class Trend(TimeOp):
 ###############################################################################
 # Combine the above classes
 
-class climatology(Clim,Mean): pass
+class climatology(Clim,Mean): 
+  ''' Computes a climatological mean.'''
+  pass
+
 class dailymean(Daily,Mean): pass
 class monthlymean(Monthly,Mean): pass
 class diurnalmean(Diurnal,Mean): pass

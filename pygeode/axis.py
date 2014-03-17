@@ -85,7 +85,7 @@ class Axis(Var):
         logr = np.floor(np.min( np.log10(np.abs(np.diff(vnz) / vnz[:-1])) ))
         if not np.isinf(logr) and 10**logr < rtol: rtol = 10**logr
     
-    self.rtol = rtol
+    self.rtol = rtol #: The relative tolerance for identifying an element of this axis.
 
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
@@ -601,6 +601,7 @@ class YAxis (Axis): pass
 
 class Lon (XAxis): 
 # {{{
+  ''' Describes longitudes. '''
   name = 'lon'
   formatstr = '%.3g E<360'
 
