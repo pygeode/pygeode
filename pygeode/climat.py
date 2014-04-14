@@ -254,17 +254,36 @@ class Trend(TimeOp):
 ###############################################################################
 # Combine the above classes
 
-class climatology(Clim,Mean): 
-  ''' Computes a climatological mean.'''
-  pass
+class climatology(Clim,Mean):
+  """
+  Computes a climatological mean.  Averages over all years, returning a single
+  value for each distinct month, day, hour, etc.
+  """
+class dailymean(Daily,Mean):
+  """
+  Computes an average value for each day.
+  """
+class monthlymean(Monthly,Mean):
+  """
+  Averages over each month.
+  """
+class diurnalmean(Diurnal,Mean):
+  """
+  Computes an average value for each time of day (averages over all years,
+  months, days).
+  """
+class seasonalmean(Seasonal,Mean):
+  """
+  Averages over each season.  Currently, the seasons are hard-coded as (DJF,
+  MAM, JJA, SON).
+  """
 
-class dailymean(Daily,Mean): pass
-class monthlymean(Monthly,Mean): pass
-class diurnalmean(Diurnal,Mean): pass
-class seasonalmean(Seasonal,Mean): pass
-
-class climtrend(Clim,Trend): pass
-
+class climtrend(Clim,Trend):
+  """
+  For each month, day, hour, etc., compute a least-squares fit to a linear trend
+  over all years.  This is similar to the climatology, but instead of averaging
+  over all years, it computes the rate of change over all years.
+  """
 
 # Reconstruct a linear dataset given the trend coefficients
 # I.e., A*t + B
