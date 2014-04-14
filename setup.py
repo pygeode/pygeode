@@ -15,7 +15,7 @@ gribcore = Extension ('pygeode.formats.gribcore', sources=['pygeode/formats/grib
 # PyGeode installation script
 
 setup (	name="python-pygeode",
-	version="1.0.0~beta1",
+	version="1.0.0",
         description = "Gridded data manipulator for Python",
 	long_description = """\
 PyGeode is a software library intended to simplify the management, analysis,

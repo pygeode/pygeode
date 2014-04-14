@@ -1,4 +1,4 @@
-1.0.0 - BETA 2014/02/24
+1.0.0 - 2014/04/14
 
   General updates to the code:
   - Converted C shared libraries to Python extension modules, to improve
