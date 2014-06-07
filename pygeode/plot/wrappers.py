@@ -150,7 +150,7 @@ class AxesWrapper:
     # Plot children
     for a in self.axes: a._do_plots(fig)
 
-    if self.nplots == 0: return
+    if self.ax is None: return
 
     # Perform plotting operations
     for p in self.plots:

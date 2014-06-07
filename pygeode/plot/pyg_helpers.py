@@ -579,6 +579,40 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   return Ax
 # }}}
 
+def showlines(vs, size=(4.1,2), **kwargs):
+# {{{
+  ''' 
+  Plot line plots of a list of 1D variables on the same plot.
+
+  Parameters
+  ----------
+  v :  list of :class:`Var`
+     The variables to plot. Should all have 1 non-degenerate axis.
+  '''
+
+  Z = [v.squeeze() for v in vs]
+
+  for z in Z:
+    assert Z[0].naxes == 1, 'Variable %s has %d non-generate axes; must have 1.' % (Z.name, Z.naxes)
+
+  fig = kwargs.pop('fig', None)
+
+  ax = wr.AxesWrapper(size=size)
+  ydat = []
+  for v in vs:
+    vplot(v, axes=ax, label=v.name, )
+    ydat.append(ax.find_plot(wr.Plot).plot_args[1])
+
+  ylim = (np.min([np.min(y) for y in ydat]), np.max([np.max(y) for y in ydat]))
+  kwargs.update(dict(ylim=ylim))
+  ax.legend(loc='best', frameon=False)
+  ax.setp(**kwargs)
+
+  import pylab as pyl
+  if pyl.isinteractive(): ax.render(fig)
+  return ax
+# }}}
+
 def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
 # {{{
   sizes = dict(A4 = (8.3, 11.7),
@@ -643,4 +677,4 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'showcol', 'showgrid', 'vplot', 'vscatter', 'vcontour', 'vsigmask', 'vquiver', 'savepages']
+__all__ = ['showvar', 'showcol', 'showgrid', 'showlines', 'vplot', 'vscatter', 'vcontour', 'vsigmask', 'vquiver', 'savepages']
