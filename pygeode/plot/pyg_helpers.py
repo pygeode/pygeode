@@ -93,6 +93,9 @@ def set_yaxis(axes, axis, lbl):
 
 def build_basemap(lons, lats, **kwargs):
 # {{{
+  if not hasattr(wr, 'BasemapAxes'):
+    return wr.AxesWrapper()
+
   prd = dict(projection = 'cyl', resolution = 'c')
   prd.update(kwargs.pop('map', {}))
   proj = prd['projection']
@@ -259,7 +262,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if isinstance(axes, wr.BasemapAxes):
+    if wr.isbasemapaxis(axes):
       decorate_basemap(axes, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
@@ -347,7 +350,7 @@ def vquiver(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=N
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if isinstance(axes, wr.BasemapAxes):
+    if isbasemapaxis(axes):
       decorate_basemap(axes, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
