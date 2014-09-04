@@ -108,5 +108,10 @@ sl2 = varTest('slice_stride', var(i_time=(1, -1, 4)), \
 sl3 = varTest('slice_negative_stride', var(i_time=(2, -5, -3)), \
          values = data[2:-5:-3, :, :])
 
-
+bc1 = varTest('broadcast1', ax1*ax2, \
+         axes = (ax1, ax2), \
+         values = ax1.values.reshape(-1, 1) * ax2.values.reshape(1, -1))
       
+bc2 = varTest('broadcast2', ax1(time=(0,100)) + ax1(time=(50,100)), \
+         axes = (ax1(time=(50,100)),), \
+         values = 2*np.arange(50,101))
