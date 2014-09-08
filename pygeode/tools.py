@@ -419,8 +419,14 @@ def loopover (vars, outview, inaxes=None, pbar=None):
     data = []
     for j,v in enumerate(vars):
       vpbar = subpbar.part(j,len(vars))
-      data.append(inv.get(v, pbar=vpbar))
-#      data.append(inv.get(v))
+      # Wrap the data retrieval in a try-catch block, to catch StopIteration.
+      # If we allow this to be emitted further up, than it looks like we're
+      # indicating that our own loop has finished successfully!
+      # See https://code.google.com/p/pygeode/issues/detail?id=59
+      try:
+        data.append(inv.get(v, pbar=vpbar))
+      except StopIteration:
+        raise Exception ("Stray StopIteration signal caught.  Unable to retrieve the data.")
     yield outv.slices, data
 # }}}
 
