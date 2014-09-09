@@ -1,0 +1,24 @@
+[Memory]
+
+# Maximum size for arrays before pygeode
+# will try to split up data sets when processing.
+# On systems with a large amount of memory, increasing
+# this can speed up the processing of large data sets.
+max_array_size = 32768
+
+# Maximum size allowed for arrays in temp files
+# (Not currently used, but could be useful for 'medium' sized intermediate
+#  products which are too big to fit in memory, but are a pain in the ass to
+#  recalculate over again.)
+MAX_SWAP_SIZE = 1073741824
+
+[Axes]
+
+# Things like default names for axes could be customized
+
+[Plotting]
+
+# What kind of parentheses to use to wrap around units
+# in plot labels
+unit_decoration = '()'
+
