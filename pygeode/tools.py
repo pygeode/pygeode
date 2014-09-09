@@ -172,6 +172,45 @@ def whichaxis(axes, id):
   raise KeyError, "axis %s not found in %s"%(repr(id),axes)
 # }}}
 
+def can_map(a1, a2):
+# {{{
+  ''' Returns the mappable axis if a complete mapping exists between the two given axes, 
+      otherwise returns None. '''
+  if a1.isparentof(a2):
+    ap = a1
+    ac = a2
+  elif a2.isparentof(a1):
+    ap = a2
+    ac = a1
+  else:
+    return None
+
+  # If the axes are equivalent, return the parent
+  if ap == ac: return ap
+
+  # The two axes can potentially be mapped; check for explicit classing
+  cl1 = ap.auxatts.get('class', None)
+  cl2 = ac.auxatts.get('class', None)
+
+  if cl1 is not None and cl2 is not None and cl1 != cl2:
+    return None
+
+  # Try mappings; confirm they exist and are complete
+  mp = ap.map_to(ac)
+  mc = ac.map_to(ap)
+
+  if mc is not None:
+    if len(mc) == len(ap): return ap
+  
+  if mp is not None:
+    if len(mp) == len(ac): return ac
+
+  if mp is not None and mc is not None:
+    # Axes are mappable, but no complete mapping exists; throw exception
+    raise ValueError('Axes <%s> and <%s> cannot be mapped.' % (ap.__str__(), ac.__str__()))
+
+  return None
+# }}}
 
 # Resolve all input axes into a set of output axes
 # (similar to an outer product, but each axis appears only once when matched)
@@ -199,37 +238,16 @@ def combine_axes (axis_lists):
   out_axes = []
   for A in axis_lists:
     for a in A:
+      ap = None
+      for i, outa in enumerate(out_axes):
+        ap = can_map(a, outa)
+        if ap is not None: 
+          out_axes[i] = ap
+          break
 
-      # Check if we already included this axis in the list
-      if a in out_axes:
-        # We won't append this axis, but we might want to use it to replace
-        # an existing axis in the output list.
-        i = out_axes.index(a)
-        if a.isparentof(out_axes[i]):
-          out_axes[i] = a
-
-        continue  # We have now handled this axis for the output
-
-#      print '**', repr(a), 'not in', out_axes
-
-      # Otherwise, check for things in the output axes that are similar to
-      # the axis we're looking at, and might be replaced
-      handled = False
-      for i,outa in enumerate(out_axes):
-        # Check if we have a mapping (i.e. to climatology axis, etc.)
-        # In that case, keep the axis which has the most information
-        if outa.map_to(a) is not None:
-#          print repr(outa), len(outa), 'maps to', repr(a), len(a)
-          out_axes[i] = a
-          handled = True
-        elif a.map_to(outa) is not None:
-#          print repr(a), len(a), 'maps to', repr(outa), len(outa)
-          handled = True
-
-        if handled: break  # no point in comparing against other output axes, already found a match
-
-      # If nothing matched from output list, append to the end
-      if not handled: out_axes.append(a)
+      if ap is None: 
+        # No possible mapping was found, append a to out_axes
+        out_axes.append(a)
 
   # Check if any of the input vars have all the axes
   basis_axes = [A for A in axis_lists if all(outa in A for outa in out_axes)]
@@ -288,7 +306,6 @@ def order (a):
 
 # }}}
 
-"""
 # Map between two arrays
 # (Finds elements that can map between the two arrays, and returns the indices referencing them
 # i.e. (1,3,5,7,9,11,13,17,19,23,29,31,27,41) and (1,2,3,5,8,13,21,34,55) give:
@@ -324,7 +341,6 @@ def common_map (a, b):
   b_map = b_ind[b_map]
   return a_map, b_map
 # }}}
-"""
 
 """
 def npsum(a, axes):
@@ -403,8 +419,14 @@ def loopover (vars, outview, inaxes=None, pbar=None):
     data = []
     for j,v in enumerate(vars):
       vpbar = subpbar.part(j,len(vars))
-      data.append(inv.get(v, pbar=vpbar))
-#      data.append(inv.get(v))
+      # Wrap the data retrieval in a try-catch block, to catch StopIteration.
+      # If we allow this to be emitted further up, than it looks like we're
+      # indicating that our own loop has finished successfully!
+      # See https://code.google.com/p/pygeode/issues/detail?id=59
+      try:
+        data.append(inv.get(v, pbar=vpbar))
+      except StopIteration:
+        raise Exception ("Stray StopIteration signal caught.  Unable to retrieve the data.")
     yield outv.slices, data
 # }}}
 

@@ -78,6 +78,13 @@ int interpgsl (int narrays, int nxin, int nxout,
       for (i = 0; i < nxout; i++) local_xout[i] = xout[i]; 
     }
 
+    // If we have insufficient points for the interpolation type, then fill
+    // the output array with NaNs.
+    if (j < type->min_size) {
+      for (j = 0; j < nxout; j++, xout++, yout++) *yout = NAN;
+      continue;
+    }
+
     interp = gsl_interp_alloc (type, j);
     gsl_interp_init (interp, local_xin, local_yin, j);
 

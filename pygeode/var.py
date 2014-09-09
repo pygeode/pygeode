@@ -194,7 +194,7 @@ class Var(object):
     # If any single integer indices were passed, then reduce out those
     # dimensions.  This is consistent with what would happen with numpy slicing.
     if isinstance(slices,tuple):
-      extra_slicing = tuple(0 if isinstance(sl,int) else slice(None) for sl in slices)
+      extra_slicing = tuple(0 if isinstance(sl,int) else Ellipsis if sl is Ellipsis else slice(None) for sl in slices)
       array = array[extra_slicing]
     elif isinstance(slices,int):
       array = array[0]

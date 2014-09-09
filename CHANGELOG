@@ -2,6 +2,11 @@
   - Added an option to disable lazy array evaluation, for cases where this
     feature gets in the way.
 
+1.0.1 - 2014/07/09
+ - Fixed small colourbar bug.
+ - In multifile, allow for case where files are passed in as a tuple.
+ - Allow showvar() to work without basemap installed.
+
 1.0.0 - 2014/04/14
 
   General updates to the code:
