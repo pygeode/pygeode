@@ -166,7 +166,7 @@ class Var(object):
 
     # If this is a Var (and not a subclass), then it is safe to lock
     # the attributes now, and prevent furthur changes.
-    if type(self) == Var: self._finalize()
+    #if type(self) == Var: self._finalize()
 
   # }}}
 

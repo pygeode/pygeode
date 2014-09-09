@@ -7,6 +7,23 @@ __path__.append(libpath)
 pluginpath = os.getenv('PYGEODEPLUGINS', libpath+sep+'plugins')
 __path__.append(pluginpath)
 
+def readConfig():
+  import ConfigParser as Cfg
+  import sys, os
+  from os.path import expanduser, dirname, sep
+
+  if sys.platform.startswith('linux'):
+    cfgpaths = ['/etc/', '/usr/local/etc/', dirname(__file__) + sep, \
+                expanduser('~') + '/.config/pygeode/', os.curdir + sep]
+  else:
+    cfgpaths = [dirname(__file__) + sep, expanduser('~') + sep, os.curdir + sep]
+    
+  c = Cfg.ConfigParser()
+  files = c.read([p + 'pygrc' for p in cfgpaths])
+  return c, files
+
+_config, _configfiles = readConfig()
+
 del os, sep
 
 # Allow PyGeode stuff from other (local) directory structures in PYTHONPATH
@@ -17,15 +34,13 @@ del extend_path
 
 # Global parameters
 # Maximum size allowed for arrays in memory
-MAX_ARRAY_SIZE = 2**22
-#MAX_ARRAY_SIZE=2**10
-#MAX_ARRAY_SIZE=2**5
+MAX_ARRAY_SIZE = _config.getint('Memory', 'max_array_size')
 
 # Maximum size allowed for arrays in temp files
 # (Not currently used, but could be useful for 'medium' sized intermediate
 #  products which are too big to fit in memory, but are a pain in the ass to
 #  recalculate over again.)
-MAX_SWAP_SIZE = 2**30
+MAX_SWAP_SIZE = _config.getint('Memory', 'max_swap_size')
 
 
 # Shortcuts

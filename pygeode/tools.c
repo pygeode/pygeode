@@ -142,8 +142,8 @@ int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices, double
 // (right now, it's an exact match or nothing)
 int common_map (int na, double *a, int nb, double *b, int *nmap, int *a_map, int *b_map) {
 
-  const double rtol=1e-05;
-  const double atol=1e-08;
+  //const double rtol=1e-05;
+  //const double atol=1e-08;
 
   int ai = 0, bi = 0;
   int m = 0;
@@ -304,27 +304,42 @@ static PyObject *toolscore_map_to (PyObject *self, PyObject *args) {
 
 }
 
-/*** not used
 static PyObject *toolscore_common_map (PyObject *self, PyObject *args) {
 
-  int na, nb, *nmap, *a_map, *b_map;
-  double *a, *b;
-  long long nmap_L, a_map_L, b_map_L, a_L, b_L;
+  npy_intp na, nb, nmap;
+  int *a_map, *b_map;
+  double rtol;
+  PyObject *a_obj, *b_obj;
+  PyArrayObject *a_array, *b_array, *a_ind, *b_ind;
 
-  if (!PyArg_ParseTuple(args, "iLiLLLL",
-    &na, &a_L, &nb, &b_L, &nmap_L, &a_map_L, &b_map_L)) return NULL;
-  // Do some unsafe casting to pointers.
-  // What's the worst that could happen?
-  a = (double*)a_L;
-  b = (double*)b_L;
-  nmap = (int*)nmap_L;
-  a_map = (int*)a_map_L;
-  b_map = (int*)b_map_L;
+  if (!PyArg_ParseTuple(args, "OOd", &a_obj, &b_obj, &rtol)) return NULL;
 
-  common_map (na, a, nb, b, nmap, a_map, b_map);
-  Py_RETURN_NONE;
+  // Make sure the arrays are contiguous, and of the right type
+  a_array = (PyArrayObject*)PyArray_ContiguousFromObject(a_obj,NPY_DOUBLE,1,1);
+  b_array = (PyArrayObject*)PyArray_ContiguousFromObject(b_obj,NPY_DOUBLE,1,1);
+  if (a_array == NULL || b_array == NULL) return NULL;
+
+  na = a_array->dimensions[0];
+  nb = b_array->dimensions[0];
+
+  if (na > nb) { nmap = na; }
+  else { nmap = nb; }
+
+  a_map = (int *)PyArray_malloc(nmap * sizeof(int));
+  b_map = (int *)PyArray_malloc(nmap * sizeof(int));
+
+  common_map (na, (double *)PyArray_DATA(a_array), 
+              nb, (double *)PyArray_DATA(b_array), 
+              (int *) &nmap, a_map, b_map);
+
+  // Create output arrays for the maps
+  a_ind = (PyArrayObject*)PyArray_SimpleNewFromData(1, &nmap, NPY_INT, a_map);
+  b_ind = (PyArrayObject*)PyArray_SimpleNewFromData(1, &nmap, NPY_INT, b_map);
+  if (a_ind == NULL) return NULL;
+  if (b_ind == NULL) return NULL;
+
+  return Py_BuildValue("(OO)", PyArray_Return(a_ind), PyArray_Return(b_ind));
 }
-***/
 
 #define WRAP_PARTIAL_SUM(TYPE)						\
 static PyObject *toolscore_partial_sum_##TYPE (PyObject *self, PyObject *args){\
@@ -355,7 +370,7 @@ WRAP_PARTIAL_SUM(complex128);
 
 static PyMethodDef ToolsMethods[] = {
   {"map_to", toolscore_map_to, METH_VARARGS, ""},
-//  {"common_map", toolscore_common_map, METH_VARARGS, ""},
+  {"common_map", toolscore_common_map, METH_VARARGS, ""},
   {"partial_sum_float32", toolscore_partial_sum_float32, METH_VARARGS, ""},
   {"partial_sum_float64", toolscore_partial_sum_float64, METH_VARARGS, ""},
   {"partial_sum_int32", toolscore_partial_sum_int32, METH_VARARGS, ""},
