@@ -4,7 +4,7 @@
 # will try to split up data sets when processing.
 # On systems with a large amount of memory, increasing
 # this can speed up the processing of large data sets.
-max_array_size = 32768
+max_array_size = 4194304
 
 # Maximum size allowed for arrays in temp files
 # (Not currently used, but could be useful for 'medium' sized intermediate
