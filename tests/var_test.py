@@ -114,4 +114,4 @@ bc1 = varTest('broadcast1', ax1*ax2, \
       
 bc2 = varTest('broadcast2', ax1(time=(0,100)) + ax1(time=(50,100)), \
          axes = (ax1(time=(50,100)),), \
-         values = 2*np.arange(50,101))
+         values = 2*np.arange(50,101,dtype=ax1.dtype))
