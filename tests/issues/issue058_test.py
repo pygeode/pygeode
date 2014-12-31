@@ -1,4 +1,4 @@
-# Issue 59 - Ufunc does not like numpy scalars
+# Issue 58 - Ufunc does not like numpy scalars
 
 def test_issue058():
   from pygeode.tutorial import t1
