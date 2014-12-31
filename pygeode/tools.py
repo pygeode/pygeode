@@ -116,7 +116,8 @@ def common_dict (*dicts):
   if len(dicts) == 1 and islist(dicts[0]): dicts = dicts[0]
   # Merge it all into a single dictionary
   d = dict([(k,v) for x in dicts for k,v in x.iteritems()])
-  # Check for consistency (remove keys which have multiple values)
+  # Check for consistency (remove keys which have multiple values, or aren't
+  # defined in some dictionaries).
   for k,v in d.items():
     for x in dicts:
       if k in x:
@@ -125,6 +126,10 @@ def common_dict (*dicts):
         if (hasattr(t, '__len__') and  any(t)) or (not hasattr(t, '__len__') and t): 
           del d[k]
           break
+      else:
+        # This attribute isn't in all dictionaries, so remove it.
+        del d[k]
+        break
   return d
 # }}}
 
