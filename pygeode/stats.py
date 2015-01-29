@@ -28,7 +28,10 @@ def correlate(X, Y, axes=None, pbar=None):
   if axes is not None:
     ri_new = []
     for a in axes:
-      ri_new.append(whichaxis([srcaxes[i] for i in riaxes], a))
+      i = whichaxis(srcaxes, a)
+      if i not in riaxes: 
+        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, X.name, Y.name))
+      ri_new.append(i)
     oiaxes.extend([r for r in riaxes if r not in ri_new])
     riaxes = ri_new
     
@@ -109,7 +112,10 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
   if axes is not None:
     ri_new = []
     for a in axes:
-      ri_new.append(whichaxis([srcaxes[i] for i in riaxes], a))
+      i = whichaxis(srcaxes, a)
+      if i not in riaxes: 
+        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, X.name, Y.name))
+      ri_new.append(i)
     oiaxes.extend([r for r in riaxes if r not in ri_new])
     riaxes = ri_new
     
