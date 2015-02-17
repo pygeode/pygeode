@@ -185,8 +185,12 @@ class Time (TAxis):
       othervalues = np.vstack(other_f).transpose()
       nfields = len(self_f)
 
+    isrt = np.argsort(self.values)
+    #iinv = np.argsort(isrt)
+
     indices = np.empty(len(other), 'int32')
-    myvalues = np.ascontiguousarray(myvalues, dtype='int32')
+    #myvalues = np.ascontiguousarray(myvalues, dtype='int32')
+    myvalues = np.ascontiguousarray(myvalues[isrt, :], dtype='int32')
     othervalues = np.ascontiguousarray(othervalues, dtype='int32')
     ret = lib.get_indices (nfields, myvalues, len(myvalues),
                            othervalues, len(othervalues),
@@ -199,7 +203,8 @@ class Time (TAxis):
 #    # We should have found a match, or something is wrong?
 #    assert len(indices) > 0, "failed to map %s to %s"%(self,other)
     # It's ok to not have a match
-    return indices
+    #return indices
+    return isrt[indices]
   # }}}
 
   def common_map (self, other):
