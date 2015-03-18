@@ -264,7 +264,6 @@ class NCVar(Var):
     return out
   # }}}
 # }}}
-del Var
 
 ### internal data filters ###
 
@@ -396,7 +395,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
 #TODO: factor out cf-meta encoding and other processing steps
 # Write a dataset to netcdf
-def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
+def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = True):
 # {{{
   from ctypes import c_int, c_long, byref
   from pygeode.view import View
@@ -409,7 +408,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 
   assert isinstance(filename,str)
 
-  dataset = finalize_save(in_dataset, cfmeta)
+  dataset = finalize_save(in_dataset, cfmeta, pack)
 
   # Version?
   if compress: version = 4
@@ -422,7 +421,8 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   axes = combine_axes(v.axes for v in vars)
 
   # Include axes in the list of vars (for writing to netcdf)
-  vars.extend(axes)
+  vars = list(axes) + vars 
+  #vars.extend(axes)
 
   # Variables (and axes) must all have unique names
   assert len(set([v.name for v in vars])) == len(vars), "vars must have unique names: %s"% [v.name for v in vars]
@@ -487,10 +487,10 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
   # Don't pre-fill the file
   oldmode = c_int()
   ret = lib.nc_set_fill (fileid, 256, byref(oldmode))
-  assert ret == 0, "can't set fill mode"
+  assert ret == 0, "Can't set fill mode: %s (error %d)" % (lib.nc_strerror(ret), ret) 
   # Finished defining the variables, about to start writing the values
   ret = lib.nc_enddef (fileid)
-  assert ret == 0, "error leaving define mode: %d"%ret
+  assert ret == 0, "Error leaving define mode: %s (error %d)" % (lib.nc_strerror(ret), ret)
 
   # Relative progress of each variable
   sizes = [v.size for v in vars]
@@ -537,7 +537,7 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
       # Ensure the data is stored contiguously in memory
       data = np.ascontiguousarray(data, dtype=dtype)
       ret = chunkf[t](fileid, varids[i], start, count, point(data))
-      assert ret == 0, "error writing var '%s' to netcdf, code %d"%(var.name,ret)
+      assert ret == 0, "Error writing var '%s' to netcdf: %s (error %d)" % (var.name, lib.nc_strerror(ret), ret)
 
 
   # Finished
@@ -549,7 +549,4 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 #    return lambda : open(filename).vars[0]
 #  else: return lambda : open(filename)
 
-
 # }}}
-
-

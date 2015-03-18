@@ -11,6 +11,32 @@ extdict = {'.nc':'netcdf',
            '.hdf': 'hdf4',
            '.grib':'grib' }
 
+from pygeode.var import Var
+class PackVar(Var):
+  def __init__(self, var):
+  # {{{
+    from pygeode.var import copy_meta
+    import numpy as np
+    self.var = var
+    dtype = np.uint16
+
+    min = var.min()
+    max = var.max()
+    self.scale = (max - min) / (2**16 - 1.)
+    self.offset = min
+
+    Var.__init__(self, var.axes, dtype=dtype)
+
+    copy_meta(var, self)
+    self.atts['scale_factor'] = self.scale
+    self.atts['add_offset'] = self.offset
+  # }}}
+
+  def getview (self, view, pbar):
+  # {{{
+    return ((view.get(self.var, pbar) - self.offset) / self.scale).astype(self.dtype)
+  # }}}
+
 def autodetectformat(filename):
 # {{{
   from os import path
@@ -133,15 +159,25 @@ def finalize_open(dataset, dimtypes = {}, namemap = {}, varlist = [], cfmeta = T
   return dataset
 # }}}
 
-def finalize_save(dataset, cfmeta = True):
+def finalize_save(dataset, cfmeta = True, pack = None):
 # {{{
   from pygeode.formats import cfmeta as cf
   from pygeode.dataset import asdataset
 
+  if pack is not None:
+    if hasattr(pack, '__len__'): # Assume this is a list of variables to pack
+      vars = [PackVar(v) if v.name in pack else v for v in dataset.vars]
+    else:
+      vars = [PackVar(v) for v in dataset.vars]
+    dset = asdataset(vars)
+    dset.atts = dataset.atts.copy()
+  else:
+    dset = dataset
+
   # Encode standard axes back into netcdf metadata?
   if cfmeta is True:
-    return cf.encode_cf(dataset)
+    return cf.encode_cf(dset)
   else:
-    return asdataset(dataset)
+    return asdataset(dset)
 # }}}
 
