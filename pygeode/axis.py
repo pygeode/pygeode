@@ -63,6 +63,30 @@ class Axis(Var):
 
   def __init__(self, values, name=None, atts=None, plotatts=None, rtol=None, **kwargs):
 # {{{ 
+    """
+    Create a new Axis object with the given values.
+
+    Parameters
+    ----------
+    values : numpy.ndarray
+        A one-dimensional coordinate defining the axis grid.
+    name : string (optional)
+        What to call the axis (i.e. for plot titles & when saving to file)
+    atts : dict (optional)
+        Any additional metadata to associate with the axis. The dictionary
+        keys should be strings.
+    plotatts : dict (optional)
+        Parameters that control plotting behaviour; default values are available. 
+        The dictionary keys should be strings.
+    rtol : float
+        A relative tolerance used for identifying an element of this axis.
+
+    Notes
+    -----
+    All subclasses of :class:`Axis` need to call this __init__ method within
+    their own __init__, to properly initialize all attributes. 
+
+    """
     import numpy as np
 
     # If a single integer given, expand to an integer range
@@ -108,10 +132,23 @@ class Axis(Var):
     if self.name == '': self.name = self.__class__.__name__.lower()
 # }}}
 
-  # Determine if one axis object is from a base class (or same class) of another axis
+  # 
   @classmethod
   def isparentof(cls,other):
   # {{{
+    """ 
+    Determines if an axis object is an instance of a base class (or the same
+    class) of another axis.
+
+    Parameters
+    ==========
+    other : :class:`Axis' object to compare against this one.
+
+    Returns
+    =======
+    True is other is an instance of this object's class
+
+    """
     return isinstance(other,cls)
   # }}}
 
