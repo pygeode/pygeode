@@ -230,6 +230,11 @@ class Dataset(object):
     for v in varlist: assert isinstance(v,Var), "%s does not map vars to vars"%f
     return Dataset(varlist, atts=self.atts.copy())
 
+  # Load all the variables in the dataset
+  def load(self):
+    vars = [v.load() for v in self.vars]
+    d = Dataset(vars, atts=self.atts)
+    return d
 
   # Slicing
   # Applies the keyword-based axis slicing to *all* the vars in the dataset.
