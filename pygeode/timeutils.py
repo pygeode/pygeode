@@ -180,7 +180,7 @@ def removeleapyears(data, omitdoy_leap=[60], omitdoy_noleap=[], new_axis_type=Mo
   # Remove the leap days from the data
   slices = [slice(None)] * data.naxes
   slices[data.whichaxis(Time)] = indices
-  data = data._getitem_asvar(*slices)
+  data = data._getitem_asvar(slices)
 
   # Recreate the axis as the new type.
   # Convert doy (old axis) to doy (new axis)
