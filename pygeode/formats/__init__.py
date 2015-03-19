@@ -18,16 +18,20 @@ class PackVar(Var):
     from pygeode.var import copy_meta
     import numpy as np
     self.var = var
-    dtype = np.uint16
+
+    # At present data is packed into short integers following the packing
+    # algorithm described in the NetCDF Operator documentation
+    dtype = np.int16
 
     min = var.min()
     max = var.max()
-    self.scale = (max - min) / (2**16 - 1.)
-    self.offset = min
+    self.scale = (max - min) / (2**16 - 2.)
+    self.offset = 0.5 * (min + max)
 
     Var.__init__(self, var.axes, dtype=dtype)
 
     copy_meta(var, self)
+    self.atts['packing_convention'] = 'NetCDF (16 bit)'
     self.atts['scale_factor'] = self.scale
     self.atts['add_offset'] = self.offset
   # }}}
