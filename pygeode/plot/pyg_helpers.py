@@ -102,7 +102,7 @@ def build_basemap(lons, lats, **kwargs):
   bnds = {}
 
   if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
-                        'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho']:
+                        'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho', 'nsper']:
     bnds = {'llcrnrlat':lats.min(), 
             'urcrnrlat':lats.max(),
             'llcrnrlon':lons.min(),
@@ -122,6 +122,12 @@ def build_basemap(lons, lats, **kwargs):
 
 def decorate_basemap(axes, **kwargs):
 # {{{
+  prd = dict(projection = 'cyl', resolution = 'c')
+  prd.update(kwargs.pop('map', {}))
+
+  if kwargs.pop('bluemarble', False):
+    axes.bluemarble()
+
   # Add coastlines, meridians, parallels
   cld = {}
   merd = dict(meridians=[-180,-90,0,90,180,270,360],
@@ -133,10 +139,11 @@ def decorate_basemap(axes, **kwargs):
   merd.update(kwargs.pop('meridians', {}))
   pard.update(kwargs.pop('parallels', {}))
 
-  axes.pad=(0.6, 0.1, 0.1, 0.1)
-  axes.drawcoastlines(**cld)
-  axes.drawmeridians(**merd)
-  axes.drawparallels(**pard)
+  axes.pad=(0.6, 0.4, 0.4, 0.4)
+  if prd.get('resolution', 'c') is not None:
+    axes.drawcoastlines(**cld)
+    axes.drawmeridians(**merd)
+    axes.drawparallels(**pard)
 # }}}
 
 # Do a 1D line plot
@@ -261,12 +268,12 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 
   # Apply the custom axes args
   if label:
-    axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
+      axes.pad = (0.1, 0.1, 0.1, 0.1)
     plt = _getplotatts(var)
     axes.setp(title = _buildvartitle(var.axes, **plt))
 
@@ -313,8 +320,8 @@ def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9',
   return axes
 # }}}
 
-# Do a quiver plot
-def vquiver(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
+# Do a stream plot
+def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
 # {{{
   U = varu.squeeze()
   V = varv.squeeze()
@@ -345,16 +352,74 @@ def vquiver(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=N
     else:
       axes = wr.AxesWrapper()
 
-  axes.quiver(x, y, u, v, **kwargs)
+  axes.streamplot(x, y, u, v, **kwargs)
 
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if isbasemapaxis(axes):
-      decorate_basemap(axes, **kwargs)
+    if wr.isbasemapaxis(axes):
+      decorate_basemap(axes, map = map, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
+    plt = _getplotatts(varu)
+    axes.setp(title = _buildvartitle(varu.axes, **plt))
+
+  return axes
+# }}}
+
+# Do a quiver plot
+def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
+# {{{
+  U = varu.squeeze()
+  V = varv.squeeze()
+  assert U.naxes == 2 and V.naxes == 2, 'Variables to quiver must have two non-degenerate axes.'
+  assert U.axes == V.axes, 'Variables U and V must have the same axes.'
+  X, Y = U.axes
+
+  if varc is not None:
+    C = varc.squeeze()
+    assert U.axes == C.axes, 'Color values must have same axes as U and V'
+
+  from pygeode.axis import Lat, Lon
+  # If a vertical axis is present transpose the plot
+  from pygeode.axis import ZAxis, Lat, Lon
+  if transpose is None:
+    if isinstance(X, ZAxis):
+      X, Y = Y, X
+    if isinstance(X, Lat) and isinstance(Y, Lon):
+      X, Y = Y, X
+  elif transpose:
+    X, Y = Y, X
+
+  x = scalevalues(X)
+  y = scalevalues(Y)
+  u = scalevalues(U.transpose(Y, X))
+  v = scalevalues(V.transpose(Y, X))
+  if varc is not None:
+    c = scalevalues(C.transpose(Y, X))
+
+  map = kwargs.pop('map', None)
+
+  if axes is None: 
+    if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
+      axes = build_basemap(x, y, map = map, **kwargs)
+    else:
+      axes = wr.AxesWrapper()
+
+  if varc is not None:
+    axes.quiver(x, y, u, v, c, **kwargs)
+  else:
+    axes.quiver(x, y, u, v, **kwargs)
+
+  # Apply the custom axes args
+  if label:
+    if wr.isbasemapaxis(axes):
+      decorate_basemap(axes, map = map, **kwargs)
+    else:
+      set_xaxis(axes, X, lblx)
+      set_yaxis(axes, Y, lbly)
+      axes.pad = (0.1, 0.1, 0.1, 0.1)
     plt = _getplotatts(varu)
     axes.setp(title = _buildvartitle(varu.axes, **plt))
 
@@ -680,4 +745,5 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
   pp.close()
 # }}}
 
-__all__ = ['showvar', 'showcol', 'showgrid', 'showlines', 'vplot', 'vscatter', 'vcontour', 'vsigmask', 'vquiver', 'savepages']
+__all__ = ['showvar', 'showcol', 'showgrid', 'showlines', 'vplot', 'vscatter', \
+          'vcontour', 'vsigmask', 'vstreamplot', 'vquiver', 'savepages']

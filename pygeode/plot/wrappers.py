@@ -292,6 +292,13 @@ class CLabel(PlotOp):
     pyl.clabel(self.cnt._cnt, **self.plot_kwargs)
 # }}}
 
+# Streamplot
+class Streamplot(PlotOp):
+# {{{
+  def render (self, axes):
+    self._sp = axes.streamplot (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 # Quiver
 class Quiver(PlotOp):
 # {{{
@@ -394,6 +401,7 @@ contour = make_plot_func(Contour)
 contourf = make_plot_func(Contourf)
 modifycontours = make_plot_func(ModifyContours)
 clabel = make_plot_func(CLabel)
+streamplot = make_plot_func(Streamplot)
 quiver = make_plot_func(Quiver)
 quiverkey = make_plot_func(QuiverKey)
 
@@ -408,9 +416,10 @@ AxesWrapper.text = make_plot_member(text)
 AxesWrapper.contour = make_plot_member(contour)
 AxesWrapper.contourf = make_plot_member(contourf)
 AxesWrapper.modifycontours = make_plot_member(modifycontours)
+AxesWrapper.clabel = make_plot_member(clabel)
+AxesWrapper.streamplot = make_plot_member(streamplot)
 AxesWrapper.quiver = make_plot_member(quiver)
 AxesWrapper.quiverkey = make_plot_member(quiverkey)
-AxesWrapper.clabel = make_plot_member(clabel)
 
 # Routine for saving this plot to a file
 def save (fig, filename):
