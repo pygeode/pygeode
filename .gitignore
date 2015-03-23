@@ -1,0 +1,8 @@
+*.pyc
+*.so
+*.dll
+tests/*.nc
+tests/issues/*.nc
+build/
+dist/
+pygeode/plugins/
