@@ -1,4 +1,4 @@
-__all__ = ('climatology', 'dailymean', 'monthlymean', 'diurnalmean', 'seasonalmean', 'climtrend', 'from_trend')
+__all__ = ('climatology', 'dailymean', 'monthlymean', 'yearlymean','diurnalmean', 'seasonalmean', 'climtrend', 'from_trend')
 
 from pygeode.var import Var
 
@@ -96,6 +96,14 @@ class Monthly(TimeMap):
     assert hasattr(outtime, 'month')  # can we even do a monthly mean?
     return outtime
 
+class Yearly(TimeMap):
+  name_suffix1 = '_yearly'
+  @staticmethod
+  def get_outtime (intime):
+    from pygeode.timeutils import modify
+    outtime = modify(intime, resolution='year', uniquify=True)
+    assert hasattr(outtime, 'year')  # can we even do a yearly mean?
+    return outtime
 
 # Note: in the seasonal stuff below, 'syear' represents a year field that has
 # been adjusted so DJFs are contiguous (see 'Seasonal' class below)
@@ -266,6 +274,10 @@ class dailymean(Daily,Mean):
 class monthlymean(Monthly,Mean):
   """
   Averages over each month.
+  """
+class yearlymean(Yearly,Mean):
+  """
+  Averages over each year.
   """
 class diurnalmean(Diurnal,Mean):
   """
