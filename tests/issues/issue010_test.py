@@ -1,5 +1,5 @@
 # Issue 10 - netcdf.dim2axes crashes if a dimension doesn't have a corresponding variable
-# http://code.google.com/p/pygeode/issues/detail?id=10
+# https://github.com/pygeode/pygeode/issues/10
 def test_issue010():
   from pygeode.var import Var
   from pygeode.axis import Axis

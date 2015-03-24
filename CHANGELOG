@@ -148,16 +148,16 @@
 0.6.3 - 2012/08/16
   - Fix bug with NaN-friendly reductions (nansum,nanmean,nanmin,nanmax).  They
     were crashing when doing a full reduction to a scalar.
-    See issue 32 - http://code.google.com/p/pygeode/issues/detail?id=32
+    See issue 32 - https://github.com/pygeode/pygeode/issues/32
 
 0.6.2 - 2012/06/15
   - Backported fix for year=0 infinite loop in timeaxis.
-  - Fix issue 28 (http://code.google.com/p/pygeode/issues/detail?id=28)
+  - Fix issue 28 (https://github.com/pygeode/pygeode/issues/28)
   - Backported more robust handling of time axis in cfmeta module.
 
 0.6.1 - 2011/11/23
-  - Fix issue 23 (http://code.google.com/p/pygeode/issues/detail?id=23)
-  - Fix issue 25 (http://code.google.com/p/pygeode/issues/detail?id=25)
+  - Fix issue 23 (https://github.com/pygeode/pygeode/issues/23)
+  - Fix issue 25 (https://github.com/pygeode/pygeode/issues/25)
   - Don't abort on missing 'A' and 'B' coefficients when loading netcdf files
     with hybrid vertical coordinates.
 

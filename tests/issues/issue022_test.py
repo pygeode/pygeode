@@ -1,5 +1,5 @@
 # Issue 22 - plot attributes get overridden by NamedAxis defaults
-# http://code.google.com/p/pygeode/issues/detail?id=22
+# https://github.com/pygeode/pygeode/issues/22
 
 # Make a sample file with a non-annotated pressure axis
 from pygeode.axis import NamedAxis, Pres

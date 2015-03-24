@@ -427,7 +427,7 @@ def loopover (vars, outview, inaxes=None, pbar=None):
       # Wrap the data retrieval in a try-catch block, to catch StopIteration.
       # If we allow this to be emitted further up, than it looks like we're
       # indicating that our own loop has finished successfully!
-      # See https://code.google.com/p/pygeode/issues/detail?id=59
+      # See https://github.com/pygeode/pygeode/issues/59
       try:
         data.append(inv.get(v, pbar=vpbar))
       except StopIteration:

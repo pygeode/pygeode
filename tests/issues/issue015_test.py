@@ -1,5 +1,5 @@
 # Issue 15 - netcdf crashes because of axes mismatch
-# http://code.google.com/p/pygeode/issues/detail?id=15
+# https://github.com/pygeode/pygeode/issues/15
 
 def test_issue015():
   from pygeode.formats import netcdf as nc

@@ -1,5 +1,5 @@
 # Issue 69  - Time axes do not support unordered values
-# http://code.google.com/p/pygeode/issues/detail?id=69
+# https://github.com/pygeode/pygeode/issues/69
 
 def test_sort():
   import numpy as np

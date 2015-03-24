@@ -1,5 +1,5 @@
 # Issue 7 - val_as_date_std fails on negative values
-# http://code.google.com/p/pygeode/issues/detail?id=7
+# https://github.com/pygeode/pygeode/issues/7
 
 def test_val_as_date():
   import pygeode as pyg, numpy as np

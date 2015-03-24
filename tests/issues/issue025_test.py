@@ -1,5 +1,5 @@
 # Issue 25 - Netcdf module does not filter names that start with a digit
-# http://code.google.com/p/pygeode/issues/detail?id=25
+# https://github.com/pygeode/pygeode/issues/25
 
 from pygeode.formats import netcdf as nc
 from pygeode.axis import Lat

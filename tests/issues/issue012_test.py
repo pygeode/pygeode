@@ -1,6 +1,5 @@
 # Issue 12 - interpolation code fails when both loop_xout and reversed axis are triggered
-# http://code.google.com/p/pygeode/issues/detail?id=12
-
+# https://github.com/pygeode/pygeode/issues/12
 
 # Input axis values in decreasing order
 def test_1():
