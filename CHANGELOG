@@ -1,3 +1,8 @@
+1.0.2 - 2015/03/24
+ - Fixed bugs in regress and correlate in axis matching logic.
+ - Allow timeaxes to support unordered values (issue 69).
+ - Fixed issue in removeleapyears.
+
 1.0.1 - 2014/07/09
  - Fixed small colourbar bug.
  - In multifile, allow for case where files are passed in as a tuple.
