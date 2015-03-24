@@ -53,6 +53,9 @@ class ReducedVar(Var):
     assert len(indices) > 0, "no reduction axes specified"
 
     N = [len(axes[i]) for i in indices]
+    # Check for degenerate reductions (ill-defined)
+    for i,n in enumerate(N):
+      if n == 0:  raise ValueError("Can't do a reduction over axis '%s' - length is 0."%axes[i].name)
     N = int(np.product(N))
     self.N =  N # number of values to reduce over
     self.var = var

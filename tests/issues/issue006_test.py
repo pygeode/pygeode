@@ -1,5 +1,5 @@
 # Issue 6 - Advanced slicing sometimes fails
-# http://code.google.com/p/pygeode/issues/detail?id=6
+# https://github.com/pygeode/pygeode/issues/6
 
 def test_slice():
   from pygeode.axis import XAxis, YAxis

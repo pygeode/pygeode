@@ -13,8 +13,9 @@ class UfuncVar (Var):
   def __new__ (self, *args):
 # {{{
     from pygeode.var import Var
+    import numpy as np
     for arg in args:
-      if not isinstance(arg,(int,long,float,complex,Var)):
+      if not isinstance(arg,(int,long,float,complex,np.number,Var)):
         return NotImplemented
     return object.__new__(self)
 # }}}

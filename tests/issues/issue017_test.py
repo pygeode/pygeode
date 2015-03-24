@@ -1,5 +1,5 @@
 # Issue 17 - can't concatenate time axes with different units
-# http://code.google.com/p/pygeode/issues/detail?id=17
+# https://github.com/pygeode/pygeode/issues/17
 
 # Common stuff
 

@@ -1,5 +1,5 @@
 # Issue 5 - cf decode fails on datestamps specified from year 0000
-# http://code.google.com/p/pygeode/issues/detail?id=5
+# https://github.com/pygeode/pygeode/issues/5
 
 def test_issue005():
 
