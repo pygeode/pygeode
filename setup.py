@@ -15,7 +15,7 @@ gribcore = Extension ('pygeode.formats.gribcore', sources=['pygeode/formats/grib
 # PyGeode installation script
 
 setup (	name="python-pygeode",
-	version="1.0.1",
+	version="1.0.2",
         description = "Gridded data manipulator for Python",
 	long_description = """\
 PyGeode is a software library intended to simplify the management, analysis,
@@ -36,7 +36,7 @@ the underlying computations and to create plots.
         license = "GPL-3",
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="pygeode-users@googlegroups.com",
-        url="http://pygeode.bitbucket.org/",
+        url="http://pygeode.github.io",
 	requires=['numpy','matplotlib','progressbar'], # NOTE: distutils doesn't ever check this!
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
