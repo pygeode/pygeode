@@ -23,8 +23,8 @@ class PackVar(Var):
     # algorithm described in the NetCDF Operator documentation
     dtype = np.int16
 
-    min = var.min()
-    max = var.max()
+    min = var.nanmin()
+    max = var.nanmax()
     self.scale = (max - min) / (2**16 - 2.)
     self.offset = 0.5 * (min + max)
 
