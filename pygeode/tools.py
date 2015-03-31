@@ -384,10 +384,22 @@ def npmin (data, axes):
   for i in sorted(axes,reverse=True): data = np.amin(data, axis=i)
   return data
 # }}}
+def npnanmin (data, axes):
+# {{{
+  import numpy as np
+  for i in sorted(axes,reverse=True): data = np.nanmin(data, axis=i)
+  return data
+# }}}
 def npmax (data, axes):
 # {{{
   import numpy as np
   for i in sorted(axes,reverse=True): data = np.amax(data, axis=i)
+  return data
+# }}}
+def npnanmax (data, axes):
+# {{{
+  import numpy as np
+  for i in sorted(axes,reverse=True): data = np.nanmax(data, axis=i)
   return data
 # }}}
 

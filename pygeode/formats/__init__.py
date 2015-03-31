@@ -23,8 +23,8 @@ class PackVar(Var):
     # algorithm described in the NetCDF Operator documentation
     dtype = np.int16
 
-    min = var.min()
-    max = var.max()
+    min = var.nanmin()
+    max = var.nanmax()
     self.scale = (max - min) / (2**16 - 2.)
     self.offset = 0.5 * (min + max)
 
@@ -168,7 +168,8 @@ def finalize_save(dataset, cfmeta = True, pack = None):
   from pygeode.formats import cfmeta as cf
   from pygeode.dataset import asdataset
 
-  if pack is not None:
+  # Only pack if pack is true
+  if pack:
     if hasattr(pack, '__len__'): # Assume this is a list of variables to pack
       vars = [PackVar(v) if v.name in pack else v for v in dataset.vars]
     else:
