@@ -82,6 +82,21 @@ class MinVar(ReducedVar):
       out[outsl] = np.minimum(out[outsl], npmin(indata, self.indices))
     return out
 # }}}
+
+class NANMinVar(ReducedVar):
+# {{{
+  def getview (self, view, pbar):
+    import numpy as np
+    from pygeode.tools import loopover, npnanmin
+    out = np.empty(view.shape, self.dtype)
+    out *= np.nan
+    out[()] = float('inf')
+    for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
+      #Ignore NaNs when finding mininum
+      out[outsl] = np.nanmin(out[outsl], npnanmin(indata, self.indices))
+    return out
+# }}}
+
 class MaxVar(ReducedVar):
 # {{{
   def getview (self, view, pbar):
@@ -91,6 +106,20 @@ class MaxVar(ReducedVar):
     out[()] = float('-inf')
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       out[outsl] = np.maximum(out[outsl], npmax(indata, self.indices))
+    return out
+# }}}
+
+class NANMaxVar(ReducedVar):
+# {{{
+  def getview (self, view, pbar):
+    import numpy as np
+    from pygeode.tools import loopover, npnanmax
+    out = np.empty(view.shape, self.dtype)
+    out *= np.nan
+    out[()] = float('-inf')
+    for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
+      #Ignore NaNs when finding maximum
+      out[outsl] = np.nanmax(out[outsl], npnanmax(indata, self.indices))
     return out
 # }}}
 
@@ -396,6 +425,8 @@ class NANSDVar(NANVarianceVar):
 
 def min (var, *axes): return MinVar(var, axes)
 def max (var, *axes): return MaxVar(var, axes)
+def nanmin (var, *axes): return NANMinVar(var, axes)
+def nanmax (var, *axes): return NANMaxVar(var, axes)
 def argmax (var, axis): return ArgMaxVar(var, axis)
 def argmin (var, axis): return ArgMinVar(var, axis)
 
@@ -560,6 +591,6 @@ def stdev (var, *axes): return SDVar (var, axes)
 def nanvariance (var, *axes): return NANVarianceVar(var, axes)
 def nanstdev (var, *axes): return NANSDVar (var, axes)
 
-class_flist = [min, max, argmax, argmin, sum, mean, variance, stdev, nansum, nanmean, nanvariance, nanstdev]
+class_flist = [min, max, nanmin, nanmax, argmax, argmin, sum, mean, variance, stdev, nansum, nanmean, nanvariance, nanstdev]
 
 del Var
