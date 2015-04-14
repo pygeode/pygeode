@@ -161,7 +161,31 @@ class Time (TAxis):
   #TODO: remove this once Axis.map_to is set up to wrap self.common_map??
   def map_to (self, other):
   # {{{
-    ''' Define a mapping between this time axis and another one '''
+    ''' Define a mapping between this time axis and another one, if one exists.
+
+    Parameters
+    ----------
+    other : :class:`Axis` instance
+      Axis instance to find map to.
+
+    Returns
+    -------
+    indices : An array of integer indices or None
+      If a mapping exists, an array of integer indices which define mapping from
+      this axis to other (i.e. self[indices] will return the elements in the appropriate
+      ordering for the mapped axis). Otherwise None.
+
+    Notes
+    -----
+    A mapping from this time axis to other can exist only if they are of the
+    same class (e.g. :class:`StandardTime`), and if the list of auxarrays defined
+    in this class is a subset of those defined in the other (e.g. a climatology which
+    defines only 'month', and 'day' can be mapped to a time axis with 'year', 'month'
+    'day' and 'hour', but not one with only 'year' and 'month'.
+
+    Matches are sought between the auxiliary arrays shared by the two axes
+
+    '''
     import numpy as np
 
     if not type(self) is type(other): return None
