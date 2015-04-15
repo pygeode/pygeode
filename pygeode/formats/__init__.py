@@ -1,4 +1,9 @@
 
+# Include "pygeode.formats" from other PyGeode-based packages.
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+del extend_path
+
 # Formats included when doing "from pygeode.formats import *"
 # Note: additional formats from the plugin directories are added dynamically
 # (see pygeode/__init__.py)
