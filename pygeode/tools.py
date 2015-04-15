@@ -44,7 +44,7 @@ def load_lib (name, Global=False):
   # Try using LD_LIBRARY_PATH???
   # Why doesn't ctypes respect LD_LIBRARY_PATH?  Why must we force it like this??
   if not exists(name):
-    dir=os.environ.get('LD_LIBRARY_PATH','')
+   for dir in os.environ.get('LD_LIBRARY_PATH','').split(':'):
     libname = dir + '/lib' + name + '.so'
     if exists(libname): name = libname
 
