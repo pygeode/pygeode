@@ -21,12 +21,6 @@ def find_library (name):
     libnames = glob(path.join(libpath, dir, 'lib'+name+'.dll'))
     if len(libnames) > 0: return libnames[0]
 
-  # Search Linux paths (for installed version)
-  libnames = glob(path.join(path.sep, 'usr', 'lib', 'pygeode', dir, 'lib'+name+'.so'))
-  if len(libnames) > 0: return libnames[0]
-  libnames = glob(path.join(path.sep, 'usr', 'local', 'lib', dir, 'pygeode', 'lib'+name+'.so'))
-  if len(libnames) > 0: return libnames[0]
-
   # Search LD_LIBRARY_PATH
   for dir in os.environ.get('LD_LIBRARY_PATH','').split(':'):
     libname = path.join(dir,'lib'+name+'.so')
