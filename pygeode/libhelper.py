@@ -5,6 +5,7 @@
 def find_library (name):
   from ctypes.util import find_library
   from glob import glob
+  import os
   from os import path
   import pygeode
 
@@ -25,6 +26,11 @@ def find_library (name):
   if len(libnames) > 0: return libnames[0]
   libnames = glob(path.join(path.sep, 'usr', 'local', 'lib', dir, 'pygeode', 'lib'+name+'.so'))
   if len(libnames) > 0: return libnames[0]
+
+  # Search LD_LIBRARY_PATH
+  for dir in os.environ.get('LD_LIBRARY_PATH','').split(':'):
+    libname = path.join(dir,'lib'+name+'.so')
+    if path.exists(libname): return libname
 
   # Search in the default system path
   libname = find_library(name)
