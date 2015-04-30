@@ -268,12 +268,12 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 
   # Apply the custom axes args
   if label:
+    axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
-      axes.pad = (0.1, 0.1, 0.1, 0.1)
     plt = _getplotatts(var)
     axes.setp(title = _buildvartitle(var.axes, **plt))
 
@@ -414,12 +414,12 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
 
   # Apply the custom axes args
   if label:
+    axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, map = map, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
-      axes.pad = (0.1, 0.1, 0.1, 0.1)
     plt = _getplotatts(varu)
     axes.setp(title = _buildvartitle(varu.axes, **plt))
 
