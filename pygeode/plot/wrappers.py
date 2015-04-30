@@ -152,8 +152,11 @@ class AxesWrapper:
 
     if self.ax is None: return
 
+    preops = [p for p in self.plots if p.pre]
+    postops = [p for p in self.plots if not p.pre]
+
     # Perform plotting operations
-    for p in self.plots:
+    for p in preops:
       p.render(self.ax)
 
     # Handle scaling first, because setting this screws up other custom attributes like ticks
@@ -164,6 +167,10 @@ class AxesWrapper:
 
     if len(self.xaxis_args) > 0: pyl.setp(self.ax.xaxis, **self.xaxis_args)
     if len(self.yaxis_args) > 0: pyl.setp(self.ax.yaxis, **self.yaxis_args)
+
+    # Perform plotting operations
+    for p in postops:
+      p.render(self.ax)
 # }}}
 
   def setp(self, children=True, **kwargs):
@@ -203,6 +210,7 @@ class PlotOp:
     self.plot_args = plot_args
     self.plot_kwargs = kwargs
     self.axes = None
+    self.pre = True
 
   # Draw the thing
   # This is pretty much the only public-facing method.
@@ -287,6 +295,7 @@ class CLabel(PlotOp):
   def __init__(self, cnt, **kwargs):
     self.cnt = cnt
     PlotOp.__init__(self, **kwargs)
+    self.pre = False
 
   def render (self, axes):
     pyl.clabel(self.cnt._cnt, **self.plot_kwargs)

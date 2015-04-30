@@ -272,6 +272,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, **kwargs)
     else:
+      axes.pad = (0.1, 0.1, 0.1, 0.1)
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
     plt = _getplotatts(var)
