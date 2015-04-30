@@ -3,6 +3,11 @@
 
 # Dataset
 class Dataset(object):
+# {{{
+  """
+    Container class for :class:`Var` objects. Provides tools for organizing and
+    working with a set of variables. 
+  """
   # Get a variable by name
   def __getitem__ (self, key):
     if key in self.vardict: return self.vardict[key]
@@ -242,15 +247,33 @@ class Dataset(object):
   # Right now, each var is sliced independantly, so the same axis will be sliced multiple times.
   def __call__ (self, **kwargs):
     return self.map ('__call__', **kwargs)
+# }}}
 
 # Wrap a variable (or a list of variables) into a dataset
 # Use this if you want to make sure something is a dataset, in case it's
 #  possible that it's currently a Var list.
 def asdataset (vars, copy=False, print_warnings=True):
-  ''' asdataset(vars, copy=False, print_warnings=True)
-       Tries to make vars into a dataset. If it is a single variable or list of variables, 
-       asdataset() returns a Dataset wrapping them. If there are datasets present in the list,
-       it merges them into a single dataset. '''
+  ''' Tries to convert a collection of objects into a single dataset.
+
+      Parameters
+      ==========
+      vars : collection
+        The collection to convert. See Notes.
+
+      copy : boolean
+
+      print_warnings : boolean
+
+      Returns
+      =======
+      dataset : :class:`Dataset`
+       
+      Notes
+      =====
+      If ``vars`` is a single variable or list of variables, asdataset()
+      returns a Dataset wrapping them. If there are datasets present in the
+      list, it merges them into a single dataset. '''
+
   from copy import copy
   from pygeode.var import Var
   if hasattr(vars, '__len__') and any([isinstance(d, Dataset) for d in vars]):
@@ -366,5 +389,3 @@ for f in class_hooks:
   setattr(Dataset, f.__name__, dataset_method(f))
 
 del class_hooks, f
-
-

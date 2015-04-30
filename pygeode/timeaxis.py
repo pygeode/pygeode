@@ -171,9 +171,9 @@ class Time (TAxis):
     Returns
     -------
     indices : An array of integer indices or None
-      If a mapping exists, an array of integer indices which define mapping from
-      this axis to other (i.e. self[indices] will return the elements in the appropriate
-      ordering for the mapped axis). Otherwise None.
+      If a mapping exists, an array of integer indices which define mapping
+      from this axis to other (i.e. self[indices] will return the elements in
+      the appropriate ordering for the mapped axis). Otherwise None.
 
     Notes
     -----
@@ -455,23 +455,24 @@ class CalendarTime(Time):
     Notes
     -----
     The following codes ($$ will yield the character $):
-      $b - short month name
-      $B - full month name
-      $d - day of the month
-      $D - 2-digit day of the month, zero-padded
-      $H - hour (24 hr clock)
-      $I - hour (12 hr clock)
-      $j - day of the year
-      $m - month number (Jan=1, ..., Dec=12)
-      $M - minute
-      $p - am/pm
-      $P - AM/PM
-      $S - second
-      $y - 2 digit year
-      $a - 4 digit year
-      $Y - full year; if less than 100, preceeded by 'y'
-      $v - value formatted with %d
-      $V - value formatted with str()
+
+    * $b - short month name
+    * $B - full month name
+    * $d - day of the month
+    * $D - 2-digit day of the month, zero-padded
+    * $H - hour (24 hr clock)
+    * $I - hour (12 hr clock)
+    * $j - day of the year
+    * $m - month number (Jan=1, ..., Dec=12)
+    * $M - minute
+    * $p - am/pm
+    * $P - AM/PM
+    * $S - second
+    * $y - 2 digit year
+    * $a - 4 digit year
+    * $Y - full year; if less than 100, preceeded by 'y'
+    * $v - value formatted with %d
+    * $V - value formatted with str()
 
     Examples
     --------
@@ -551,14 +552,31 @@ class CalendarTime(Time):
 
   def str_as_val(self, key, s):
 # {{{
-    ''' str_as_val() - interprets string s as a date and converts it to a value appropriate
-            to this time axis. For now assumes a string in the form 
-                '12 Dec 2008' or 
-                '06:00:00 1 Jan 1979'.'''
+    ''' Converts a string representation of a date to a value according to the 
+        calendar defined by this time axis.
+        
+        Parameters
+        ==========
+        key : string
+            key used in selece()
+
+        s : string
+            string to convert
+        
+        Returns
+        =======
+        val : value
+            value corresponding to specified date.
+        
+        Notes
+        =====
+        The string is parsed using the regular expression pattern defined in ``parse_pattern``.
+        By default this assumes a string in the form '12 Dec 2008' or '06:00:00 1 Jan 1979'.
+        A ValueError is thrown if the regular expression does not match the string.'''
     import re
     res = re.search(self.parse_pattern, s)
     if res is None:
-      raise Exception('String "%s" not recognized as a time')
+      raise ValueError('String "%s" not recognized as a time')
 
     d = {}
     for k, v in res.groupdict().iteritems():
@@ -688,6 +706,7 @@ class CalendarTime(Time):
 # Standard time (with leap years)
 class StandardTime(CalendarTime):
 # {{{ 
+  ''' Time axis describing the standard Gregorian calendar. '''
 
   _val_as_date = lib.val_as_date_std
   _date_as_val = lib.date_as_val_std
@@ -697,6 +716,7 @@ class StandardTime(CalendarTime):
 # Model time (365-day calendar)
 class ModelTime365(CalendarTime):
 # {{{
+  ''' Time axis describing a model 365-day calendar. '''
 
   _date_as_val = lib.date_as_val_365
   _val_as_date = lib.val_as_date_365
@@ -706,6 +726,8 @@ class ModelTime365(CalendarTime):
 # Model time (360-day calendar)
 class ModelTime360(CalendarTime):
 # {{{
+  ''' Time axis describing a model 360-day calendar. '''
+
   autofmts = [(360., '$Y',        ''),   # Range larger than 1 year
           (30. , '$b $Y',     ''),   # Larger than 1 month
           (1., '$d $b',     '$Y'), # Larger than 1 day
@@ -913,6 +935,7 @@ SeasonalTAxes = {StandardTime:SeasonalStandardTime,
 # Kludges the CalendarTime axis so it has no years or months, just a running count of days
 class Yearless(CalendarTime):
 # {{{
+  ''' Time axis describing a calendar with no months or years. '''
 
   # Format of time axis used for str/repr functions
   plotatts = CalendarTime.plotatts.copy()

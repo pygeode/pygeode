@@ -1,5 +1,7 @@
 # Time axis utilities
 
+''' A set of tools for manipulating time axes. '''
+
 # Things which are useful for manipulating time axes, but aren't needed in the
 # core timeaxis module.
 
@@ -32,6 +34,27 @@ def _uniquify (fields):
 # include: explicit list of fields to include (everything else is excluded)
 def modify (taxis, resolution=None, exclude=[], include=[], uniquify=False):
 # {{{
+  ''' Modifies the auxiliary arrays associated with a time axis.
+
+    Parameters
+    ==========
+    taxis : time axis instance
+      Time axis to modify
+
+    resolution : {None, 'year', 'month', 'day', 'hour', 'minute', 'second'}, optional
+      Finest division to retain.
+
+    exclude : list of strings, optional
+      List of arrays to remove
+
+    include : list of strings, optional
+      Explicit list of arrays to include
+
+    Returns
+    =======
+    taxis : time axis instance
+      Modified time axis
+  '''
   # Determine which fields to use
   fnames = set(taxis.auxarrays.keys())
   if isinstance(exclude,str): exclude = [exclude]

@@ -20,6 +20,59 @@ def expand_file_list (file_list, sort=True):
 # I.e.: openall(files = "file???.nc", format = netcdf)
 #NOTE: for a large number of homogeneous files, use the alternative interface below
 def openall (files, format=None, opener=None, **kwargs):
+  ''' Returns a :class:`Dataset` containing variables merged across multiple files.
+
+  Parameters
+  ==========
+  files : string, list, or tuple
+    Either a single filename or a list of filenames. Wildcards are supported, :func:`glob.iglob` is
+    used to expand these into an explicit list of files.
+
+  format : string, optional
+    String specifying format of file to open. If none is given the format will be automatically
+    detected from the first filename (see :func:`autodetectformat`)
+
+  opener : function, optional
+    Function to open individual files. If none is provided, uses the
+    format-specific version of :func:`open`. The datasets returned by this
+    function are then concatenated and returned. See Notes.
+
+  sorted : boolean, optional
+    If True, the filenames are sorted (by alpha) prior to opening each file, and
+    the axes on the returned dataset are sorted by calling :meth:`Dataset.sorted`.
+
+  **kwargs : keyword arguments
+    These are passed on to the function ``opener``;
+
+  Returns
+  =======
+  dataset
+    A dataset containing the variables concatenated across all specified files.
+    The variable data itself is not loaded into memory. 
+
+  Notes
+  =====
+  The function ``opener`` must take a single positional argument - the filename of the file
+  to open - and keyword arguments that are passed through from this function. It must return
+  a :class:`Dataset` object with the loaded variables. By default the standard
+  :func:`open` is used, but providing a custom opener can be useful for any reshaping of the 
+  variables that must be done prior to concatenating the whole dataset. 
+
+  Once every file has been opened, the resulting datasets are concatenated
+  using :func:`dataset.concat`. 
+  
+  This function is best suited for a moderate number of files. Because each
+  file must be explicitly opened to read the metadata, even this can take a
+  significant amount of time if a large number of files are being opened. For
+  these cases using :func:`open_multi` can be much more efficient, though it
+  requires more coding effort initially. The underlying concatenation is also
+  more efficient when the data is actually accessed. 
+
+  See Also
+  ========
+  open
+  open_multi
+  '''
   from pygeode.dataset import concat
   from pygeode.formats import autodetectformat
 
@@ -45,19 +98,77 @@ def openall (files, format=None, opener=None, **kwargs):
 
 def open_multi (files, format=None, opener=None, pattern=None, file2date=None, **kwargs):
 # {{{
-  ''' open_multi (files, [format, opener, pattern, file2date], **kwargs)
-      Opens multiple data sources and tries to merge them together.
+  ''' Returns a :class:`Dataset` containing variables merged across many files.
 
-      format - a pygeode-supported data format module, such as netcdf (found in pygeode.formats)
-      opener - a function which opens an individual file and returns a pygeode dataset. 
-               format.open() is used by default; if any custom behaviour is needed it can
-               be provided here.
-      pattern - a regex pattern to extract date stamps from the filename; used by default file2date.
-               Matching patterns must be named <year>, <month>, <day>, <hour> or <minute>.
-               Abbreviations are available for the above; $Y matches a four digit year, $m, $d, $H,
-               and $M match a two-digit month, day, hour and minute, respectively.
-      file2date - a function which returns a date dictionary given a filename. By default a regex pattern is
-               used.
+  Parameters
+  ==========
+  files : string, list, or tuple
+    Either a single filename or a list of filenames. Wildcards are supported, :func:`glob.iglob` is
+    used to expand these into an explicit list of files.
+
+  format : string, optional
+    String specifying format of file to open. If none is given the format will be automatically
+    detected from the first filename (see :func:`autodetectformat`)
+
+  opener : function, optional
+    Function to open individual files. If none is provided, uses the
+    format-specific version of :func:`open`. The datasets returned by this
+    function are then concatenated and returned. See Notes.
+
+  pattern : string, optional
+    A regex pattern to extract date stamps from the filename; used by default file2date.
+    Matching patterns must be named <year>, <month>, <day>, <hour> or <minute>.
+    Abbreviations are available for the above; $Y matches a four digit year, $m, $d, $H,
+    and $M match a two-digit month, day, hour and minute, respectively.
+
+  file2date : function, optional
+    Function which returns a date dictionary given a filename. By default this is produced
+    by applying the regex pattern ``pattern`` to the filename.
+
+  sorted : boolean, optional
+    If True, the filenames are sorted (by alpha) prior to opening each file, and
+    the axes on the returned dataset are sorted by calling :meth:`Dataset.sorted`.
+
+  **kwargs : keyword arguments
+    These are passed on to the function ``opener``;
+
+  Returns
+  =======
+  dataset
+    A dataset containing the variables concatenated across all specified files.
+    The variable data itself is not loaded into memory. 
+
+  Notes
+  =====
+  This is intended to provide access to large datasets whose files are
+  separated by timestep.  To avoid opening every file individually, the time
+  axis is constructed by opening the first and the last file in the list of
+  files provided. This is done to provide a template of what variables and what
+  times are stored in each file - it is assumed that the number of timesteps
+  (and their offsets) is the same accross the whole dataset. The time axis is
+  then constructed from the filenames themselves, using the function
+  ``file2date`` to generate a date from each filename. As a result only two files
+  need to be opened, which makes this a very efficient way to work with very large
+  datasets.
+
+  However, no explicit check is made of the integrity of the files - if there
+  are corrupt or missing data within individual files, this will not become
+  clear until that data is actually accessed. This can be done explicitly with
+  :func:`check_dataset`, which explicitly attempts to access all the data and
+  returns a list of any problems encountered; this can take a long time, but is
+  a useful check (and is more likely to provide helpful error messages). 
+
+  The function ``opener`` must take a single positional argument - the filename
+  of the file to open - and keyword arguments that are passed through from this
+  function. It must return a :class:`Dataset` object with the loaded variables.
+  By default the standard :func:`open` is used, but providing a custom opener
+  can be useful for any reshaping of the variables that must be done prior to
+  concatenating the whole dataset. 
+
+  See Also
+  ========
+  open
+  openall
   '''
 
   from pygeode.timeaxis import Time, StandardTime

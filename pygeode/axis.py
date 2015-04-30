@@ -32,9 +32,8 @@ except ImportError:
 # Axis parent class
 class Axis(Var):
 # {{{
-
   """
-    A one-dimensional object associated with each dimension of a data array.
+    An object that describes a single dimension of a :class:`Var` object.
     It is a subclass of :class:`Var`, so it can be used anywhere a Var would be
     used.
 
@@ -56,10 +55,18 @@ class Axis(Var):
   """
   
   # Default dictionaries: these are class defaults and are overwritten by child class defaults    
-  # Auxiliary arrays (provides some more context than just the regular value array)
+  
+  #: Auxiliary arrays (provides some more context than just the regular value array)
   auxarrays = {}
-  # Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
+
+  #: Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
   auxatts = {}  
+
+  #: Format specification for plotting values
+  formatstr = ''
+
+  #: Relative tolerance for identifying two values of this axis as equal
+  rtol = 1e-5
 
   def __init__(self, values, name=None, atts=None, plotatts=None, rtol=None, **kwargs):
 # {{{ 
@@ -108,8 +115,9 @@ class Axis(Var):
         vnz = np.sort(values[inz]).astype('d')
         logr = np.floor(np.min( np.log10(np.abs(np.diff(vnz) / vnz[:-1])) ))
         if not np.isinf(logr) and 10**logr < rtol: rtol = 10**logr
-    
-    self.rtol = rtol #: The relative tolerance for identifying an element of this axis.
+
+    #: The relative tolerance for identifying an element of this axis.
+    self.rtol = rtol 
 
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
@@ -142,12 +150,12 @@ class Axis(Var):
 
     Parameters
     ==========
-    other : :class:`Axis' object to compare against this one.
+    other : :class:`Axis` object to compare against this one.
 
     Returns
     =======
-    True is other is an instance of this object's class
-
+    bool : boolean
+      True if ``other`` is an instance of this object's class
     """
     return isinstance(other,cls)
   # }}}
@@ -224,8 +232,28 @@ class Axis(Var):
   #TODO: include associated arrays when doing the mapping?
   def map_to (self, other):
   # {{{
-    '''check if there is a way to map from one to the other, but the values are
-        not necessarily in 1:1 correspondence '''
+    '''Returns indices of this axis which correspond to the axis ``other``. 
+    
+       Parameters
+       ----------
+       other : :class:`Axis` 
+         Axis to find mapping to
+
+       Returns
+       -------
+       mapping : integer array or None
+
+       Notes
+       -----
+
+       Returns an ordered indices of the elements of this axis that correspond to those of
+       the axis ``other``, if one exists, otherwise None. This axis must be a
+       parent class of ``other`` or vice versa in order for the mapping to
+       exist. The mapping may include only a subset of this axis object, but
+       must be as long as the other axis, if it is not None. The mapping
+       identifies equivalent elements based on equality up to a tolerance
+       specified by self.rtol. 
+       '''
 
     from pygeode.tools import map_to
     import numpy as np
@@ -484,6 +512,22 @@ class Axis(Var):
 
   def auxasvar (self, name):
 # {{{
+    ''' Returns auxiliary array as a new :class:`Var` object.
+
+        Parameters
+        ==========
+        name : string
+            Name of auxiliary array to return
+
+        Returns
+        =======
+        var : :class:`Var`
+            Variable with values of requested auxilliary array
+
+        See Also
+        ========
+        auxarrays
+    '''
     from pygeode.var import Var
     return Var([self], values=self.auxarrays[name], name=name)
 # }}}
@@ -604,8 +648,8 @@ class Axis(Var):
 # Named axis
 class NamedAxis (Axis):
 # {{{
-  '''Slightly less useless than a raw Axis, we can at least use the name
-      to uniquely identify them.'''
+  '''Generic axis object identified by its name.'''
+
   def __init__ (self, values, name, **kwargs):
   # {{{
     Axis.__init__(self, values, **kwargs)
@@ -628,6 +672,7 @@ class NamedAxis (Axis):
   # (not only do both axes need to be a NamedAxis, but they need to have the same name)
   # (The name is the only way to uniquely identify them)
   def map_to (self, other):
+        
     if not isinstance(other, NamedAxis): return None
     if other.name != self.name: return None
     return Axis.map_to(self, other)
@@ -638,7 +683,7 @@ class YAxis (Axis): pass
 
 class Lon (XAxis): 
 # {{{
-  ''' Describes longitudes. '''
+  ''' Longitude axis. '''
   name = 'lon'
   formatstr = '%.3g E<360'
 
@@ -725,6 +770,7 @@ def regularlon(n, origin=0., order=1, repeat_origin=False):
 
 class Lat (YAxis):
 # {{{
+  ''' Latitude axis. '''
   name = 'lat'
   formatstr = '%.2g N'
   plotatts = YAxis.plotatts.copy() 
@@ -852,6 +898,7 @@ class ZAxis (Axis):
 #TODO: attributes
 class Height(ZAxis):
 # {{{  
+  ''' Geometric height axis. '''
   name = 'z' # default name
   formatstr = '%d' 
   units = 'm'
@@ -863,6 +910,7 @@ class Height(ZAxis):
 #TODO: weights!
 class Hybrid (ZAxis):
 # {{{
+  ''' Hybridized vertical coordinate axis. '''
   name = 'eta'  #TODO: rename this to 'hybrid'?  (keep 'eta' for now, for compatibility with existing code)
   formatstr = '%g'
   plotatts = ZAxis.plotatts.copy()
@@ -895,6 +943,7 @@ class Hybrid (ZAxis):
 
 class Pres (ZAxis): 
 # {{{
+  ''' Pressure height axis. '''
   name = 'pres'
   units = 'hPa'
   formatstr = '%.2g<100'

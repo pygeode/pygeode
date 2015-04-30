@@ -48,6 +48,28 @@ class PackVar(Var):
 
 def autodetectformat(filename):
 # {{{
+  ''' Returns best guess at file format based on file name.
+
+      Parameters
+      ==========
+      filename : string
+        Filename to identify
+
+      Returns
+      =======
+      string
+        String specifying identified file format.   
+
+      Raises
+      ======
+      ValueError
+        If the format cannot be determined from the extension.
+
+      See Also
+      ========
+      extdict
+  '''
+
   from os import path
 
   rt, ext = path.splitext(filename)
@@ -61,6 +83,64 @@ def autodetectformat(filename):
 def open(filename, format = None, value_override = {}, dimtypes = {}, namemap = {}, varlist = [],
          cfmeta = True, **kwargs):
 # {{{
+  ''' Returns a :class:`Dataset` containing variables defined in a single file.
+
+  Parameters
+  ==========
+  filename : string
+    Path of file to open
+
+  format : string, optional
+    String specifying format of file to open. If none is given the format will be automatically
+    detected from the file (see :func:`autodetectformat`)
+
+  value_override : dict, optional
+    A dictionary containing arrays with which to override values for one or more variables (specified
+    by the keys). This can be used for instance to avoid loading the values of an axis whose values
+    are severely scattered across a large file.
+
+  dimtypes : dict, optional
+    A dictionary mapping dimension names to axis classes. The keys should be
+    axis names as defined in the file; values should be one of:
+
+    1. an axis instance, which will be used directly
+    2. an axis class, which will be used to create a new instance with the values given by the file
+    3. a tuple of an axis class and a dictionary with keyword arguments to pass to that axis' constructor              
+
+    If dimtypes is not specified, an attempt is made to automatically identify the axis types (see optional
+    `cfmeta` argument below)
+
+  namemap : dict, optional
+    A dictionary to map variable names as specified in the file (keys) to PyGeode variable names
+    (values); also works for axes/dimensions
+
+  varlist : list, optional
+    A list (of strings) specifying the variables that should be loaded into the
+    data set (if the list is empty, all NetCDF variables will be loaded)
+
+  cfmeta : boolean
+    If true, an attempt to identify the type of each dimension is made
+    following the CF metadata conventions.
+
+  Returns
+  =======
+  dataset
+    A dataset containing the variables contained in the file. The variable data itself is not loaded
+    into memory. 
+
+  Notes
+  =====
+  The format of the file is automatically detected from the filename (if
+  possible); otherwise it must be specified by the ``format`` argument. 
+  The identifiers used in ``varlist`` and ``dimtypes`` are the original names used in
+  the NetCDF file, not the names given in ``namemap``.
+
+  See Also
+  ========
+  openall
+  open_multi
+  '''
+
   if format is None: format = autodetectformat(filename)
 
   if not hasattr(format, 'open'):
@@ -75,6 +155,29 @@ def open(filename, format = None, value_override = {}, dimtypes = {}, namemap = 
 
 def save(filename, dataset, format=None, cfmeta=True, **kwargs):
 # {{{
+  ''' Saves a :class:`Var` or :class:`Dataset` to file.
+
+  Parameters
+  ==========
+  filename : string
+    Path of file to save to.
+
+  dataset : :class:`Var`, :class:`Dataset`, or collection of :class:`Var` objects
+    Variables to write to disk. The dataset is consolidated using :func:`dataset.asdataset`.
+
+  format : string, optional
+    String specifying format of file to open. If none is given the format will be automatically
+    detected from the file (see :func:`autodetectformat`)
+
+  cfmeta : boolean
+    If true, metadata is automatically written specifying the axis dimensions following CF
+    metadata conventions.
+
+  Notes
+  =====
+  The format of the file is automatically detected from the filename (if
+  possible). The NetCDF format is at present the best supported.
+  '''
   if format is None: format = autodetectformat(filename)
 
   if not hasattr(format, 'save'):

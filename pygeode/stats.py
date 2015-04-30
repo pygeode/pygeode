@@ -1,22 +1,37 @@
-__all__ = ('correlate', 'regress', 'difference', 'isnonzero')
+''' Tools for computing some basic statistical quantities. '''
+
+__all__ = ('correlate', 'regress', 'multiple_regress', 'difference', 'isnonzero')
 
 import numpy as np
 from scipy.stats import norm, t as tdist
 
-sigs = (-1.1, -0.05, -0.01, 0., 0.01, 0.05, 1.1)
-sigs_c = (  (1.0, 1.0, 1.0),
-            (0.9, 0.9, 1.0), 
-            (0.6, 0.6, 0.9), 
-            (0.9, 0.6, 0.6), 
-            (1.0, 0.9, 0.9), 
-            (1.0, 1.0, 1.0))
-
 def correlate(X, Y, axes=None, pbar=None):
 # {{{
-  r''' correlate(X, Y) - returns correlation between variables X and Y
-      computed over all axes shared by x and y. Returns \rho_xy, and p values
-      for \rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
-      section 8.2.3.'''
+  r'''Computes correlation between variables X and Y.
+
+  Parameters
+  ==========
+  X, Y : :class:`Var`
+    Variables to correlate. Must have at least one axis in common.
+
+  axes : list, optional
+    Axes over which to compute correlation; if nothing is specified, the correlation
+    is computed over all axes common to  shared by X and Y.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
+  Returns
+  =======
+  rho, p : :class:`Var`
+    The correlation coefficient :math:`\rho_{XY}` and p-value, respectively.
+
+  Notes
+  =====
+  The p-value is computed against the hypothesis that the correlation
+  coefficient is 0.  It is assumed that X and Y are normally distributed, as
+  specified in Storch and Zwiers 1999 section 8.2.3.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
@@ -99,11 +114,50 @@ def correlate(X, Y, axes=None, pbar=None):
 
 def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
 # {{{
-  ''' regress(X, Y) - returns correlation between variables X and Y
-      computed over axes. Outputs can be requested by a comma seperated
-      string Returns rho_xy, and p values
-      for rho_xy assuming x and y are normally distributed as Storch and Zwiers 1999
-      section 8.2.3.'''
+  r'''Computes least-squares linear regression of Y against X.
+
+  Parameters
+  ==========
+  X, Y : :class:`Var`
+    Variables to regress. Must have at least one axis in common.
+
+  axes : list, optional
+    Axes over which to compute correlation; if nothing is specified, the correlation
+    is computed over all axes common to X and Y.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
+  N_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom; the effective
+    number will be given by the number estimated from the dataset divided by ``N_fac``.
+
+  output : string, optional
+    A string determining which parameters are returned; see list of possible outputs
+    in the Returns section. The specifications must be separated by a comma. Defaults 
+    to 'm,b,p'.
+
+  Returns
+  =======
+  results : list of :class:`Var` instances.
+    The return values are specified by the ``output`` argument. A fit of the form
+    :math:`Y = m X + b + \epsilon` is assumed, and the following parameters
+    can be returned:
+
+    * 'm': Linear coefficient of the regression
+    * 'b': Constant coefficient of the regression
+    * 'r': Fraction of the variance in Y explained by X (:math:`R^2`)
+    * 'p': Probability of this fit if the true linear coefficient was zero
+    * 'sm': Variance in linear coefficient
+    * 'se': Variance of residuals
+
+  Notes
+  =====
+  The p-value is computed against the hypothesis that the correlation
+  coefficient is 0.  It is assumed that X and Y are normally distributed, as
+  specified in Storch and Zwiers 1999 section 8.2.3.'''
+
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
 
@@ -189,153 +243,59 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
   return ret
 # }}}
 
-def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
-# {{{
-  ''' difference(X, Y) - calculates difference between the mean values of X and Y
-      averaged over the dimensions specified by axes. Returns X - Y, p values, confidence
-      intervals, and degrees of freedom.'''
-
-  from pygeode.tools import combine_axes, whichaxis, loopover, npsum
-  from pygeode.view import View
-
-  srcaxes = combine_axes([X, Y])
-  riaxes = [whichaxis(srcaxes, n) for n in axes]
-  raxes = [a for i, a in enumerate(srcaxes) if i in riaxes]
-  oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
-  oview = View(oaxes) 
-
-  ixaxes = [X.whichaxis(n) for n in axes]
-  Nx = np.product([len(X.axes[i]) for i in ixaxes])
-
-  iyaxes = [Y.whichaxis(n) for n in axes]
-  Ny = np.product([len(Y.axes[i]) for i in iyaxes])
-  
-  if pbar is None:
-    from pygeode.progress import PBar
-    pbar = PBar()
-
-  assert Nx > 1, '%s has only one element along the reduction axes' % X.name
-  assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
-
-  # Construct work arrays
-  x = np.zeros(oview.shape, 'd')
-  y = np.zeros(oview.shape, 'd')
-  xx = np.zeros(oview.shape, 'd')
-  yy = np.zeros(oview.shape, 'd')
-
-  # Accumulate data
-  for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
-    xdata = xdata.astype('d')
-    x[outsl] += npsum(xdata, ixaxes)
-    xx[outsl] += npsum(xdata**2, ixaxes)
-
-  for outsl, (ydata,) in loopover([Y], oview, pbar=pbar):
-    ydata = ydata.astype('d')
-    y[outsl] += npsum(ydata, iyaxes)
-    yy[outsl] += npsum(ydata**2, iyaxes)
-
-  # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx = (xx - x**2/Nx) / (Nx - 1)
-  yy = (yy - y**2/Ny) / (Ny - 1)
-  x /= Nx
-  y /= Ny
-
-  if Nx_fac is not None: eNx = Nx/Nx_fac
-  else: eNx = Nx
-  if Ny_fac is not None: eNy = Ny/Ny_fac
-  else: eNy = Ny
-  print 'eff. Nx = %.1f, eff. Ny = %.1f' % (eNx, eNy)
-
-  d = x - y
-  den = np.sqrt(xx/eNx + yy/eNy)
-  df = (xx/eNx + yy/eNy)**2 / ((xx/eNx)**2/(eNx - 1) + (yy/eNy)**2/(eNy - 1))
-
-  p = tdist.cdf(abs(d/den), df)*np.sign(d)
-  ci = tdist.ppf(1. - alpha/2, df) * den
-
-  xn = X.name if X.name != '' else 'X'
-  yn = Y.name if Y.name != '' else 'Y'
-  if xn == yn: name = xn
-  else: name = '%s-%s'%(xn, yn)
-
-  if len(oaxes) > 0:
-    from pygeode import Var, Dataset
-    D = Var(oaxes, values=d, name=name)
-    DF = Var(oaxes, values=df, name='df_%s' % name)
-    P = Var(oaxes, values=p, name='p_%s' % name)
-    CI = Var(oaxes, values=ci, name='CI_%s' % name)
-    return Dataset([D, DF, P, CI])
-  else: # Degenerate case
-    return d, df, p, ci
-# }}}
-
-def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
-# {{{
-  ''' isnonzero(X) - determins if X is non-zero, assuming X is normally distributed.
-      Returns mean of X along axes, p value, and confidence interval.'''
-
-  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
-  from pygeode.view import View
-
-  riaxes = [X.whichaxis(n) for n in axes]
-  raxes = [a for i, a in enumerate(X.axes) if i in riaxes]
-  oaxes = [a for i, a in enumerate(X.axes) if i not in riaxes]
-  oview = View(oaxes) 
-
-  N = np.product([len(X.axes[i]) for i in riaxes])
-
-  if pbar is None:
-    from pygeode.progress import PBar
-    pbar = PBar()
-
-  assert N > 1, '%s has only one element along the reduction axes' % X.name
-
-  # Construct work arrays
-  x = np.zeros(oview.shape, 'd')*np.nan
-  xx = np.zeros(oview.shape, 'd')*np.nan
-  Na = np.zeros(oview.shape, 'd')*np.nan
-
-  # Accumulate data
-  for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
-    xdata = xdata.astype('d')
-    x[outsl] = np.nansum([x[outsl], npnansum(xdata, riaxes)], 0)
-    xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, riaxes)], 0)
-    # Sum of weights (kludge to get masking right)
-    Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xdata*0., riaxes)], 0) 
-
-  # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx = (xx - x**2/Na) / (Na - 1)
-  x /= Na
-
-  if N_fac is not None: 
-    eN = N/N_fac
-    eNa = Na/N_fac
-  else: 
-    eN = N
-    eNa = Na
-  print 'eff. N = %.1f' % eN
-
-  sdom = np.sqrt(xx/eNa)
-
-  p = tdist.cdf(abs(x/sdom), eNa - 1)*np.sign(x)
-  ci = tdist.ppf(1. - alpha/2, eNa - 1) * sdom
-
-  name = X.name if X.name != '' else 'X'
-
-  if len(oaxes) > 0:
-    from pygeode import Var, Dataset
-    X = Var(oaxes, values=x, name=name)
-    P = Var(oaxes, values=p, name='p_%s' % name)
-    CI = Var(oaxes, values=ci, name='CI_%s' % name)
-    return Dataset([X, P, CI])
-  else: # Degenerate case
-    return x, p, ci
-# }}}
-
 def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 # {{{
-  ''' Returns least-squares fit of y to a linear combination of Xs, computed over axes.
-      Outputs can be requested by a comma seperated string, options are 'b,r,p,sm,se'.'''
+  r'''Computes least-squares multiple regression of Y against variables Xs.
+
+  Parameters
+  ==========
+  Xs : list of :class:`Var` instances
+    Variables to treat as independent regressors. Must have at least one axis
+    in common with each other and with Y.
+
+  Y : :class:`Var`
+    The dependent variable. Must have at least one axis in common with the Xs.
+
+  axes : list, optional
+    Axes over which to compute correlation; if nothing is specified, the correlation
+    is computed over all axes common to the Xs and Y.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
+  N_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom; the effective
+    number will be given by the number estimated from the dataset divided by ``N_fac``.
+
+  output : string, optional
+    A string determining which parameters are returned; see list of possible outputs
+    in the Returns section. The specifications must be separated by a comma. Defaults 
+    to 'B,p'.
+
+  Returns
+  =======
+  results : tuple of floats or :class:`Var` instances.
+    The return values are specified by the ``output`` argument. A fit of the form
+    :math:`Y = \sum_i \beta_i X_i + \epsilon` is assumed. Note that a constant term
+    is not included by default. The following parameters can be returned:
+
+    * 'B': Linear coefficients :math:`\beta_i` of each regressor
+    * 'r': Fraction of the variance in Y explained by all Xs (:math:`R^2`)
+    * 'p': Probability of this fit if the true linear coefficients were zero
+    * 'sb': Standard deviation of each linear coefficient
+    * 'se': Standard deviation of residuals
+
+    If the regression is computed over all axes so that the result is a scalar,
+    the above are returned as a tuple of floats in the order specified by
+    ``output``. Otherwise they are returned as :class:`Var` instances. The outputs
+    'B' and 'sb' will produce as many outputs as there are regressors. 
+
+  Notes
+  =====
+  The p-value is computed against the hypothesis that the correlation
+  coefficient is 0.  It is assumed that X and Y are normally distributed, as
+  specified in Storch and Zwiers 1999 section 8.2.3.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
@@ -453,6 +413,233 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 
   return ret
 # }}}
+
+def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
+# {{{
+  r'''Computes the mean value and statistics of X - Y.
+
+  Parameters
+  ==========
+  X, Y : :class:`Var`
+    Variables to difference. Must have at least one axis in common.
+
+  axes : list, optional
+    Axes over which to compute means; if nothing is specified, the mean
+    is computed over all axes common to X and Y.
+
+  alpha : float
+    Confidence level for which to compute confidence interval.
+
+  Nx_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom of
+    X; the effective number will be given by the number estimated from the
+    dataset divided by ``Nx_fac``.
+
+  Ny_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom of
+    Y; the effective number will be given by the number estimated from the
+    dataset divided by ``Ny_fac``.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
+  Returns
+  =======
+  results : tuple or :class:`Dataset` instance.
+    Four quantities are computed:
+
+    * The difference in the means, X - Y
+    * The effective number of degrees of freedom
+    * The probability of the computed difference if the population difference was zero
+    * The confidence interval of the difference at the level specified by alpha
+
+    If the average is taken over all axes of X and Y resulting in a scalar,
+    the above values are returned as a tuple in the order given. If not, the
+    results are provided as :class:`Var` objects in a dataset. 
+
+  Notes
+  =====
+  The p-value is computed against the hypothesis that the population difference 
+  is 0.  It is assumed that X and Y are normally distributed, as
+  specified in Storch and Zwiers 1999 section 8.2.3.'''
+
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum
+  from pygeode.view import View
+
+  srcaxes = combine_axes([X, Y])
+  riaxes = [whichaxis(srcaxes, n) for n in axes]
+  raxes = [a for i, a in enumerate(srcaxes) if i in riaxes]
+  oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
+  oview = View(oaxes) 
+
+  ixaxes = [X.whichaxis(n) for n in axes]
+  Nx = np.product([len(X.axes[i]) for i in ixaxes])
+
+  iyaxes = [Y.whichaxis(n) for n in axes]
+  Ny = np.product([len(Y.axes[i]) for i in iyaxes])
+  
+  if pbar is None:
+    from pygeode.progress import PBar
+    pbar = PBar()
+
+  assert Nx > 1, '%s has only one element along the reduction axes' % X.name
+  assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
+
+  # Construct work arrays
+  x = np.zeros(oview.shape, 'd')
+  y = np.zeros(oview.shape, 'd')
+  xx = np.zeros(oview.shape, 'd')
+  yy = np.zeros(oview.shape, 'd')
+
+  # Accumulate data
+  for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
+    xdata = xdata.astype('d')
+    x[outsl] += npsum(xdata, ixaxes)
+    xx[outsl] += npsum(xdata**2, ixaxes)
+
+  for outsl, (ydata,) in loopover([Y], oview, pbar=pbar):
+    ydata = ydata.astype('d')
+    y[outsl] += npsum(ydata, iyaxes)
+    yy[outsl] += npsum(ydata**2, iyaxes)
+
+  # remove the mean (NOTE: numerically unstable if mean >> stdev)
+  xx = (xx - x**2/Nx) / (Nx - 1)
+  yy = (yy - y**2/Ny) / (Ny - 1)
+  x /= Nx
+  y /= Ny
+
+  if Nx_fac is not None: eNx = Nx/Nx_fac
+  else: eNx = Nx
+  if Ny_fac is not None: eNy = Ny/Ny_fac
+  else: eNy = Ny
+  print 'eff. Nx = %.1f, eff. Ny = %.1f' % (eNx, eNy)
+
+  d = x - y
+  den = np.sqrt(xx/eNx + yy/eNy)
+  df = (xx/eNx + yy/eNy)**2 / ((xx/eNx)**2/(eNx - 1) + (yy/eNy)**2/(eNy - 1))
+
+  p = tdist.cdf(abs(d/den), df)*np.sign(d)
+  ci = tdist.ppf(1. - alpha/2, df) * den
+
+  xn = X.name if X.name != '' else 'X'
+  yn = Y.name if Y.name != '' else 'Y'
+  if xn == yn: name = xn
+  else: name = '%s-%s'%(xn, yn)
+
+  if len(oaxes) > 0:
+    from pygeode import Var, Dataset
+    D = Var(oaxes, values=d, name=name)
+    DF = Var(oaxes, values=df, name='df_%s' % name)
+    P = Var(oaxes, values=p, name='p_%s' % name)
+    CI = Var(oaxes, values=ci, name='CI_%s' % name)
+    return Dataset([D, DF, P, CI])
+  else: # Degenerate case
+    return d, df, p, ci
+# }}}
+
+def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
+# {{{
+  r'''Computes the mean value and statistics of X, against the hypothesis that it is 0.
+
+  Parameters
+  ==========
+  X : :class:`Var`
+    Variable to average.
+
+  axes : list, optional
+    Axes over which to compute the mean; if nothing is specified, the mean is
+    computed over all axes.
+
+  alpha : float
+    Confidence level for which to compute confidence interval.
+
+  N_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom;
+    the effective number will be given by the number estimated from the dataset
+    divided by ``N_fac``.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
+  Returns
+  =======
+  results : tuple or :class:`Dataset` instance.
+    Four quantities are computed:
+
+    * The mean value of X
+    * The probability of the computed value if the population mean was zero
+    * The confidence interval of the mean at the level specified by alpha
+
+    If the average is taken over all axes of X resulting in a scalar,
+    the above values are returned as a tuple in the order given. If not, the
+    results are provided as :class:`Var` objects in a dataset. 
+
+  Notes
+  =====
+  The p-value is computed against the hypothesis that the population difference 
+  is 0.  It is assumed that X and Y are normally distributed, as
+  specified in Storch and Zwiers 1999 section 8.2.3.'''
+
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
+  from pygeode.view import View
+
+  riaxes = [X.whichaxis(n) for n in axes]
+  raxes = [a for i, a in enumerate(X.axes) if i in riaxes]
+  oaxes = [a for i, a in enumerate(X.axes) if i not in riaxes]
+  oview = View(oaxes) 
+
+  N = np.product([len(X.axes[i]) for i in riaxes])
+
+  if pbar is None:
+    from pygeode.progress import PBar
+    pbar = PBar()
+
+  assert N > 1, '%s has only one element along the reduction axes' % X.name
+
+  # Construct work arrays
+  x = np.zeros(oview.shape, 'd')*np.nan
+  xx = np.zeros(oview.shape, 'd')*np.nan
+  Na = np.zeros(oview.shape, 'd')*np.nan
+
+  # Accumulate data
+  for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
+    xdata = xdata.astype('d')
+    x[outsl] = np.nansum([x[outsl], npnansum(xdata, riaxes)], 0)
+    xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, riaxes)], 0)
+    # Sum of weights (kludge to get masking right)
+    Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xdata*0., riaxes)], 0) 
+
+  # remove the mean (NOTE: numerically unstable if mean >> stdev)
+  xx = (xx - x**2/Na) / (Na - 1)
+  x /= Na
+
+  if N_fac is not None: 
+    eN = N/N_fac
+    eNa = Na/N_fac
+  else: 
+    eN = N
+    eNa = Na
+  print 'eff. N = %.1f' % eN
+
+  sdom = np.sqrt(xx/eNa)
+
+  p = tdist.cdf(abs(x/sdom), eNa - 1)*np.sign(x)
+  ci = tdist.ppf(1. - alpha/2, eNa - 1) * sdom
+
+  name = X.name if X.name != '' else 'X'
+
+  if len(oaxes) > 0:
+    from pygeode import Var, Dataset
+    X = Var(oaxes, values=x, name=name)
+    P = Var(oaxes, values=p, name='p_%s' % name)
+    CI = Var(oaxes, values=ci, name='CI_%s' % name)
+    return Dataset([X, P, CI])
+  else: # Degenerate case
+    return x, p, ci
+# }}}
+
 """
 
 # Linear trend
