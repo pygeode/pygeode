@@ -854,7 +854,7 @@ class Lat (YAxis):
 
 def gausslat (n, order=1, axis_dict={}):
 # {{{
-  '''Gaussian latitude axis'''
+  '''Constructs a Gaussian :class:`Lat` axis with n latitudes.'''
   from pygeode.quadrulepy import legendre_compute
   import numpy as np
   from math import pi

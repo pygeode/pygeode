@@ -29,9 +29,11 @@ def correlate(X, Y, axes=None, pbar=None):
 
   Notes
   =====
-  The p-value is computed against the hypothesis that the correlation
-  coefficient is 0.  It is assumed that X and Y are normally distributed, as
-  specified in Storch and Zwiers 1999 section 8.2.3.'''
+  The coefficient :math:`\rho_{XY}` is computed following von Storch and Zwiers
+  1999, section 8.2.2. The p-value is the probability of finding the given
+  result under the hypothesis that the true correlation coefficient between X
+  and Y is zero. It is computed from the t-statistic given in eq (8.7), in
+  section 8.2.3, and assumes normally distributed quantities.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
@@ -154,9 +156,12 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
 
   Notes
   =====
-  The p-value is computed against the hypothesis that the correlation
-  coefficient is 0.  It is assumed that X and Y are normally distributed, as
-  specified in Storch and Zwiers 1999 section 8.2.3.'''
+  The statistics described are computed following von Storch and Zwiers 1999,
+  section 8.3. The p-value 'p' is computed using the t-statistic given in
+  section 8.3.8, and confidence intervals for the slope and intercept can be
+  computed from 'se' and 'se' (:math:`\hat{\sigma}_E` and
+  :math:`\hat{\sigma}_E/\sqrt{S_{XX}}` in von Storch and Zwiers, respectively).
+  The data is assumed to be normally distributed.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
@@ -282,20 +287,25 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 
     * 'B': Linear coefficients :math:`\beta_i` of each regressor
     * 'r': Fraction of the variance in Y explained by all Xs (:math:`R^2`)
-    * 'p': Probability of this fit if the true linear coefficients were zero
+    * 'p': Probability of this fit if the true linear coefficient was zero for each regressor
     * 'sb': Standard deviation of each linear coefficient
     * 'se': Standard deviation of residuals
 
     If the regression is computed over all axes so that the result is a scalar,
     the above are returned as a tuple of floats in the order specified by
     ``output``. Otherwise they are returned as :class:`Var` instances. The outputs
-    'B' and 'sb' will produce as many outputs as there are regressors. 
+    'B', 'p', and 'sb' will produce as many outputs as there are regressors. 
 
   Notes
   =====
-  The p-value is computed against the hypothesis that the correlation
-  coefficient is 0.  It is assumed that X and Y are normally distributed, as
-  specified in Storch and Zwiers 1999 section 8.2.3.'''
+  The statistics described are computed following von Storch and Zwiers 1999,
+  section 8.4. The p-value 'p' is computed using the t-statistic appropriate
+  for the multi-variate normal estimator :math:`\hat{\vec{a}}` given in section
+  8.4.2; note this may not be the best way to determine if a given parameter is
+  contributing a significant fraction to the explained variance of Y.  The
+  variances 'se' and 'sb' are :math:`\hat{\sigma}_E` and the square root of the
+  diagonal elements of :math:`\hat{\sigma}^2_E (\chi^T\chi)` in von Storch and
+  Zwiers, respectively.  The data is assumed to be normally distributed.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
@@ -450,7 +460,7 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
     Four quantities are computed:
 
     * The difference in the means, X - Y
-    * The effective number of degrees of freedom
+    * The effective number of degrees of freedom, :math:`df`
     * The probability of the computed difference if the population difference was zero
     * The confidence interval of the difference at the level specified by alpha
 
@@ -458,11 +468,18 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
     the above values are returned as a tuple in the order given. If not, the
     results are provided as :class:`Var` objects in a dataset. 
 
+  See Also
+  ========
+  isnonzero
+
   Notes
   =====
-  The p-value is computed against the hypothesis that the population difference 
-  is 0.  It is assumed that X and Y are normally distributed, as
-  specified in Storch and Zwiers 1999 section 8.2.3.'''
+  The effective number of degrees of freedom is estimated using eq (6.20) of 
+  von Storch and Zwiers 1999, in which :math:`n_X` and :math:`n_Y` are scaled by
+  Nx_fac and Ny_fac, respectively. This provides a means of taking into account
+  serial correlation in the data (see sections 6.6.7-9), but the number of effective
+  degrees of freedom are not calculated explicitly by this routine. The p-value and 
+  confidence interval are computed based on the t-statistic in eq (6.19).'''
 
   from pygeode.tools import combine_axes, whichaxis, loopover, npsum
   from pygeode.view import View
@@ -576,11 +593,15 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
     the above values are returned as a tuple in the order given. If not, the
     results are provided as :class:`Var` objects in a dataset. 
 
+  See Also
+  ========
+  difference
+
   Notes
   =====
-  The p-value is computed against the hypothesis that the population difference 
-  is 0.  It is assumed that X and Y are normally distributed, as
-  specified in Storch and Zwiers 1999 section 8.2.3.'''
+  The number of effective degrees of freedom can be scaled as in :meth:`difference`. 
+  The p-value and confidence interval are computed for the t-statistic defined in 
+  eq (6.61) of von Storch and Zwiers 1999.'''
 
   from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
   from pygeode.view import View

@@ -253,6 +253,7 @@ class Dataset(object):
 # Use this if you want to make sure something is a dataset, in case it's
 #  possible that it's currently a Var list.
 def asdataset (vars, copy=False, print_warnings=True):
+# {{{
   ''' Tries to convert a collection of objects into a single dataset.
 
       Parameters
@@ -294,10 +295,11 @@ def asdataset (vars, copy=False, print_warnings=True):
     return dataset
   if isinstance(vars, Var): vars = [vars]
   return Dataset(vars, print_warnings=print_warnings)
-
+# }}}
 
 
 def axis_name_clumping (varlist):
+# {{{
   # Name-based dictionary pointing to all related axes
   # each name maps to a list of 'distinct' axis lists
   # each of these sublists contains all the equivalent axes
@@ -320,7 +322,7 @@ def axis_name_clumping (varlist):
       # If it's not comparable to anything, start a new family
       if not match: eqlist.append([a])
   return namedict
-
+# }}}
 
 # Concatenate a bunch of datasets together
 def concat(*datasets):
