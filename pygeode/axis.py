@@ -1056,6 +1056,32 @@ class Index(Axis):
 # Coefficient number (when returning a set of coefficients, such as for a polynomial fit)
 class Coef(Index): pass
 
+class NonCoordinateAxis(Axis):
+  '''Non-coordinate axis (disables nearest-neighbour value matching, etc.)'''
+  formatstr = "%s"
+  # Modify the Axis.__init__ to avoid trying to generate an rtol value
+  #TODO: Move the rtol logic to a different subclass of Axis, so we don't have
+  # to do this?
+  def __init__(self, *args, **kwargs):
+    kwargs['rtol'] = "NOPE!"
+    Axis.__init__(self, *args, **kwargs)
+    del self.rtol
+  # Modify test for equality to look for an exact match
+  #TODO: Make the default Axis.__eq__ logic do this, and move the "close"
+  # matching to a subclass of Axis.
+  def __eq__ (self, other):
+    # For simplicity, expect them to be the same type of axis.
+    if type(self) != type(other): return False
+    return tuple(self.values) == tuple(other.values)
+  # Modify str_as_val to *not* convert string parameters passed to data
+  # subsetting, since the axis may actually have string values.
+  #TODO: Revisit how to handle strings passed to the Axis.__call__ method?
+  def str_as_val(self, key, s): return s
+
+class Station(NonCoordinateAxis):
+  '''Station axis (for timeseries data at fixed station locations)'''
+  name = "station"
+
 
 # Concatenate a bunch of axes together.
 # Find a common parent class for all of them, and call that class's concat function.
