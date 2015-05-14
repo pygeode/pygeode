@@ -1077,6 +1077,26 @@ class NonCoordinateAxis(Axis):
   # subsetting, since the axis may actually have string values.
   #TODO: Revisit how to handle strings passed to the Axis.__call__ method?
   def str_as_val(self, key, s): return s
+  # Modify map_to do use exact matching.
+  # (Avoids use of tools.map_to, which assumes the values are numerical)
+  #TODO: Make this the default for Axis (don't assume we have numerical values?)
+  def map_to (self, other):
+    import numpy as np
+    print 'unsorted target:', other.values
+    target = np.sort(other.values)
+    print 'sorted target:', target
+    target_set = set(target)
+    print 'target_set:', target_set
+    target_indices = np.arange(len(target))[np.argsort(other.values)]
+    #TODO: Speed this up? (move this to tools.c?)
+    indices = []
+    for v in self.values:
+      print 'looking at value', v
+      if v not in target_set: continue
+      sorted_index = np.searchsorted(target, v)
+      indices.append(target_indices[sorted_index])
+    print '??', indices
+    return indices
 
 class Station(NonCoordinateAxis):
   '''Station axis (for timeseries data at fixed station locations)'''

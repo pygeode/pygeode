@@ -76,4 +76,28 @@ def test_select_station():
   w = x(station='Moon')
   assert len(w.station) == 0
 
+# Test concatenating stations together
+def test_concat():
+  import numpy as np
+  from pygeode.var import concat
+  x = make_var()
+  # First, pull out two stations
+  y = x(station='Sable_Island')
+  z = x(station='Bratts_Lake')
+  # Now, concatenate the data along the station axis.
+  w = concat([y,z])
+  assert len(w.station) == 2
+  assert list(w.station.values) == ['Sable_Island', 'Bratts_Lake']
+  # Make sure the getview() functionality works.
+  w.get()
+  print 'orig:', x.get()
+  print y.get()
+  print z.get()
+  print np.concatenate((y.get(),z.get()),axis=1)
+  print w.get()
+  assert np.all(np.concatenate((y.get(),z.get()),axis=1) == w.get())
+  # Make sure this works the same as pulling the two stations without
+  # splitting / concatenating
+  assert np.all(w.get() == x.slice[:,7:9].get())
+
 
