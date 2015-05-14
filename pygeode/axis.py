@@ -447,7 +447,7 @@ class Axis(Var):
         # Convert string representation if necessary
         if isinstance(v, str): v = self.str_as_val(ax, v) 
 
-        if not hasattr(v,'__len__'): # Single value given
+        if isinstance(v,str) or not hasattr(v,'__len__'): # Single value given
           if vals.dtype.name.startswith('float'): # closest match 
             kp[np.argmin( np.abs(v-vals) )] = True
           else:                 # otherwise require an exact match

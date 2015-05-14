@@ -25,7 +25,55 @@ def make_station_axis ():
   ])
   return Station(values=station_names, lat=lats, lon=lons, elevation=elevations, country=countries)
 
+# Generate a dummy variable with a station axis
+def make_var ():
+  from pygeode.var import Var
+  from pygeode.timeaxis import StandardTime
+  import numpy as np
+  time = StandardTime(startdate=dict(year=2009,month=1,day=1), values=range(10), units='days')
+  station = make_station_axis()
+  return Var([time,station], values=np.arange(len(time)*len(station)).reshape(len(time),len(station)), name="dummy")
+
 # Try to create a Station axis
 def test_creation():
   stations = make_station_axis()
+  # Make sure we've got all the auxiliary information in the right place.
+  assert 'lat' in stations.auxarrays
+  assert 'lon' in stations.auxarrays
+  assert 'elevation' in stations.auxarrays
+  assert 'country' in stations.auxarrays
+  # Make sure we can access the auxiliary information
+  assert len(stations.lat) == len(stations.lon) == len(stations.elevation) == len(stations.country) == len(stations)
+
+# Test equality operator
+def test_equality():
+  stations1 = make_station_axis().slice[1::]
+  stations2 = make_station_axis().slice[::-1]
+  assert (stations1 == stations1) is True
+  assert (stations2 == stations2) is True
+  assert (stations1 == stations2) is False
+  assert (stations1 == stations2) is False
+
+# Test creation of a variable with a station axis
+def test_var_creation():
+  x = make_var()
+  # Try loading the data
+  x.get()
+
+# Test selecting a single station
+def test_select_station():
+  import numpy as np
+  x = make_var()
+  y = x(station='Alert')
+  # Try loading the data
+  y.get()
+  assert y.get().shape == y.shape
+  assert len(y.station) == 1
+  # Try another station
+  z = x(station='Egbert')
+  assert not np.all(y.get() == z.get())
+  # Try a fictional station, make sure there is no match
+  w = x(station='Moon')
+  assert len(w.station) == 0
+
 
