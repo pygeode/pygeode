@@ -1084,20 +1084,24 @@ class NonCoordinateAxis(Axis):
     # Only allow mapping non-coordinate axes if they're the exact same type.
     if not isinstance(other,type(self)): return None
     import numpy as np
-    print 'unsorted target:', other.values
-    target = np.sort(other.values)
-    print 'sorted target:', target
-    target_set = set(target)
-    print 'target_set:', target_set
-    target_indices = np.arange(len(target))[np.argsort(other.values)]
+    print 'unsorted values:', self.values
+    values = np.sort(self.values)
+    print 'sorted values:', values
+    values_set = set(values)
+    values_indices = np.arange(len(values))[np.argsort(self.values)]
+    print 'values_indices:', values_indices
+    print 'looking for:', other.values
     #TODO: Speed this up? (move this to tools.c?)
     indices = []
-    for v in self.values:
+    for v in other.values:
       print 'looking at value', v
-      if v not in target_set: continue
-      sorted_index = np.searchsorted(target, v)
-      indices.append(target_indices[sorted_index])
+      if v not in values_set: continue
+      print 'matched'
+      sorted_index = np.searchsorted(values, v)
+      indices.append(values_indices[sorted_index])
     print '??', indices
+    for i in indices:
+      assert self.values[i] in other.values
     return indices
 
 class Station(NonCoordinateAxis):
