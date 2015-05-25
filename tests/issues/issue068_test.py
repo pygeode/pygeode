@@ -89,15 +89,22 @@ def test_concat():
   assert len(w.station) == 2
   assert list(w.station.values) == ['Sable_Island', 'Bratts_Lake']
   # Make sure the getview() functionality works.
-  w.get()
-  print 'orig:', x.get()
-  print y.get()
-  print z.get()
-  print np.concatenate((y.get(),z.get()),axis=1)
-  print w.get()
-  assert np.all(np.concatenate((y.get(),z.get()),axis=1) == w.get())
+  test1 = x.get()
+  test2 = y.get()
+  test3 = z.get()
+  print 'orig:', test1
+  print 'y:', y, test2
+  print 'z:', z, test3
+  test4 = np.concatenate((test2,test3),axis=1)
+  print test4
+  test5 = w.get()
+  assert np.all(test4 == test5)
   # Make sure this works the same as pulling the two stations without
   # splitting / concatenating
-  assert np.all(w.get() == x.slice[:,7:9].get())
+  test1 =  w.get()
+  test2 = x.slice[:,7:9].get()
+  print 'w.get():', test1
+  print 'x.slice[:,7:9]:', test2
+  assert np.all(test1 == test2)
 
 
