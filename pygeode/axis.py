@@ -1081,6 +1081,8 @@ class NonCoordinateAxis(Axis):
   # (Avoids use of tools.map_to, which assumes the values are numerical)
   #TODO: Make this the default for Axis (don't assume we have numerical values?)
   def map_to (self, other):
+    # Only allow mapping non-coordinate axes if they're the exact same type.
+    if not isinstance(other,type(self)): return None
     import numpy as np
     print 'unsorted target:', other.values
     target = np.sort(other.values)
