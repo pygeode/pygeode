@@ -662,7 +662,7 @@ def showlines(vs, size=(4.1,2), **kwargs):
   Z = [v.squeeze() for v in vs]
 
   for z in Z:
-    assert Z[0].naxes == 1, 'Variable %s has %d non-generate axes; must have 1.' % (Z.name, Z.naxes)
+    assert z.naxes == 1, 'Variable %s has %d non-generate axes; must have 1.' % (z.name, z.naxes)
 
   fig = kwargs.pop('fig', None)
 
