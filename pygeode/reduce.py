@@ -93,7 +93,7 @@ class NANMinVar(ReducedVar):
     out[()] = float('inf')
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       #Ignore NaNs when finding mininum
-      out[outsl] = np.nanmin(out[outsl], npnanmin(indata, self.indices))
+      out[outsl] = np.nanmin([out[outsl], npnanmin(indata, self.indices)])
     return out
 # }}}
 
@@ -110,7 +110,7 @@ class MaxVar(ReducedVar):
 # }}}
 
 class NANMaxVar(ReducedVar):
-# {{{
+# {{{ 
   def getview (self, view, pbar):
     import numpy as np
     from pygeode.tools import loopover, npnanmax
@@ -119,7 +119,7 @@ class NANMaxVar(ReducedVar):
     out[()] = float('-inf')
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       #Ignore NaNs when finding maximum
-      out[outsl] = np.nanmax(out[outsl], npnanmax(indata, self.indices))
+      out[outsl] = np.nanmax([out[outsl], npnanmax(indata, self.indices)])
     return out
 # }}}
 

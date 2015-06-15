@@ -63,7 +63,7 @@ class Axis(Var):
   auxatts = {}  
 
   #: Format specification for plotting values
-  formatstr = ''
+  formatstr = '%g'
 
   #: Relative tolerance for identifying two values of this axis as equal
   rtol = 1e-5

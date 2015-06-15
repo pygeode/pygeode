@@ -481,7 +481,7 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   degrees of freedom are not calculated explicitly by this routine. The p-value and 
   confidence interval are computed based on the t-statistic in eq (6.19).'''
 
-  from pygeode.tools import combine_axes, whichaxis, loopover, npsum
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
   from pygeode.view import View
 
   srcaxes = combine_axes([X, Y])
@@ -509,16 +509,30 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   xx = np.zeros(oview.shape, 'd')
   yy = np.zeros(oview.shape, 'd')
 
+  Nx = np.zeros(oview.shape, 'd')
+  Ny = np.zeros(oview.shape, 'd')
+
+  x[()] = np.nan
+  y[()] = np.nan
+  xx[()] = np.nan
+  yy[()] = np.nan
+  Nx[()] = np.nan
+  Ny[()] = np.nan
+
   # Accumulate data
   for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
     xdata = xdata.astype('d')
-    x[outsl] += npsum(xdata, ixaxes)
-    xx[outsl] += npsum(xdata**2, ixaxes)
+    x[outsl] = np.nansum([x[outsl], npnansum(xdata, ixaxes)], 0)
+    xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, ixaxes)], 0)
+    # Sum of weights (kludge to get masking right)
+    Nx[outsl] = np.nansum([Nx[outsl], npnansum(1. + xdata*0., riaxes)], 0) 
 
   for outsl, (ydata,) in loopover([Y], oview, pbar=pbar):
     ydata = ydata.astype('d')
-    y[outsl] += npsum(ydata, iyaxes)
-    yy[outsl] += npsum(ydata**2, iyaxes)
+    y[outsl] = np.nansum([y[outsl], npnansum(ydata, iyaxes)], 0)
+    yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, iyaxes)], 0)
+    # Sum of weights (kludge to get masking right)
+    Ny[outsl] = np.nansum([Ny[outsl], npnansum(1. + ydata*0., riaxes)], 0) 
 
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
   xx = (xx - x**2/Nx) / (Nx - 1)
@@ -530,7 +544,7 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   else: eNx = Nx
   if Ny_fac is not None: eNy = Ny/Ny_fac
   else: eNy = Ny
-  print 'eff. Nx = %.1f, eff. Ny = %.1f' % (eNx, eNy)
+  #print 'average eff. Nx = %.1f, average eff. Ny = %.1f' % (eNx.mean(), eNy.mean())
 
   d = x - y
   den = np.sqrt(xx/eNx + yy/eNy)
@@ -583,7 +597,7 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   Returns
   =======
   results : tuple or :class:`Dataset` instance.
-    Four quantities are computed:
+    Three quantities are computed:
 
     * The mean value of X
     * The probability of the computed value if the population mean was zero
@@ -620,9 +634,13 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   assert N > 1, '%s has only one element along the reduction axes' % X.name
 
   # Construct work arrays
-  x = np.zeros(oview.shape, 'd')*np.nan
-  xx = np.zeros(oview.shape, 'd')*np.nan
-  Na = np.zeros(oview.shape, 'd')*np.nan
+  x = np.zeros(oview.shape, 'd')
+  xx = np.zeros(oview.shape, 'd')
+  Na = np.zeros(oview.shape, 'd')
+
+  x[()] = np.nan
+  xx[()] = np.nan
+  Na[()] = np.nan
 
   # Accumulate data
   for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
@@ -642,7 +660,7 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   else: 
     eN = N
     eNa = Na
-  print 'eff. N = %.1f' % eN
+  #print 'eff. N = %.1f' % eN
 
   sdom = np.sqrt(xx/eNa)
 
