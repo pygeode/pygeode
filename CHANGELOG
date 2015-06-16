@@ -1,3 +1,9 @@
+1.0.3 - 2015/06/16
+ - Allow other PyGeode formats to be installed in parallel Python paths.
+ - Add LD_LIBRARY_PATH to search path in libhelper.find_library().
+ - Force double-precision in val_as_date, to prevent precision loss when
+   computing dates.
+
 1.0.2 - 2015/03/24
  - Fixed bugs in regress and correlate in axis matching logic.
  - Allow timeaxes to support unordered values (issue 69).
