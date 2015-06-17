@@ -1058,41 +1058,67 @@ class Coef(Index): pass
 
 class NonCoordinateAxis(Axis):
   '''Non-coordinate axis (disables nearest-neighbour value matching, etc.)'''
-  formatstr = "%s"
-  # Modify the Axis.__init__ to avoid trying to generate an rtol value
-  #TODO: Move the rtol logic to a different subclass of Axis, so we don't have
-  # to do this?
-  def __init__(self, *args, **kwargs):
-    kwargs['rtol'] = "NOPE!"
-    Axis.__init__(self, *args, **kwargs)
-    del self.rtol
+  # Refresh the coordinate values (should always be monotonically increasing integers).
+  def __init__ (self, *args, **kwargs):
+    import numpy as np
+    values = kwargs.pop('values',None)
+    if values is None and len(args) > 0:
+      values = args[0]
+      args = args[1:]
+    if values is not None:
+      N = len(values)
+    else:
+      N = [len(kw) for kw in kwargs.values() if hasattr(kw,'__len__')][0]
+    values = np.arange(N)
+    Axis.__init__(self, values, *args, **kwargs)
+    # Remember original name
+    self._name = self.name
+
   # Modify test for equality to look for an exact match
   #TODO: Make the default Axis.__eq__ logic do this, and move the "close"
   # matching to a subclass of Axis.
   def __eq__ (self, other):
     # For simplicity, expect them to be the same type of axis.
     if type(self) != type(other): return False
-    return tuple(self.values) == tuple(other.values)
-  # Modify str_as_val to *not* convert string parameters passed to data
-  # subsetting, since the axis may actually have string values.
-  #TODO: Revisit how to handle strings passed to the Axis.__call__ method?
-  def str_as_val(self, key, s): return s
+    if set(self.auxarrays.keys()) != set(other.auxarrays.keys()): return False
+    for k in self.auxarrays.keys():
+      if list(self.auxarrays[k]) != list(other.auxarrays[k]): return False
+    return True
+
+  # How to map string values to dummy indices
+  def str_as_val(self, key, s):
+    # Special case: referencing an aux array with the same name as the axis.
+    if self.name in self.auxarrays:
+      values = list(self.auxarrays[self.name])
+      if s in values:
+        return values.index(s)
+    # Otherwise, return an invalid index (no match)
+    return -1
+  # Modify formatvalue to convert dummy indices to the appropriate values
+  def formatvalue(self, value, fmt=None, units=False, unitstr=None):
+    if value not in range(len(self)) or self._name not in self.auxarrays:
+      return "?%s?"%value
+    return str(self.auxarrays[self._name][value])
   # Modify map_to do use exact matching.
   # (Avoids use of tools.map_to, which assumes the values are numerical)
   #TODO: Make this the default for Axis (don't assume we have numerical values?)
   def map_to (self, other):
+    import numpy as np
     # Only allow mapping non-coordinate axes if they're the exact same type.
     if not isinstance(other,type(self)): return None
-    import numpy as np
-    values = np.sort(self.values)
-    values_set = set(values)
-    values_indices = np.arange(len(values))[np.argsort(self.values)]
+    # Get keys to use for comparing aux arrays
+    keys = list(set(self.auxarrays.keys()) & set(other.auxarrays.keys()))
+    print '?? keys:', keys
+    if len(keys) == 0: return None
+    values = zip(*[self.auxarrays[k] for k in keys])
+    print '?? values:', values
+    other_values = zip(*[other.auxarrays[k] for k in keys])
     #TODO: Speed this up? (move this to tools.c?)
+    values_set = set(values)
     indices = []
-    for v in other.values:
+    for v in other.auxarrays[other._name]:
       if v not in values_set: continue
-      sorted_index = np.searchsorted(values, v)
-      indices.append(values_indices[sorted_index])
+      indices.append(values.index(v))
     return indices
 
 class Station(NonCoordinateAxis):

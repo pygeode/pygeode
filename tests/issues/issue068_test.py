@@ -23,7 +23,7 @@ def make_station_axis ():
     (station_name, lat, lon, elevation, country)
     for station_name, (lat, lon, elevation, country) in obs_locations
   ])
-  return Station(values=station_names, lat=lats, lon=lons, elevation=elevations, country=countries)
+  return Station(station=station_names, lat=lats, lon=lons, elevation=elevations, country=countries)
 
 # Generate a dummy variable with a station axis
 def make_var ():
@@ -65,6 +65,7 @@ def test_select_station():
   import numpy as np
   x = make_var()
   y = x(station='Alert')
+  print y
   # Try loading the data
   y.get()
   assert y.get().shape == y.shape
