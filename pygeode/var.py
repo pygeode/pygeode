@@ -227,11 +227,7 @@ class Var(object):
     Notes
     -----
     There are a couple of special prefixes which can be prepended to each
-    keyword to alter the subsetting behaviour:
-
-      * **m_** triggers an arithmetic mean over the specified range.
-        E.g., ``myvar(m_lon = (10, 80))`` is a shortcut for doing
-        ``myvar(lon = (10,80)).mean('lon')``.
+    keyword to alter the subsetting behaviour. They can be used together.
 
       * **i_** indicates that the values are *indices* into the axis, and not
         the axis values themselves.  Indices start at 0.
@@ -241,6 +237,20 @@ class Var(object):
       * **l_** indicates that you are providing an explicit list of
         coordinates, instead of a range.
         E.g. ``myvar(l_lon = (105.,106.,107.,108))``
+
+      * **n_** returns the complement of the set you request; that is,
+        everything except the specified selection.
+        E.g. ``myvar(n_lat = (60, 90)) returns all latitudes except those between 60 and 90N.
+
+      * **m_** triggers an arithmetic mean over the specified range.
+        E.g., ``myvar(m_lon = (10, 80))`` is a shortcut for doing
+        ``myvar(lon = (10,80)).mean('lon')``.
+
+      * **s_** triggers a call to squeeze on the specified axis, so
+        that if only one value is selected the degenerate axis is removed.
+        E.g., ``myvar(s_lon = 5)`` is a shortcut for doing
+        ``myvar(lon = 5).squeeze()`` or ``myvar.squeeze(lon=5).
+
 
     Examples
     --------
@@ -272,6 +282,7 @@ class Var(object):
     # i.e., var(m_lon=(30,40)) is equivalent to var(lon=(30,40)).mean('lon')
 
     means = []
+    squeezes = []
 
     newargs = {}
     for k, v in kwargs.iteritems():
@@ -283,8 +294,14 @@ class Var(object):
       if 'm' in prefix:
         if not self.hasaxis(ax) and ignore_mismatch: continue
         assert self.hasaxis(ax), "'%s' is not a valid axis for var '%s'"%(ax,self.name)
-        means.append(self.whichaxis(ax))
+        means.append(ax)
         prefix = prefix.replace('m', '')
+
+      if 's' in prefix:
+        if not self.hasaxis(ax) and ignore_mismatch: continue
+        assert self.hasaxis(ax), "'%s' is not a valid axis for var '%s'"%(ax,self.name)
+        if ax not in means: squeezes.append(ax)
+        prefix = prefix.replace('s', '')
 
       if len(prefix) > 0:
         k = '_'.join([prefix, ax])
@@ -299,8 +316,9 @@ class Var(object):
 
     ret = self._getitem_asvar(slices)
 
-    # Any means requested?
+    # Any means or squeezes requested?
     if len(means) > 0: ret = ret.mean(*means)
+    if len(squeezes) > 0: ret = ret.squeeze(*squeezes)
 
     return ret
   # }}}

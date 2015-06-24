@@ -10,11 +10,10 @@ class SqueezedVar(Var):
     # Get the axes to be squeezed
     if len(iaxes) == 1 and isinstance(iaxes[0],(list,tuple)): iaxes = iaxes[0]
     if len(iaxes) == 0: iaxes = [i for i,a in enumerate(var.axes) if len(a) == 1]
-    iaxes = [var.whichaxis(a) for a in iaxes]
 
-    for ia in iaxes:
-      a = var.axes[ia]
-      assert len(a) == 1, "can't squeeze an axis with length != 1 ('%s' has length %s)"%(a.name,len(a))
+    # Only remove degenerate axes
+    iaxes = [var.whichaxis(a) for a in iaxes]
+    iaxes = [i for i in iaxes if len(var.axes[i]) == 1]
 
     # Slice the var along some axes (passed by keyword argument)?
     if len(kwargs) > 0:

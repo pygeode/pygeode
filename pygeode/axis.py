@@ -472,6 +472,9 @@ class Axis(Var):
         else:                   # Don't know what to do with more than 2 values
           raise Exception('A range must be specified')
 
+      # Use complement of requested set
+      if 'n' in prefix: kp = ~kp
+
       # Compute intersection of index sets
       keep &= kp
       matched.append(k)       # Mark for removal from slice list
