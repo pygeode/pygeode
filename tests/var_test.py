@@ -90,6 +90,7 @@ ax3 = pyg.Pres(np.arange(0, 100, 10.))
 
 shape = (365, 32, 10)
 data = np.random.randn(*shape)
+ltwts = ax2.auxarrays['weights']
 var = pyg.Var((ax1, ax2, ax3), values=data, name='var')
 
 tv = varTest('1_Simple', var, \
@@ -115,3 +116,19 @@ bc1 = varTest('broadcast1', ax1*ax2, \
 bc2 = varTest('broadcast2', ax1(time=(0,100)) + ax1(time=(50,100)), \
          axes = (ax1(time=(50,100)),), \
          values = 2*np.arange(50,101,dtype=ax1.dtype))
+
+lnrm = np.sum(ltwts[-5:])
+
+pf1 = varTest('mean', var(m_lat=(60, 90)), \
+         axes = (ax1, ax3), \
+         values = np.sum(data[:, -5:, :] * ltwts[-5:].reshape(1, 5, 1), 1)/lnrm)
+
+pf2 = varTest('complement', var(n_lat=(60, 90), month=1, n_day=(4, 31)), \
+         shape = (3, 27, 10), \
+         axes = (ax1(i_time=(0,3)), ax2(i_lat=(0, 27)), ax3), \
+         values = data[:3, :27, :])
+
+pf3 = varTest('squeeze', var(si_lat=10), \
+         shape = (365, 10), \
+         axes = (ax1, ax3), \
+         values = data[:, 10, :])
