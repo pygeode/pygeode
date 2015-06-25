@@ -228,6 +228,61 @@ def vscatter(varx, vary, axes=None, lblx=True, lbly=True, **kwargs):
 # Do a 2D contour plot
 def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
 # {{{
+  '''Create a contour plot (lines, filled, or both) from a variable.
+
+  Parameters
+  ----------
+  var :  :class:`Var`
+    The variable to plot. Should have 2 non-degenerate axes.
+
+  clevs : integer or collection of numbers, optional
+    Levels at which to construct filled contours through an underlying call to 
+    :func:`matplotlib.contourf`. If None is specified, no filled contours will 
+    be produced, unless clines is also None. If a number is specified, that 
+    number of equally spaced contours are chosen. Otherwise the explicit
+    values are used.
+
+  clines : integer or collection of numbers, optional
+    Levels at which to construct contour lines through an underlying call to 
+    :func:`matplotlib.contour`. If None is specified, no contour lines are
+    produced.  If a number is specified, that number of equally spaced contours
+    are chosen. Otherwise the explicit values are used.
+
+  axes : :class:`AxisWrapper`, optional
+    Axes on which to produce contour plot. If none is specified, one is created. 
+
+  lblx : bool, optional
+    If True, add appropriate tick labels and an axis label on the x axis; if
+    False, the x axis a is left unlabeled. Defaults to True. 
+
+  lbly : bool, optional
+    If True, add appropriate tick labels and an axis label on the y axis; if
+    False, the y axis a is left unlabeled. Defaults to True. 
+
+  transpose : bool, optional
+    The x and y axes are chosen based on the two degenerate axes of the variable
+    to plot. This order can be reversed by setting transpose to True.
+
+  map : dict, optional
+    If
+
+  *args, **kwargs : arguments to pass on to underlying matplotlib contour
+    plotting routines, see Notes.
+
+  Returns
+  -------
+  axes : :class:`AxesWrapper`
+    The axes object containing the contour plots.
+
+  Notes
+  -----
+  If the two axes of the variable are a :class:`Lat` and :class:`Lon` axes,
+  a map projection is created automatically. 
+
+  See Also
+  --------
+  showvar, colorbar
+  '''
   Z = var.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
   X, Y = Z.axes
@@ -430,8 +485,7 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
 # Generic catch all interface (plotvar replacement)
 def showvar(var, *args, **kwargs):
 # {{{
-  ''' 
-  Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+  '''Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
 
   Parameters
   ----------
