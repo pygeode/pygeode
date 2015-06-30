@@ -490,10 +490,10 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
   oview = View(oaxes) 
 
-  ixaxes = [X.whichaxis(n) for n in axes]
+  ixaxes = [X.whichaxis(n) for n in axes if X.hasaxis(n)]
   Nx = np.product([len(X.axes[i]) for i in ixaxes])
 
-  iyaxes = [Y.whichaxis(n) for n in axes]
+  iyaxes = [Y.whichaxis(n) for n in axes if Y.hasaxis(n)]
   Ny = np.product([len(Y.axes[i]) for i in iyaxes])
   
   if pbar is None:
@@ -525,14 +525,14 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
     x[outsl] = np.nansum([x[outsl], npnansum(xdata, ixaxes)], 0)
     xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, ixaxes)], 0)
     # Sum of weights (kludge to get masking right)
-    Nx[outsl] = np.nansum([Nx[outsl], npnansum(1. + xdata*0., riaxes)], 0) 
+    Nx[outsl] = np.nansum([Nx[outsl], npnansum(1. + xdata*0., ixaxes)], 0) 
 
   for outsl, (ydata,) in loopover([Y], oview, pbar=pbar):
     ydata = ydata.astype('d')
     y[outsl] = np.nansum([y[outsl], npnansum(ydata, iyaxes)], 0)
     yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, iyaxes)], 0)
     # Sum of weights (kludge to get masking right)
-    Ny[outsl] = np.nansum([Ny[outsl], npnansum(1. + ydata*0., riaxes)], 0) 
+    Ny[outsl] = np.nansum([Ny[outsl], npnansum(1. + ydata*0., iyaxes)], 0) 
 
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
   xx = (xx - x**2/Nx) / (Nx - 1)
