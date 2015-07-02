@@ -596,6 +596,7 @@ class CalendarTime(Time):
 
     iyear, imonth, iday, ihour, iminute, isecond = self._get_dates(startdate)
 
+    had_array = hasattr(vals,'__len__')
     vals = np.asarray(vals)
     values = np.ascontiguousarray(np.round(vals.astype('float64') * self.unitfactor[units]), dtype='int64')
     n = len(values)
@@ -615,7 +616,7 @@ class CalendarTime(Time):
     if not allfields:
       # Remove fields that weren't explicitly provided?
       date = dict([k,v] for k,v in date.iteritems() if k in startdate)
-    if not hasattr(vals, '__len__'):
+    if not had_array:
       date = dict([k,v[0]] for k,v in date.iteritems())
     return date
   # }}}
