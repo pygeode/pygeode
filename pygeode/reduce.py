@@ -423,12 +423,151 @@ class NANSDVar(NANVarianceVar):
     return np.sqrt(variance)
 # }}}
 
-def min (var, *axes): return MinVar(var, axes)
-def max (var, *axes): return MaxVar(var, axes)
-def nanmin (var, *axes): return NANMinVar(var, axes)
-def nanmax (var, *axes): return NANMaxVar(var, axes)
-def argmax (var, axis): return ArgMaxVar(var, axis)
-def argmin (var, axis): return ArgMinVar(var, axis)
+def min (var, *axes): 
+# {{{
+  '''
+    Computes the minimum value of this variable. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the minimum should be found. If none are provided, the 
+      global minimum is found.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the global minimum
+      is requested, a python scalar is returned.
+
+    See Also
+    --------
+    max
+    nanmax
+    nanmin
+  '''
+  return MinVar(var, axes)
+# }}}
+def nanmin (var, *axes): 
+# {{{
+  '''
+    Computes the minimum value of this variable, ignoring NaNs. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the minimum should be found. If none are provided, the 
+      global minimum is found.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the global minimum
+      is requested, a python scalar is returned.
+
+    See Also
+    --------
+    min
+    max
+    nanmax
+  '''
+  return NANMinVar(var, axes)
+# }}}
+def max (var, *axes): 
+# {{{
+  '''
+    Computes the maximum value of this variable. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the maximum should be found. If none are provided, the 
+      global maximum is found.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the global maximum
+      is requested, a python scalar is returned.
+
+    See Also
+    --------
+    min
+    nanmax
+    nanmin
+  '''
+  return MaxVar(var, axes)
+# }}}
+def nanmax (var, *axes): 
+# {{{
+  '''
+    Computes the maximum value of this variable, ignoring NaNs. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the maximum should be found. If none are provided, the 
+      global maximum is found.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the global maximum
+      is requested, a python scalar is returned.
+
+    See Also
+    --------
+    max
+    min
+    nanmin
+  '''
+  return NANMaxVar(var, axes)
+# }}}
+def argmax (var, axis): 
+# {{{
+  '''
+    Finds the index of the maximum value of this variable along the given axis. 
+
+    Parameters
+    ----------
+    axis : a single axis identifier (string, :class:`Axis`, or int) (optional)
+      Axis over which the index of the maximum should be found. 
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on all axes of this variable except ``axis``,
+      containing the index of the maximum.
+
+    See Also
+    --------
+    argmin
+  '''
+  return ArgMaxVar(var, axis)
+# }}}
+def argmin (var, axis): 
+# {{{
+  '''
+    Finds the index of the minumum value of this variable along the given axis. 
+
+    Parameters
+    ----------
+    axis : a single axis identifier (string, :class:`Axis`, or int) (optional)
+      Axis over which the index of the minimum should be found. 
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on all axes of this variable except ``axis``,
+      containing the index of the minimum.
+
+    See Also
+    --------
+    argmax
+  '''
+  return ArgMinVar(var, axis)
+# }}}
+
 
 def sum (var, *axes, **kwargs): 
 # {{{
@@ -467,7 +606,6 @@ def sum (var, *axes, **kwargs):
 
   return WeightedSumVar(var, axes, weights=weights, **kwargs)
 # }}}
-
 def nansum (var, *axes, **kwargs):
 # {{{
   '''
@@ -533,8 +671,8 @@ def mean (var, *axes, **kwargs):
 
     See Also
     --------
+    nanmean
     getweights
-
   '''
   weights = kwargs.pop('weights', True)
   if weights is True:
@@ -572,8 +710,8 @@ def nanmean (var, *axes, **kwargs):
 
     See Also
     --------
+    mean
     getweights
-
   '''
   weights = kwargs.pop('weights', True)
   if weights is True:
@@ -586,10 +724,107 @@ def nanmean (var, *axes, **kwargs):
   return WeightedNANMeanVar(var, axes, weights=weights, **kwargs)
 # }}}
 
-def variance (var, *axes): return VarianceVar(var, axes)
-def stdev (var, *axes): return SDVar (var, axes)
-def nanvariance (var, *axes): return NANVarianceVar(var, axes)
-def nanstdev (var, *axes): return NANSDVar (var, axes)
+def stdev (var, *axes): 
+# {{{
+  '''
+    Computes the standard deviation of this variable. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the standard deviation should be computed. If none are provided, the 
+      standard deviation is computed over the whole domain.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the variance is
+      computed over the whole domain, a python scalar is returned.
+
+    See Also
+    --------
+    variance
+    nanstdev
+    nanvariance
+  '''
+  return SDVar (var, axes)
+# }}}
+def nanstdev (var, *axes): 
+# {{{
+  '''
+    Computes the standard deviation of this variable, ignoring any NaNs present. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the standard deviation should be computed. If none are provided, the 
+      standard deviation is computed over the whole domain.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the variance is
+      computed over the whole domain, a python scalar is returned.
+
+    See Also
+    --------
+    stdev
+    variance
+    nanvariance
+  '''
+  return NANSDVar (var, axes)
+# }}}
+
+def variance (var, *axes): 
+# {{{
+  '''
+    Computes the variance of this variable. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the variance should be computed. If none are provided, the 
+      variance is computed over the whole domain.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the variance is
+      computed over the whole domain, a python scalar is returned.
+
+    See Also
+    --------
+    stdev
+    nanvariance
+    nanstdev
+  '''
+  return VarianceVar(var, axes)
+# }}}
+def nanvariance (var, *axes): 
+# {{{
+  '''
+    Computes the variance of this variable, ignoring any NaNs. 
+
+    Parameters
+    ----------
+    *axes : any number of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which the variance should be computed. If none are provided, the 
+      variance is computed over the whole domain.
+
+    Returns
+    -------
+    out : :class:`Var`
+      :class:`Var` defined on a subgrid of this variable. If the variance is
+      computed over the whole domain, a python scalar is returned.
+
+    See Also
+    --------
+    variance
+    stdev
+    nanstdev
+  '''
+  return NANVarianceVar(var, axes)
+# }}}
 
 class_flist = [min, max, nanmin, nanmax, argmax, argmin, sum, mean, variance, stdev, nansum, nanmean, nanvariance, nanstdev]
 
