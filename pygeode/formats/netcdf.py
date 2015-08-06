@@ -395,7 +395,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
 #TODO: factor out cf-meta encoding and other processing steps
 # Write a dataset to netcdf
-def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = True):
+def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = True, unlimited=None):
 # {{{
   from ctypes import c_int, c_long, byref
   from pygeode.view import View
@@ -427,6 +427,9 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
   # Variables (and axes) must all have unique names
   assert len(set([v.name for v in vars])) == len(vars), "vars must have unique names: %s"% [v.name for v in vars]
 
+  if unlimited is not None:
+    assert unlimited in [a.name for a in axes]
+
   # Functions for writing entire array
   allf = {1:lib.nc_put_var_schar, 2:lib.nc_put_var_text, 3:lib.nc_put_var_short,
        4:lib.nc_put_var_int, 5:lib.nc_put_var_float,
@@ -454,7 +457,10 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
   dimids = [None] * len(axes)
   for i,a in enumerate(axes):
     dimids[i] = c_int()
-    ret = lib.nc_def_dim (fileid, a.name, c_long(len(a)), byref(dimids[i]))
+    if unlimited == a.name:
+      ret = lib.nc_def_dim (fileid, a.name, c_long(0), byref(dimids[i]))
+    else:
+      ret = lib.nc_def_dim (fileid, a.name, c_long(len(a)), byref(dimids[i]))
     assert ret == 0, lib.nc_strerror(ret)
 
   # Define the variables (including axes)
