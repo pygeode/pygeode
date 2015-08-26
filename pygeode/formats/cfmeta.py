@@ -78,7 +78,7 @@ def encode_cf (dataset):
   dataset = asdataset(dataset)
   varlist = list(dataset)
   axisdict = dataset.axisdict.copy()
-  global_atts = dataset.atts
+  global_atts = dataset.atts.copy()
   del dataset
 
   # Fix the variable names
@@ -97,7 +97,8 @@ def encode_cf (dataset):
   #TODO
 
   # Fix the global metadata
-  #TODO
+  # Specify the conventions we're (supposedly) using
+  global_atts['Conventions'] = "CF-1.0"
 
   for v in varlist: assert v.name not in axisdict, "'%s' refers to both a variable and an axis"%v.name
 
