@@ -595,7 +595,7 @@ class CalendarTime(Time):
 # {{{
     import numpy as np
 
-    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') for d in dates.itervalues())
+    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') and len(d) > 1 for d in dates.itervalues())
 
     if use_arrays:
       assert all(hasattr(d,'__len__') for d in dates.itervalues())
@@ -618,9 +618,17 @@ class CalendarTime(Time):
     second = dates.get('second', zeros)
 
     if not use_arrays:
+      def scalar(a):
+        if hasattr(a, '__len__'): return int(a[0])
+        else: return int(a)
+
       # Fuck you, numpy scalars!
-      year, month, day = int(year), int(month), int(day)
-      hour, minute, second = int(hour), int(minute), int(second)
+      year = scalar(year)
+      month = scalar(month)
+      day = scalar(day)
+      hour = scalar(hour)
+      minute = scalar(minute)
+      second = scalar(second)
 
     return year, month, day, hour, minute, second
 # }}}
@@ -948,6 +956,9 @@ class Yearless(CalendarTime):
               (0.  , '$H:$M:$S', 'day $d')] # Less than 1 hour
 
   allowed_fields = ('day', 'hour', 'minute', 'second')
+
+  # Regular expression used to parse times
+  parse_pattern = '((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2})'
 
   _date_as_val = lib.date_as_val_yearless
   _val_as_date = lib.val_as_date_yearless

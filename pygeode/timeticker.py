@@ -253,7 +253,7 @@ class DayOfMonthTickGen(TickGenerator):
     d = self._taxis.val_as_date(val, allfields=True)
     d1 = d.copy()
     d['day'] += self.mult
-    d1['month'] += 1; d1['day'] = 1
+    d1['month'] += 1; d1['day'] = [1]
     if tu.date_diff(self._taxis, d, d1, 'days') < self.mult / 2.:
       return self._taxis.date_as_val(d1)
     else:
