@@ -403,10 +403,11 @@ def npnanmax (data, axes):
   return data
 # }}}
 
-def loopover (vars, outview, inaxes=None, pbar=None):
+def loopover (vars, outview, inaxes=None, preserve=None, pbar=None):
 # {{{
   ''' Loop over a variable 
-    In: input variable, view of reduced variable
+    In: input variable, view of reduced variable, optionally a list of integer indices (preserve) 
+    to axes that should be loaded in their entirety
     Out: slices into an accumulation array, chunks of the input variable that will go into that part of
     the accumulation array'''
 
@@ -427,7 +428,7 @@ def loopover (vars, outview, inaxes=None, pbar=None):
   inview = outview.map_to(inaxes, strict=False)
 
   # Break the input view up into memory-friendly chunks
-  loop = list(inview.loop_mem())
+  loop = list(inview.loop_mem(preserve=preserve))
   for i, inv in enumerate(loop):
     # Get same view, but in output space (drop the reduced axes)
     outv = inv.map_to(outview.axes)

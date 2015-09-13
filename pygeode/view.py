@@ -436,16 +436,16 @@ class View:
 
   # }}}
 
-  def loop_mem (self):
+  def _loop_mem (self, preserve=None):
   # {{{
     '''Loop over smaller pieces of the view that fit in memory'''
     from pygeode import MAX_ARRAY_SIZE
-#TODO: use itertools.product when everyone has python >= 2.6
-#    from itertools import product
+    #TODO: use itertools.product when everyone has python >= 2.6
+    #from itertools import product
     from pygeode.tools import product
     # Determine the largest chunk that can be loaded, given the size constraint
     maxsize = MAX_ARRAY_SIZE
-
+ 
     # Get the shape of a single chunk
     indices = []
     for i in reversed(range(len(self.axes))):
@@ -457,6 +457,55 @@ class View:
       ind = [input_indices[j:min(j+n,N)] for j in range(0,N,n)]
       # Build the subslices from the last axis to the first
       indices = [ind] + indices
+      # Take into account the count along this axis when looking at the faster-varying axes
+      maxsize /= n
+ 
+    # Loop over all combinations of slices to cover the whole view
+    # (take the cartesian product)
+    for ind in product(*indices):
+      yield View(self.axes, ind)
+  # }}}
+
+  def loop_mem (self, preserve=None):
+  # {{{
+    '''Loop over smaller pieces of the view that fit in memory. preserve
+        can optionally be a list of integer indices of axes that should be loaded
+        in their entirety in each chunk. A warning is thrown if this ends up being
+        larger than MAX_ARRAY_SIZE, but not an exception; memory allocation problems
+        may result in this case. '''
+
+    from pygeode import MAX_ARRAY_SIZE
+#TODO: use itertools.product when everyone has python >= 2.6
+#    from itertools import product
+    from pygeode.tools import product
+    from warnings import warn
+    # Determine the largest chunk that can be loaded, given the size constraint
+    maxsize = MAX_ARRAY_SIZE
+
+    # Get the shape of a single chunk
+    indices = [[] for s in self.shape]
+
+    if preserve is not None:
+      for i in preserve:
+        N = self.shape[i]
+        indices[i] = [self.integer_indices[i]]
+        if maxsize < N: 
+          warn('Data request involves arrays larger than MAX_ARRAY_SIZE; continuing for now but memory allocation problems may result.')
+          maxsize = 1
+        else:
+          maxsize /= N
+      others = [i for i in range(len(self.axes)) if i not in preserve]
+    else:
+      others = range(len(self.axes))
+
+    # Build the subslices from the last axis to the first
+    for i in reversed(others):
+      # Number of values along this axis we can get at a time
+      N = self.shape[i]  # total length of this axis
+      n = min(maxsize,N)  # amount we can fix in a single chunk
+      # break up the axis into subslices
+      input_indices = self.integer_indices[i]
+      indices[i] = [input_indices[j:min(j+n,N)] for j in range(0,N,n)]
       # Take into account the count along this axis when looking at the faster-varying axes
       maxsize /= n
 
