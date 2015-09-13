@@ -367,6 +367,36 @@ class VarianceVar(ReducedVar):
     x /= N
     return (x2 - N*x**2) / (N - 1)
 # }}}
+class WeightedVarianceVar(ReducedVar):
+# {{{
+  '''WeightedVarianceVar(ReducedVar) - computes weighted mean.'''
+  def __init__(self, var, indices, weights):
+  # {{{
+    ReducedVar.__init__(self, var, indices)
+
+    # Confirm that weights are defined for the reduction axes
+    raxes = [a for a in var.axes if a not in self.axes]
+    assert all([a in raxes for a in weights.axes]), 'The provided weights do not match the reduced axes'
+
+    self.mweights = weights
+  # }}}
+
+  def getview (self, view, pbar):
+  # {{{
+    import numpy as np
+    from pygeode.tools import loopover, npsum
+    x = np.zeros(view.shape, self.dtype)
+    x2 = np.zeros(view.shape, self.dtype)
+    W = np.zeros(view.shape, self.dtype)
+    for outsl, (indata, inw) in loopover([self.var, self.mweights], view, self.var.axes, pbar=pbar):
+      x[outsl] += npsum(indata * inw, self.indices)  # Product of data and weights
+      x2[outsl] += npsum(indata**2 * inw, self.indices)  # Product of data and weights
+      f = indata.size / (inw.size * x[outsl].size)
+      W[outsl] += npsum(inw, self.indices) * f # Sum of weights
+
+    return (x2 - x*x/W) / (W - 1)
+  # }}}
+# }}}
 
 # NB: There is possibly an issue with this for integer datatypes
 class NANVarianceVar(ReducedVar):
@@ -786,6 +816,12 @@ def variance (var, *axes):
       Axes over which the variance should be computed. If none are provided, the 
       variance is computed over the whole domain.
 
+    weights : boolean or :class:`Var` (optional, default False)
+      If provided, a weighted variance is calculated. If True, the default
+      weights associated with the variable are used (getweights). If False, or None, no 
+      weighting is performed. Finally, custom weights can be provided in the form of a 
+      :class:`Var`; this var must be defined on a subset of the axes being reduced.
+
     Returns
     -------
     out : :class:`Var`
@@ -798,7 +834,15 @@ def variance (var, *axes):
     nanvariance
     nanstdev
   '''
-  return VarianceVar(var, axes)
+  weights = kwargs.pop('weights', False)
+  if weights is True:
+    weights = var.getweights(axes)
+
+  if weights is False or weights is None or weights.naxes == 0:
+    # If weights aren't provided or predefined, return unweighted variance
+    return VarianceVar(var, axes)
+
+  return WeightedVarianceVar(var, axes, weights=weights, **kwargs)
 # }}}
 def nanvariance (var, *axes): 
 # {{{
