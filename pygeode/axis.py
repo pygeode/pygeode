@@ -1088,7 +1088,7 @@ class NonCoordinateAxis(Axis):
   # How to map string values to dummy indices
   def str_as_val(self, key, s):
     # Special case: referencing an aux array with the same name as the axis.
-    if self.name in self.auxarrays:
+    if self._name in self.auxarrays:
       values = list(self.auxarrays[self.name])
       if s in values:
         return values.index(s)
