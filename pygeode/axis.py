@@ -1060,6 +1060,7 @@ class NonCoordinateAxis(Axis):
   '''Non-coordinate axis (disables nearest-neighbour value matching, etc.)'''
   # Refresh the coordinate values (should always be monotonically increasing integers).
   def __init__ (self, *args, **kwargs):
+    print "Init:", args, kwargs
     import numpy as np
     values = kwargs.pop('values',None)
     if values is None and len(args) > 0:

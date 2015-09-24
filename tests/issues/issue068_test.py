@@ -85,9 +85,13 @@ def test_concat():
   # First, pull out two stations
   y = x(station='Sable_Island')
   z = x(station='Bratts_Lake')
+  print "Sable_Island auxarrays:", y.station.auxarrays
+  print "Bratts_Lake auxarrays:", z.station.auxarrays
   # Now, concatenate the data along the station axis.
   w = concat([y,z])
   assert len(w.station) == 2
+  print "Station values:", w.station.values
+  print "Station auxarrays:", w.station.auxarrays
   assert list(w.station.values) == ['Sable_Island', 'Bratts_Lake']
   # Make sure the getview() functionality works.
   test1 = x.get()
