@@ -42,9 +42,7 @@ class ConcatVar(Var):
       iaxis = vars[0].whichaxis(iaxis)
 
       # Update the list of axes with the concatenated axis included
-      values = [v.axes[iaxis].values for v in vars]
-      values = np.concatenate(values)
-      axes[iaxis] = axes[iaxis].withnewvalues(values)
+      axes[iaxis] = pygeode.axis.concat([v.axes[iaxis] for v in vars])
 
     # Get the data type
     dtype = common_dtype(vars)
