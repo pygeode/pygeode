@@ -1060,7 +1060,6 @@ class NonCoordinateAxis(Axis):
   '''Non-coordinate axis (disables nearest-neighbour value matching, etc.)'''
   # Refresh the coordinate values (should always be monotonically increasing integers).
   def __init__ (self, *args, **kwargs):
-    print "Init:", args, kwargs
     import numpy as np
     values = kwargs.pop('values',None)
     if values is None and len(args) > 0:
@@ -1109,19 +1108,15 @@ class NonCoordinateAxis(Axis):
     if not isinstance(other,type(self)): return None
     # Get keys to use for comparing aux arrays
     keys = list(set(self.auxarrays.keys()) & set(other.auxarrays.keys()))
-    print '?? keys:', keys
     if len(keys) == 0: return None
     values = zip(*[self.auxarrays[k] for k in keys])
-    print '?? values:', values
     other_values = zip(*[other.auxarrays[k] for k in keys])
-    print '?? other values:', other_values
     #TODO: Speed this up? (move this to tools.c?)
     values_set = set(values)
     indices = []
     for v in other_values:
       if v not in values_set: continue
       indices.append(values.index(v))
-    print "Indices:", indices
     return indices
 
 class Station(NonCoordinateAxis):
