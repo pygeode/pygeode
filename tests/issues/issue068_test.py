@@ -92,7 +92,8 @@ def test_concat():
   assert len(w.station) == 2
   print "Station values:", w.station.values
   print "Station auxarrays:", w.station.auxarrays
-  assert list(w.station.values) == ['Sable_Island', 'Bratts_Lake']
+  print "Station names:", w.station.station
+  assert list(w.station.station) == ['Sable_Island', 'Bratts_Lake']
   # Make sure the getview() functionality works.
   test1 = x.get()
   test2 = y.get()
