@@ -1113,12 +1113,14 @@ class NonCoordinateAxis(Axis):
     values = zip(*[self.auxarrays[k] for k in keys])
     print '?? values:', values
     other_values = zip(*[other.auxarrays[k] for k in keys])
+    print '?? other values:', other_values
     #TODO: Speed this up? (move this to tools.c?)
     values_set = set(values)
     indices = []
-    for v in other.auxarrays[other._name]:
+    for v in other_values:
       if v not in values_set: continue
       indices.append(values.index(v))
+    print "Indices:", indices
     return indices
 
 class Station(NonCoordinateAxis):
