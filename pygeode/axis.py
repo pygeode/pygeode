@@ -1092,7 +1092,7 @@ class NonCoordinateAxis(Axis):
   def str_as_val(self, key, s):
     # Special case: referencing an aux array with the same name as the axis.
     if self._name in self.auxarrays:
-      values = list(self.auxarrays[self.name])
+      values = list(self.auxarrays[self._name])
       if s in values:
         return values.index(s)
     # Otherwise, return an invalid index (no match)
