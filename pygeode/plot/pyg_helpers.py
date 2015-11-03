@@ -163,9 +163,9 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   choosing appropriate parameter values as automatically as possible.
   '''
 
-  Y = var.squeeze()
+  Y = var.squeeze().load()
   assert Y.naxes == 1, 'Variable to plot must have exactly one non-degenerate axis.'
-  X = Y.axes[0]
+  X = Y.axes[0].load()
 
   # If a vertical axis is present transpose the plot
   from pygeode.axis import ZAxis
@@ -184,6 +184,38 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   axes.pad = (0.1, 0.1, 0.1, 0.1)
   set_xaxis(axes, X, lblx)
   set_yaxis(axes, Y, lbly)
+  plt = _getplotatts(var)
+  lbl = _buildvartitle(var.axes, **plt)
+  axes.setp(title=lbl, label=lbl)
+
+  return axes
+# }}}
+
+def vhist(var, axes=None, lblx=True, lbly=True, **kwargs):
+# {{{
+  ''' 
+  Plot histogram of values taken by a variable.
+
+  Parameters
+  ----------
+  var :  :class:`Var`
+     The variable to compute the histogram of. 
+
+  Notes
+  -----
+  This function is intended as the simplest way to display the contents of a variable,
+  choosing appropriate parameter values as automatically as possible.
+  '''
+
+  V = var.squeeze().load()
+
+  v = scalevalues(V).ravel()
+
+  axes = wr.hist(v, axes=axes, **kwargs)
+
+  # Apply the custom axes args
+  axes.pad = (0.1, 0.1, 0.1, 0.1)
+  set_xaxis(axes, V, lblx)
   plt = _getplotatts(var)
   lbl = _buildvartitle(var.axes, **plt)
   axes.setp(title=lbl, label=lbl)
@@ -702,14 +734,14 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   return Ax
 # }}}
 
-def showlines(vs, size=(4.1,2), **kwargs):
+def showlines(vs, fmts=None, labels=None, size=(4.1,2), **kwargs):
 # {{{
   ''' 
   Plot line plots of a list of 1D variables on the same plot.
 
   Parameters
   ----------
-  v :  list of :class:`Var`
+  vs :  list of :class:`Var`
      The variables to plot. Should all have 1 non-degenerate axis.
   '''
 
@@ -718,12 +750,32 @@ def showlines(vs, size=(4.1,2), **kwargs):
   for z in Z:
     assert z.naxes == 1, 'Variable %s has %d non-generate axes; must have 1.' % (z.name, z.naxes)
 
+  if fmts is not None:
+    if hasattr(fmts, '__len__'): assert len(fmts) == len(vs)
+    else: fmts = [fmts for v in vs]
+  else:
+    fmts = [None for v in vs]
+
   fig = kwargs.pop('fig', None)
 
   ax = wr.AxesWrapper(size=size)
   ydat = []
-  for v in vs:
-    vplot(v, axes=ax, label=v.name, )
+  for i, v in enumerate(vs):
+    if fmts is None:
+      fmt = None
+    elif hasattr(fmts, '__len__'):
+      fmt = fmts[i]
+    else:
+      fmt = fmts
+
+    if labels is None:
+      lbl = v.name
+    elif hasattr(labels, '__len__'):
+      lbl = labels[i]
+    else:
+      lbl = labels
+
+    vplot(v, axes=ax, fmt=fmt, label=lbl)
     ydat.append(ax.find_plot(wr.Plot).plot_args[1])
 
   ylim = (np.min([np.min(y) for y in ydat]), np.max([np.max(y) for y in ydat]))
@@ -801,4 +853,4 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
 # }}}
 
 __all__ = ['showvar', 'showcol', 'showgrid', 'showlines', 'vplot', 'vscatter', \
-          'vcontour', 'vsigmask', 'vstreamplot', 'vquiver', 'savepages']
+          'vhist', 'vcontour', 'vsigmask', 'vstreamplot', 'vquiver', 'savepages']

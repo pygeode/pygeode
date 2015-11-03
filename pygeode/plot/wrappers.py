@@ -223,7 +223,8 @@ class Plot(PlotOp):
 # {{{
   def render (self, axes):
     axes.plot (*self.plot_args, **self.plot_kwargs)
-    axes.autoscale()
+    #print 'Autoscaling.'
+    #axes.autoscale_view()
 # }}}
 
 class FillBetween(PlotOp):
@@ -237,6 +238,12 @@ class Scatter(PlotOp):
 # {{{
   def render (self, axes):
     axes.scatter (*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class Histogram(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.hist (*self.plot_args, **self.plot_kwargs)
 # }}}
 
 class AxHLine(PlotOp):
@@ -410,6 +417,7 @@ def make_plot_member(f):
 plot = make_plot_func(Plot)
 fill_between = make_plot_func(FillBetween)
 scatter = make_plot_func(Scatter)
+hist = make_plot_func(Histogram)
 axhline = make_plot_func(AxHLine)
 axvline = make_plot_func(AxVLine)
 legend = make_plot_func(Legend)
@@ -422,11 +430,12 @@ streamplot = make_plot_func(Streamplot)
 quiver = make_plot_func(Quiver)
 quiverkey = make_plot_func(QuiverKey)
 
-__all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'quiver', 'quiverkey', 'colorbar']
+__all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'hist', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'quiver', 'quiverkey', 'colorbar']
 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.fill_between = make_plot_member(fill_between)
 AxesWrapper.scatter = make_plot_member(scatter)
+AxesWrapper.hist = make_plot_member(hist)
 AxesWrapper.axhline = make_plot_member(axhline)
 AxesWrapper.axvline = make_plot_member(axvline)
 AxesWrapper.legend = make_plot_member(legend)
