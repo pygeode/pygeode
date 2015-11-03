@@ -51,7 +51,7 @@ def _uniquify (fields):
 #     (note: any of these can be ommitted, if they're not applicable)
 #     (i.e., a monthly mean time axis would not have day, hour, etc.)
 #
-# 
+#
 # (superclass; use one of the subclasses defined below)
 from pygeode.axis import TAxis
 class Time (TAxis):
@@ -324,7 +324,7 @@ class Time (TAxis):
     from warnings import warn
     warn ("Deprecated.  Use timeutils module.")
     return timeutils.date_diff(self, dt1, dt2, units)
-  
+
 # }}}
 del TAxis
 
@@ -436,7 +436,7 @@ class CalendarTime(Time):
 
   def formatvalue (self, value, fmt=None, units=True, unitstr=None):
   # {{{
-    ''' 
+    '''
     Returns formatted string representation of ``value``, using a strftime-like
     specification.
 
@@ -445,12 +445,12 @@ class CalendarTime(Time):
     value : float or int
       Value to format, in calendar defined by this time axis.
     fmt : string (optional)
-      Format specification. If the default ``None`` is specified, 
+      Format specification. If the default ``None`` is specified,
       ``self.formatstr`` is used.
     units : boolean (optional)
-      Not used;, included for consistency with :func:`Var.formatvalue`    
+      Not used;, included for consistency with :func:`Var.formatvalue`
     unitstr : string (optional)
-      Not used;, included for consistency with :func:`Var.formatvalue`    
+      Not used;, included for consistency with :func:`Var.formatvalue`
 
     Notes
     -----
@@ -511,7 +511,7 @@ class CalendarTime(Time):
     else:
       mi = 0
       subs['b'], subs['B'], subs['m'] = '', '', ''
-    
+
     if dt.has_key('day'):
       d = dt['day']
       subs['d'] = '%d' % d
@@ -552,27 +552,58 @@ class CalendarTime(Time):
 
   def str_as_val(self, key, s):
 # {{{
-    ''' Converts a string representation of a date to a value according to the 
+    ''' Converts a string representation of a date to a value according to the
         calendar defined by this time axis.
-        
+
         Parameters
         ==========
         key : string
-            key used in selece()
+            key used in select()
 
         s : string
             string to convert
-        
+
         Returns
         =======
         val : value
             value corresponding to specified date.
-        
+
         Notes
         =====
-        The string is parsed using the regular expression pattern defined in ``parse_pattern``.
-        By default this assumes a string in the form '12 Dec 2008' or '06:00:00 1 Jan 1979'.
-        A ValueError is thrown if the regular expression does not match the string.'''
+        The string is parsed using the regular expression pattern defined in
+        :attr:`parse_pattern <CalendarTime.parse_pattern>`.  By default this assumes
+        a string in the form '12 Dec 2008' or '06:00:00 1 Jan 1979'.  A
+        ValueError is thrown if the regular expression does not match the
+        string.'''
+
+    return self.date_as_val(self.str_as_date(key, s))
+# }}}
+
+  def str_as_date(self, key, s):
+# {{{
+    ''' Converts a string representation of a date to a dictionary according to the
+        calendar defined by this time axis.
+
+        Parameters
+        ==========
+        key : string
+            key used in select()
+
+        s : string
+            string to convert
+
+        Returns
+        =======
+        val : value
+            value corresponding to specified date.
+
+        Notes
+        =====
+        The string is parsed using the regular expression pattern defined in
+        :attr:`~timeaxis.CalendarTime.parse_pattern`.  By default this assumes
+        a string in the form '12 Dec 2008' or '06:00:00 1 Jan 1979'.  A
+        ValueError is thrown if the regular expression does not match the
+        string.'''
     import re
     res = re.search(self.parse_pattern, s)
     if res is None:
@@ -581,12 +612,11 @@ class CalendarTime(Time):
     d = {}
     for k, v in res.groupdict().iteritems():
       if k in ['hour', 'minute', 'second', 'day', 'year']:
-        if v is not None: d[k] = int(v) 
+        if v is not None: d[k] = int(v)
       elif k == 'month':
         lmonths = [m.lower() for m in months]
         d[k] = lmonths.index(v.lower())
-
-    return self.date_as_val(d)
+    return d
 # }}}
 
   # Convert a date dictionary to a tuple - fill in missing fields with defaults
@@ -715,7 +745,7 @@ class CalendarTime(Time):
 
 # Standard time (with leap years)
 class StandardTime(CalendarTime):
-# {{{ 
+# {{{
   ''' Time axis describing the standard Gregorian calendar. '''
 
   _val_as_date = lib.val_as_date_std
@@ -731,7 +761,7 @@ class ModelTime365(CalendarTime):
   _date_as_val = lib.date_as_val_365
   _val_as_date = lib.val_as_date_365
 
-# }}} 
+# }}}
 
 # Model time (360-day calendar)
 class ModelTime360(CalendarTime):
@@ -746,7 +776,7 @@ class ModelTime360(CalendarTime):
 
   _date_as_val = lib.date_as_val_360
   _val_as_date = lib.val_as_date_360
-# }}} 
+# }}}
 
 # Seasonal time axis
 # (only has 'syear' and 'season' auxiliary arrays)
@@ -765,8 +795,8 @@ def makeSeasonalAxis(Base):
     nseasons = 4
     seasons = ['DJF', 'MAM', 'JJA', 'SON']
     season_boundaries = [(-30,60),(60,152),(152,244),(244,335)]
-    cdates = {'dyear':np.array([0, 0, 0, 0]), 
-              'month':np.array([1,4,7,10]), 
+    cdates = {'dyear':np.array([0, 0, 0, 0]),
+              'month':np.array([1,4,7,10]),
               'day':np.array([16, 15, 16, 16])}
     plotatts = Base.plotatts.copy()
 
@@ -799,7 +829,7 @@ def makeSeasonalAxis(Base):
 
     def _get_cdates(self, dates):
   # {{{
-      ''' _get_cdates(self, dates): returns central calendar dates of the seasonal dates given in the 
+      ''' _get_cdates(self, dates): returns central calendar dates of the seasonal dates given in the
           dictionary of dates.'''
       import numpy as np
 
@@ -809,7 +839,7 @@ def makeSeasonalAxis(Base):
         n = set(len(d) for d in dates.itervalues())
         assert len(n) == 1, 'inconsistent array lengths'
         n = n.pop()
-        zeros = np.zeros(n, 'int32') 
+        zeros = np.zeros(n, 'int32')
         ones = np.ones(n, 'int32')
       else:
         zeros = 0
@@ -863,12 +893,12 @@ def makeSeasonalAxis(Base):
       value : float or int
         Value to format, in calendar defined by this time axis.
       fmt : string (optional)
-        Format specification. If the default ``None`` is specified, 
+        Format specification. If the default ``None`` is specified,
         ``self.formatstr`` is used.
       units : boolean (optional)
-        Not used;, included for consistency with :func:`Var.formatvalue`    
+        Not used;, included for consistency with :func:`Var.formatvalue`
       unitstr : string (optional)
-        Not used;, included for consistency with :func:`Var.formatvalue`    
+        Not used;, included for consistency with :func:`Var.formatvalue`
 
       Notes
       -----
@@ -925,7 +955,7 @@ def makeSeasonalAxis(Base):
     # {{{
       if dates is None: dates = self.auxarrays
       if startdate is None: startdate = self.startdate
-      
+
       if 'season' in dates.keys(): dates = self._get_cdates(dates)
 
       return Base.date_as_val(self, dates, startdate, units)
@@ -950,7 +980,7 @@ class Yearless(CalendarTime):
   # Format of time axis used for str/repr functions
   plotatts = CalendarTime.plotatts.copy()
   plotatts['plotfmt'] = '$d'
-  formatstr = 'day $d, $H:$M:$S' 
+  formatstr = 'day $d, $H:$M:$S'
   autofmts = [(1., '$d',         ''),   # Larger than 1 day
               (1/24., '$H:$M',   'day $d'), # Larger than 1 hour
               (0.  , '$H:$M:$S', 'day $d')] # Less than 1 hour
@@ -989,3 +1019,204 @@ class Yearless(CalendarTime):
     tg.append(tt.SecondTickGen(self, [30, 15, 10, 5, 3, 2, 1]))
     self.tick_generators = tg
 
+# }}}
+
+# Helper functions
+
+def standardtimerange(start, end, step=1, units='days', From=None):
+# {{{
+  r'''Creates a :class:`StandardTime` axis for the period from start to end.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  end : string
+    Date to end time axis at. Note this date will not be included.
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  From : string, optional
+    Reference date for calendar. If the default None is specified, start is used.
+  '''
+  from timeutils import date_diff
+  import numpy as np
+  tdum = StandardTime(values=[0], units=units, startdate=dict(year=1, month=1))
+  s = tdum.str_as_date(None, start)
+  e = tdum.str_as_date(None, end)
+  if From is None: f = s
+  else: f = tdum.str_as_date(None, From)
+  n = date_diff(tdum, s, e, units)
+  o = date_diff(tdum, f, s, units)
+  vals = np.arange(0, n, step) + o
+  return StandardTime(values=vals, units=units, startdate=f)
+# }}}
+
+def standardtimen(start, n, step=1, units='days', From=None):
+# {{{
+  r'''Creates a :class:`StandardTime` axis of length n.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  n : integer
+    Length of axis to create
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  From : string, optional
+    Reference date for calendar. If the default None is specified, start is used.
+  '''
+  from timeutils import date_diff
+  import numpy as np
+  tdum = StandardTime(values=[0], units=units, startdate=dict(year=1, month=1))
+  s = tdum.str_as_date(None, start)
+  if From is None: f = s
+  else: f = tdum.str_as_date(None, From)
+  o = date_diff(tdum, f, s, units)
+  vals = np.arange(0, n*step, step) + o
+  return StandardTime(values=vals, units=units, startdate=f)
+# }}}
+
+def modeltime365range(start, end, step=1, units='days', From=None):
+# {{{
+  r'''Creates a :class:`ModelTime365` axis for the period from start to end.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  end : string
+    Date to end time axis at. Note this date will not be included.
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  From : string, optional
+    Reference date for calendar. If the default None is specified, start is used.
+  '''
+  from timeutils import date_diff
+  import numpy as np
+  tdum = ModelTime365(values=[0], units=units, startdate=dict(year=1, month=1))
+  s = tdum.str_as_date(None, start)
+  e = tdum.str_as_date(None, end)
+  if From is None: f = s
+  else: f = tdum.str_as_date(None, From)
+  n = date_diff(tdum, s, e, units)
+  o = date_diff(tdum, f, s, units)
+  vals = np.arange(0, n, step) + o
+  return ModelTime365(values=vals, units=units, startdate=f)
+# }}}
+
+def modeltime365n(start, n, step=1, units='days', From=None):
+# {{{
+  r'''Creates a :class:`ModelTime365` axis of length n.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  n : integer
+    Length of axis to create
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  From : string, optional
+    Reference date for calendar. If the default None is specified, start is used.
+  '''
+  from timeutils import date_diff
+  import numpy as np
+  tdum = ModelTime365(values=[0], units=units, startdate=dict(year=1, month=1))
+  s = tdum.str_as_date(None, start)
+  if From is None: f = s
+  else: f = tdum.str_as_date(None, From)
+  o = date_diff(tdum, f, s, units)
+  vals = np.arange(0, n*step, step) + o
+  return ModelTime365(values=vals, units=units, startdate=f)
+# }}}
+
+def modeltime360range(start, end, step=1, units='days', From=None):
+# {{{
+  r'''Creates a :class:`ModelTime360` axis for the period from start to end.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  end : string
+    Date to end time axis at. Note this date will not be included.
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  From : string, optional
+    Reference date for calendar. If the default None is specified, start is used.
+  '''
+  from timeutils import date_diff
+  import numpy as np
+  tdum = ModelTime360(values=[0], units=units, startdate=dict(year=1, month=1))
+  s = tdum.str_as_date(None, start)
+  e = tdum.str_as_date(None, end)
+  if From is None: f = s
+  else: f = tdum.str_as_date(None, From)
+  n = date_diff(tdum, s, e, units)
+  o = date_diff(tdum, f, s, units)
+  vals = np.arange(0, n, step) + o
+  return ModelTime360(values=vals, units=units, startdate=f)
+# }}}
+
+def modeltime360n(start, n, step=1, units='days', From=None):
+# {{{
+  r'''Creates a :class:`ModelTime360` axis of length n.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  n : integer
+    Length of axis to create
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  From : string, optional
+    Reference date for calendar. If the default None is specified, start is used.
+  '''
+  from timeutils import date_diff
+  import numpy as np
+  tdum = ModelTime360(values=[0], units=units, startdate=dict(year=1, month=1))
+  s = tdum.str_as_date(None, start)
+  if From is None: f = s
+  else: f = tdum.str_as_date(None, From)
+  o = date_diff(tdum, f, s, units)
+  vals = np.arange(0, n*step, step) + o
+  return ModelTime360(values=vals, units=units, startdate=f)
+# }}}
+
+def yearlessn(n, start=1, step=1, units='days'):
+# {{{
+  r'''Creates a :class:`Yearless` axis of length n.
+
+  Parameters
+  ==========
+  start : string
+    Date to start time axis from (see :meth:`~timeaxis.CalendarTime.str_as_val`)
+  n : integer
+    Length of axis to create
+  step : float, optional
+    Interval between grid points. Default is 1.
+  units : one of 'seconds', 'minutes', 'hours', 'days', optional
+    Unit in which to define time step values. Default is 'days'.
+  '''
+  import numpy as np
+  vals = np.arange(0, n*step, step)
+  return Yearless(values=vals, units=units, startdate=dict(day=start))
+# }}}
+
+__all__ = ['StandardTime', 'ModelTime365', 'ModelTime360', 'Yearless', 'standardtimerange', \
+    'standardtimen', 'modeltime365range', 'modeltime365n', 'modeltime360range', 'modeltime360n', \
+    'yearlessn']

@@ -60,7 +60,9 @@ from pygeode.var import Var
 from pygeode.axis import standard_axes
 for A in standard_axes:
   globals()[A.__name__] = A
-from pygeode.timeaxis import StandardTime, ModelTime365, ModelTime360, Yearless
+from pygeode.timeaxis import *
+from pygeode.timeaxis import __all__ as taxis_all
+__all__.extend(taxis_all)
 
 # Static methods
 
