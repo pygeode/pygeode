@@ -240,7 +240,7 @@ class Var(object):
 
       * **n_** returns the complement of the set you request; that is,
         everything except the specified selection.
-        E.g. ``myvar(n_lat = (60, 90)) returns all latitudes except those between 60 and 90N.
+        E.g. ``myvar(n_lat = (60, 90))`` returns all latitudes except those between 60 and 90N.
 
       * **m_** triggers an arithmetic mean over the specified range.
         E.g., ``myvar(m_lon = (10, 80))`` is a shortcut for doing
@@ -249,7 +249,7 @@ class Var(object):
       * **s_** triggers a call to squeeze on the specified axis, so
         that if only one value is selected the degenerate axis is removed.
         E.g., ``myvar(s_lon = 5)`` is a shortcut for doing
-        ``myvar(lon = 5).squeeze()`` or ``myvar.squeeze(lon=5).
+        ``myvar(lon = 5).squeeze()`` or ``myvar.squeeze(lon=5)``.
 
 
     Examples

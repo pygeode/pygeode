@@ -111,11 +111,11 @@ def smooth(var, saxis, kernel=15, fft=True):
       kernel : sequence or int (optional)
         Averaging kernel with which to convolve this variable. Does not need to
         be normalized.  If an integer is provided, a Hanning window is used of
-        length ``kernel`` (:numpy:function:`hanning`)
+        length ``kernel`` (:func:`numpy.hanning`)
 
       fft : boolean (optional, True by default)
-        If True, :meth:`scipy.signal.fftconvolve` is used to compute the convolution.
-        Otherwise, :meth:`scipy.signal.convolve` is used. In most cases the former
+        If True, :func:`scipy.signal.fftconvolve` is used to compute the convolution.
+        Otherwise, :func:`scipy.signal.convolve` is used. In many cases the former
         is more efficient.
 
       Returns
