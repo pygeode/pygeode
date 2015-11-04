@@ -1,8 +1,24 @@
-# miscellaneous stuff that's in development
+# Helper functions for accessing libraries
+
+def get_library_paths():
+  ''' Returns list of paths in which pygeode looks for libraries. '''
+  import os, sys
+  from os import path
+  import pygeode
+
+  # Search in PyGeode directory
+  paths = [p for p in pygeode.__path__]
+  # Search relative to python install prefix
+  paths.append(path.join(path.sep, sys.prefix, 'lib'))
+  # Search LD_LIBRARY_PATH
+  paths += [d for d in os.environ.get('LD_LIBRARY_PATH','').split(':')]
+  return paths
 
 # Get a library name
 # (extends ctypes.util.find_library to include PyGeode-specific paths)
 def find_library (name):
+  ''' Searches for a library in the list of default paths. Returns the path
+  of the first instance found if one is found, otherwise returns None. '''
   from ctypes.util import find_library
   from glob import glob
   import os
@@ -14,19 +30,16 @@ def find_library (name):
   else:
     dir = ''
 
-  # Search in PyGeode directory
-  for libpath in pygeode.__path__:
-    libnames = glob(path.join(libpath, dir, 'lib'+name+'.so'))
-    if len(libnames) > 0: return libnames[0]
-    libnames = glob(path.join(libpath, dir, 'lib'+name+'.dll'))
-    if len(libnames) > 0: return libnames[0]
+  exts = ['.so', '.dll', '.dylib']
+  paths = get_library_paths()
 
-  # Search LD_LIBRARY_PATH
-  for dir in os.environ.get('LD_LIBRARY_PATH','').split(':'):
-    libname = path.join(dir,'lib'+name+'.so')
-    if path.exists(libname): return libname
+  # Return first match
+  for libpath in paths:
+    for e in exts:
+      libnames = glob(path.join(libpath, dir, 'lib' + name + e))
+      if len(libnames) > 0: return libnames[0]
 
-  # Search in the default system path
+  # Search using ctypes find_library
   libname = find_library(name)
   if libname is not None: return libname
 
