@@ -625,7 +625,7 @@ class CalendarTime(Time):
 # {{{
     import numpy as np
 
-    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') and len(d) > 1 for d in dates.itervalues())
+    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') and len(d) != 1 for d in dates.itervalues())
 
     if use_arrays:
       assert all(hasattr(d,'__len__') for d in dates.itervalues())
