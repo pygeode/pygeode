@@ -411,8 +411,9 @@ def loopover (vars, outview, inaxes=None, preserve=None, pbar=None):
     Out: slices into an accumulation array, chunks of the input variable that will go into that part of
     the accumulation array'''
 
+  from pygeode.var import Var
   # Make vars a list if it isn't already
-  if not hasattr(vars, '__len__'): vars = [vars]
+  if isinstance(vars,Var): vars = [vars]
 
   # clip the output view so there is nothing 'outside' of the selected region
   # (so we can use the slices of the current view chunk as a 1:1 correspondence to
