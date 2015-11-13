@@ -805,7 +805,7 @@ def nanstdev (var, *axes):
   return NANSDVar (var, axes)
 # }}}
 
-def variance (var, *axes): 
+def variance (var, *axes, **kwargs): 
 # {{{
   '''
     Computes the variance of this variable. 
