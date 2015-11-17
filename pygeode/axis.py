@@ -95,6 +95,7 @@ class Axis(Var):
 
     """
     import numpy as np
+    from pygeode.var import Var
 
     # If a single integer given, expand to an integer range
     #TODO: get rid of this?  if you want to use integer indices, then make an appropriate 'Index' axis subclass?
@@ -123,9 +124,11 @@ class Axis(Var):
     # array, if present, will be added here, not by the logic in Var.__init___
     auxarrays = {}; auxatts = {}
     for key, val in kwargs.iteritems():
+      if isinstance(val,Var): val = val.get()
       if isinstance(val,(list,tuple,np.ndarray)):
         val = np.asarray(val)
-        assert val.shape == self.values.shape, 'Auxilliary array %s has the wrong shape.' % key
+        if val.shape != self.values.shape:
+          raise ValueError('Auxilliary array %s has the wrong shape.  Expected %s, got %s' % (key,self.values.shape, val.shape))
         auxarrays[key] = val
       else:
         auxatts[key] = val
