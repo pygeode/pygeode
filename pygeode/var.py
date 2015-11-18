@@ -776,11 +776,12 @@ del concat
 # Class methods
 from pygeode.smooth import smooth
 from pygeode.deriv import deriv
+from pygeode.diff import diff
 from pygeode.intgr import integrate
 from pygeode.interp import interpolate
 from pygeode.varoperations import squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
-class_hooks += [smooth, deriv, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type]
-del smooth, deriv, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
+class_hooks += [smooth, deriv, diff, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type]
+del smooth, deriv, diff, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
 
 
 # Apply the global hooks
