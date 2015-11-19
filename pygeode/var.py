@@ -778,9 +778,14 @@ from pygeode.smooth import smooth
 from pygeode.deriv import deriv
 from pygeode.diff import diff
 from pygeode.intgr import integrate
-from pygeode.interp import interpolate
+try:
+  from pygeode.interp import interpolate
+except ImportError:
+  from warnings import warn
+  warn ("Can't import the GSL library.  Interpolation is disabled.")
+  interpolate = None
 from pygeode.varoperations import squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
-class_hooks += [smooth, deriv, diff, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type]
+class_hooks += filter(None,[smooth, deriv, diff, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type])
 del smooth, deriv, diff, integrate, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
 
 
