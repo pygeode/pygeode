@@ -247,6 +247,8 @@ int ndays (int year1, int year2) {
 }
 
 
+// Make sure we have a valid month (or we'll get a segmentation fault!)
+#define check_month(m) if (imonth <= 0 || imonth > 12) { PyErr_SetString (PyExc_IndexError, "month is out of range"); return 0; }
 
 // Convert an absolute date to a relative date (seconds since start date)
 int date_as_val_std (int n, int iyear, int imonth, int iday,
@@ -260,12 +262,7 @@ int date_as_val_std (int n, int iyear, int imonth, int iday,
     {0, 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
   };
 
-  // Make sure we have a valid month (or we'll get a segmentation fault!)
-  if (imonth <= 0 || imonth > 12) {
-    PyErr_SetString (PyExc_IndexError, "month is out of range");
-    return 0;
-  }
-
+  check_month(imonth);
   long long int ref = ( month2doy[isleap(iyear)][imonth] + iday - 1) * 86400 + ihour*3600 + iminute*60 + isecond;
 
   // Take the difference between the date array and the start date
@@ -300,6 +297,8 @@ int val_as_date_std (int n, int iyear, int imonth, int iday,
     {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
     {0, 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
   };
+
+  check_month(imonth);
   long long int ref = ( month2doy[isleap(iyear)][imonth] + iday - 1) * 86400 + ihour*3600 + iminute*60 + isecond;
 
   for (int i = 0; i < n; i++) {
@@ -387,12 +386,7 @@ int date_as_val_365 (int n, int iyear, int imonth, int iday,
 
   static const int month2doy[] = {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
-  // Make sure we have a valid month (or we'll get a segmentation fault!)
-  if (imonth <= 0 || imonth > 12) {
-    PyErr_SetString (PyExc_IndexError, "month is out of range");
-    return 0;
-  }
-
+  check_month(imonth);
   long long int ref = ( month2doy[imonth] + iday - 1) * 86400 + ihour*3600 + iminute*60 + isecond;
 
   // Take the difference between the date array and the start date
@@ -425,6 +419,8 @@ int val_as_date_365 (int n, int iyear, int imonth, int iday,
                      int *hour, int *minute, int *second) {
 
   static const int month2doy[] = {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+  check_month(imonth);
   long long int ref = ( month2doy[imonth] + iday ) * 86400 + ihour*3600 + iminute*60 + isecond;
 
   for (int i = 0; i < n; i++) {
