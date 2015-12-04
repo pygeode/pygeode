@@ -259,6 +259,13 @@ int date_as_val_std (int n, int iyear, int imonth, int iday,
     {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
     {0, 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
   };
+
+  // Make sure we have a valid month (or we'll get a segmentation fault!)
+  if (imonth <= 0 || imonth > 12) {
+    PyErr_SetString (PyExc_IndexError, "month is out of range");
+    return 0;
+  }
+
   long long int ref = ( month2doy[isleap(iyear)][imonth] + iday - 1) * 86400 + ihour*3600 + iminute*60 + isecond;
 
   // Take the difference between the date array and the start date
@@ -379,6 +386,13 @@ int date_as_val_365 (int n, int iyear, int imonth, int iday,
                      long long int *val) {
 
   static const int month2doy[] = {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+  // Make sure we have a valid month (or we'll get a segmentation fault!)
+  if (imonth <= 0 || imonth > 12) {
+    PyErr_SetString (PyExc_IndexError, "month is out of range");
+    return 0;
+  }
+
   long long int ref = ( month2doy[imonth] + iday - 1) * 86400 + ihour*3600 + iminute*60 + isecond;
 
   // Take the difference between the date array and the start date
@@ -784,6 +798,9 @@ static PyObject *date_as_val_wrapper (PyObject *args, date_as_val_func *f) {
   second = (int*)(second_array->data);
 
   ret = f (n, iyear, imonth, iday, ihour, iminute, isecond, year, month, day, hour, minute, second, val);
+  // Check if there was an internal problem
+  if (PyErr_Occurred()) return NULL;
+
   return Py_BuildValue("i", ret);
 
 }
