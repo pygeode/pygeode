@@ -79,15 +79,16 @@ def openall (files, format=None, opener=None, **kwargs):
   sort = kwargs.pop('sorted', True)
   files = expand_file_list (files, sort)
 
-  if format is None: format = autodetectformat(files[0])
-
-  if not hasattr(format, 'open'): 
-    try:
-      format = __import__("pygeode.formats.%s" % format, fromlist=["pygeode.formats"])
-    except ImportError:
-      raise ValueError('Unrecognized format module %s.' % format)
-
   if opener is None:
+
+    if format is None: format = autodetectformat(files[0])
+
+    if not hasattr(format, 'open'):
+      try:
+        format = __import__("pygeode.formats.%s" % format, fromlist=["pygeode.formats"])
+      except ImportError:
+        raise ValueError('Unrecognized format module %s.' % format)
+
     opener = format.open
   
   datasets = [ opener(f, **kwargs) for f in files]
