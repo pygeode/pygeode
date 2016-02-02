@@ -154,6 +154,7 @@ class Seasonal(TimeMap):
 # Define the operation that's done in the mapping
 
 class TimeOp(Var):
+# {{{
   extra_dims = ()  # Override this in a subclass if needed (see Trend class)
   def __init__ (self, var):
     from pygeode.var import Var
@@ -172,10 +173,10 @@ class TimeOp(Var):
     axes = list(var.axes)
     axes[ti] = outtime
     Var.__init__ (self, axes+list(self.extra_dims), dtype = var.dtype)
-
-
+# }}}
 
 class Mean(TimeOp):
+# {{{
   name_suffix2 = '_mean'
 
   def getview (self, view, pbar):
@@ -192,8 +193,34 @@ class Mean(TimeOp):
 
     sum /= count
     return sum
+# }}}
+
+class Stdev(TimeOp):
+# {{{
+  name_suffix2 = '_stdev'
+
+  def getview (self, view, pbar):
+    from pygeode.tools import partial_sum
+    import numpy as np
+
+    ti = self.ti
+
+    xx = np.zeros (view.shape, self.dtype)
+    x = np.zeros (view.shape, self.dtype)
+    nx = np.zeros (view.shape, dtype='int32')
+    nx2 = np.zeros (view.shape, dtype='int32')
+
+    for slices, [data], bins in loopover (self.var, view, pbar):
+      partial_sum (data, slices, x, nx, ti, bins)
+      partial_sum (data**2, slices, xx, nx2, ti, bins)
+
+    x /= nx
+    var = (xx - nx*x**2) / (nx - 1)
+    return np.sqrt(var)
+# }}}
 
 class Trend(TimeOp):
+# {{{
   name_suffix2 = '_trend'
   from pygeode.axis import Coef
   extra_dims = (Coef(2),)
@@ -257,7 +284,7 @@ class Trend(TimeOp):
     out /= (X2 - X**2)[...,None]
 
     return out
-
+# }}}
 
 ###############################################################################
 # Combine the above classes
@@ -297,9 +324,15 @@ class climtrend(Clim,Trend):
   over all years, it computes the rate of change over all years.
   """
 
+class climstdev(Clim,Stdev):
+  """
+  Computes a climatological standard deviation. Computes standard deviation over all years,
+  returning a single value for each distinct month, day, hour, etc.
+  """
 # Reconstruct a linear dataset given the trend coefficients
 # I.e., A*t + B
 class from_trend (Var):
+# {{{
   def __init__ (self, taxis, coef=None, A=None, B=None):
     from pygeode.tools import merge_coefs
     from pygeode.var import Var
@@ -343,6 +376,8 @@ class from_trend (Var):
     A = coef[1,...]
     secs = view.get(self.secs)
     return A*secs + B
+# }}}
+
 del Var
 
 # Remove the climatological trend from the data
@@ -351,10 +386,12 @@ del Var
 # Instead, call 'climtrend', save the output to disk, and then feed that into 'from_trend'
 from pygeode.timeaxis import Time
 def detrend (var, taxis=Time, return_clim = False):
+# {{{
   clim = from_trend(var.getaxis(taxis), climtrend(var).load())
   clim.name = 'clim'
   out = var - clim
   if return_clim is True: return out, clim
   else: return out
+# }}}
 
 del Time

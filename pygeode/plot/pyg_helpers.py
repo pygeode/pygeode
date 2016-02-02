@@ -546,12 +546,15 @@ def showvar(var, *args, **kwargs):
   assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.naxes)
 
   fig = kwargs.pop('fig', None)
+  size = kwargs.pop('size', None)
 
   if Z.naxes == 1:
     ax = vplot(var, *args, **kwargs)
+    if size is not None: ax.size = size
 
   elif Z.naxes == 2:
     ax = vcontour(var, *args, **kwargs)
+    if size is not None: ax.size = size
 
     cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
     cf = ax.find_plot(wr.Contourf)
@@ -708,10 +711,14 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
       kwlines.update(kwargs)
       ax = vcontour(v, axes=ax, lblx = lblx, lbly = lbly, **kwlines)
 
-    if lblx: h = axh + aypadl
-    else: h = axh + aypad
-    if lbly: w = axw + axpadl
-    else: w = axw + axpad
+    if hasattr(wr, 'BasemapAxes') and isinstance(ax, wr.BasemapAxes):
+      w = axw
+      h = axh
+    else:
+      if lblx: h = axh + aypadl
+      else: h = axh + aypad
+      if lbly: w = axw + axpadl
+      else: w = axw + axpad
 
     ax.size = (w, h)
     row.append(ax)

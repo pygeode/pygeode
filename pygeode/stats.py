@@ -1,6 +1,6 @@
 ''' Tools for computing some basic statistical quantities. '''
 
-__all__ = ('correlate', 'regress', 'multiple_regress', 'difference', 'isnonzero')
+__all__ = ('correlate', 'regress', 'multiple_regress', 'difference', 'paired_difference', 'isnonzero')
 
 import numpy as np
 from scipy.stats import norm, t as tdist
@@ -70,7 +70,7 @@ def correlate(X, Y, axes=None, pbar=None):
     from pygeode.progress import PBar
     pbar = PBar()
 
-  for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes, pbar):
+  for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes, pbar=pbar):
     xdata = xdata.astype('d')
     ydata = ydata.astype('d')
     xydata = xdata*ydata
@@ -471,6 +471,7 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   See Also
   ========
   isnonzero
+  paired_difference
 
   Notes
   =====
@@ -567,6 +568,137 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
     return Dataset([D, DF, P, CI])
   else: # Degenerate case
     return d, df, p, ci
+# }}}
+
+def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
+# {{{
+  r'''Computes the mean value and statistics of X - Y, assuming that individual elements
+  of X and Y can be directly paired. In contrast to :func:`difference', X and Y must have the same
+  shape 
+
+  Parameters
+  ==========
+  X, Y : :class:`Var`
+    Variables to difference. Must have at least one axis in common.
+
+  axes : list, optional
+    Axes over which to compute means; if nothing is specified, the mean
+    is computed over all axes common to X and Y.
+
+  alpha : float
+    Confidence level for which to compute confidence interval.
+
+  Nx_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom of
+    X; the effective number will be given by the number estimated from the
+    dataset divided by ``Nx_fac``.
+
+  Ny_fac : integer
+    A factor by which to rescale the estimated number of degrees of freedom of
+    Y; the effective number will be given by the number estimated from the
+    dataset divided by ``Ny_fac``.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
+  Returns
+  =======
+  results : tuple or :class:`Dataset` instance.
+    Four quantities are computed:
+
+    * The difference in the means, X - Y
+    * The effective number of degrees of freedom, :math:`df`
+    * The probability of the computed difference if the population difference was zero
+    * The confidence interval of the difference at the level specified by alpha
+
+    If the average is taken over all axes of X and Y resulting in a scalar,
+    the above values are returned as a tuple in the order given. If not, the
+    results are provided as :class:`Var` objects in a dataset. 
+
+  See Also
+  ========
+  isnonzero
+  difference
+
+  Notes
+  =====
+  Following section 6.6.6 of von Storch and Zwiers 1999, a one-sample t test is used to test the
+  hypothesis. The number of degrees of freedom is the sample size scaled by N_fac, less one. This
+  provides a means of taking into account serial correlation in the data (see sections 6.6.7-9), but
+  the appropriate number of effective degrees of freedom are not calculated explicitly by this
+  routine. The p-value and confidence interval are computed based on the t-statistic in eq
+  (6.21).'''
+
+  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
+  from pygeode.view import View
+
+  srcaxes = combine_axes([X, Y])
+  riaxes = [whichaxis(srcaxes, n) for n in axes]
+  raxes = [a for i, a in enumerate(srcaxes) if i in riaxes]
+  oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
+  oview = View(oaxes) 
+
+  ixaxes = [X.whichaxis(n) for n in axes if X.hasaxis(n)]
+  Nx = np.product([len(X.axes[i]) for i in ixaxes])
+
+  iyaxes = [Y.whichaxis(n) for n in axes if Y.hasaxis(n)]
+  Ny = np.product([len(Y.axes[i]) for i in iyaxes])
+
+  assert ixaxes == iyaxes and Nx == Ny, 'For the paired difference test, X and Y must have the same size along the reduction axes.'
+  
+  if pbar is None:
+    from pygeode.progress import PBar
+    pbar = PBar()
+
+  assert Nx > 1, '%s has only one element along the reduction axes' % X.name
+  assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
+
+  # Construct work arrays
+  d = np.zeros(oview.shape, 'd')
+  dd = np.zeros(oview.shape, 'd')
+
+  N = np.zeros(oview.shape, 'd')
+
+  d[()] = np.nan
+  dd[()] = np.nan
+  N[()] = np.nan
+
+  # Accumulate data
+  for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes=srcaxes, pbar=pbar):
+    ddata = xdata.astype('d') - ydata.astype('d')
+    d[outsl] = np.nansum([d[outsl], npnansum(ddata, ixaxes)], 0)
+    dd[outsl] = np.nansum([dd[outsl], npnansum(ddata**2, ixaxes)], 0)
+    # Sum of weights (kludge to get masking right)
+    N[outsl] = np.nansum([N[outsl], npnansum(1. + ddata*0., ixaxes)], 0) 
+
+  # remove the mean (NOTE: numerically unstable if mean >> stdev)
+  dd = (dd - d**2/N) / (N - 1)
+  d /= Nx
+
+  if N_fac is not None: eN = N/N_fac
+  else: eN = N
+  #print 'average eff. Nx = %.1f, average eff. Ny = %.1f' % (eNx.mean(), eNy.mean())
+
+  den = np.sqrt(dd/(eN - 1))
+
+  p = tdist.cdf(abs(d/den), eN - 1)*np.sign(d)
+  ci = tdist.ppf(1. - alpha/2, eN - 1) * den
+
+  xn = X.name if X.name != '' else 'X'
+  yn = Y.name if Y.name != '' else 'Y'
+  if xn == yn: name = xn
+  else: name = '%s-%s'%(xn, yn)
+
+  if len(oaxes) > 0:
+    from pygeode import Var, Dataset
+    D = Var(oaxes, values=d, name=name)
+    DF = Var(oaxes, values=eN-1, name='df_%s' % name)
+    P = Var(oaxes, values=p, name='p_%s' % name)
+    CI = Var(oaxes, values=ci, name='CI_%s' % name)
+    return Dataset([D, DF, P, CI])
+  else: # Degenerate case
+    return d, eN-1, p, ci
 # }}}
 
 def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
