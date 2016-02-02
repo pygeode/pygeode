@@ -741,7 +741,7 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   return Ax
 # }}}
 
-def showlines(vs, fmts=None, labels=None, size=(4.1,2), **kwargs):
+def showlines(vs, fmts=None, labels=None, size=(4.1,2), lblx=True, lbly=True, **kwargs):
 # {{{
   ''' 
   Plot line plots of a list of 1D variables on the same plot.
@@ -757,19 +757,13 @@ def showlines(vs, fmts=None, labels=None, size=(4.1,2), **kwargs):
   for z in Z:
     assert z.naxes == 1, 'Variable %s has %d non-generate axes; must have 1.' % (z.name, z.naxes)
 
-  if fmts is not None:
-    if hasattr(fmts, '__len__'): assert len(fmts) == len(vs)
-    else: fmts = [fmts for v in vs]
-  else:
-    fmts = [None for v in vs]
-
   fig = kwargs.pop('fig', None)
 
   ax = wr.AxesWrapper(size=size)
   ydat = []
   for i, v in enumerate(vs):
     if fmts is None:
-      fmt = None
+      fmt = ''
     elif hasattr(fmts, '__len__'):
       fmt = fmts[i]
     else:
@@ -787,7 +781,9 @@ def showlines(vs, fmts=None, labels=None, size=(4.1,2), **kwargs):
 
   ylim = (np.min([np.min(y) for y in ydat]), np.max([np.max(y) for y in ydat]))
   kwargs.update(dict(ylim=ylim))
-  ax.legend(loc='best', frameon=False)
+
+  kwleg = kwargs.pop('legend', dict(loc='best', frameon=False))
+  ax.legend(**kwleg)
   ax.setp(**kwargs)
 
   import pylab as pyl

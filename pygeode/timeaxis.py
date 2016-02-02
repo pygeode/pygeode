@@ -1023,7 +1023,7 @@ class Yearless(CalendarTime):
 
 # Helper functions
 
-def standardtimerange(start, end, step=1, units='days', From=None):
+def standardtimerange(start, end, step=1, units='days', ref=None, inc=False):
 # {{{
   r'''Creates a :class:`StandardTime` axis for the period from start to end.
 
@@ -1037,23 +1037,25 @@ def standardtimerange(start, end, step=1, units='days', From=None):
     Interval between grid points. Default is 1.
   units : one of 'seconds', 'minutes', 'hours', 'days', optional
     Unit in which to define time step values. Default is 'days'.
-  From : string, optional
+  ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
+  inc : boolean, optional (default False)
   '''
   from timeutils import date_diff
   import numpy as np
   tdum = StandardTime(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
   e = tdum.str_as_date(None, end)
-  if From is None: f = s
-  else: f = tdum.str_as_date(None, From)
+  if ref is None: f = s
+  else: f = tdum.str_as_date(None, ref)
   n = date_diff(tdum, s, e, units)
   o = date_diff(tdum, f, s, units)
-  vals = np.arange(0, n, step) + o
+  if inc: vals = np.arange(0, n + step, step) + o
+  else: vals = np.arange(0, n, step) + o
   return StandardTime(values=vals, units=units, startdate=f)
 # }}}
 
-def standardtimen(start, n, step=1, units='days', From=None):
+def standardtimen(start, n, step=1, units='days', ref=None):
 # {{{
   r'''Creates a :class:`StandardTime` axis of length n.
 
@@ -1067,21 +1069,21 @@ def standardtimen(start, n, step=1, units='days', From=None):
     Interval between grid points. Default is 1.
   units : one of 'seconds', 'minutes', 'hours', 'days', optional
     Unit in which to define time step values. Default is 'days'.
-  From : string, optional
+  ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
   '''
   from timeutils import date_diff
   import numpy as np
   tdum = StandardTime(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
-  if From is None: f = s
-  else: f = tdum.str_as_date(None, From)
+  if ref is None: f = s
+  else: f = tdum.str_as_date(None, ref)
   o = date_diff(tdum, f, s, units)
   vals = np.arange(0, n*step, step) + o
   return StandardTime(values=vals, units=units, startdate=f)
 # }}}
 
-def modeltime365range(start, end, step=1, units='days', From=None):
+def modeltime365range(start, end, step=1, units='days', ref=None, inc=False):
 # {{{
   r'''Creates a :class:`ModelTime365` axis for the period from start to end.
 
@@ -1095,23 +1097,26 @@ def modeltime365range(start, end, step=1, units='days', From=None):
     Interval between grid points. Default is 1.
   units : one of 'seconds', 'minutes', 'hours', 'days', optional
     Unit in which to define time step values. Default is 'days'.
-  From : string, optional
+  ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
+  inc : boolean, optional (default False)
   '''
   from timeutils import date_diff
   import numpy as np
   tdum = ModelTime365(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
   e = tdum.str_as_date(None, end)
-  if From is None: f = s
-  else: f = tdum.str_as_date(None, From)
+  if ref is None: f = s
+  else: f = tdum.str_as_date(None, ref)
   n = date_diff(tdum, s, e, units)
   o = date_diff(tdum, f, s, units)
-  vals = np.arange(0, n, step) + o
+  if inc: vals = np.arange(0, n + step, step) + o
+  else: vals = np.arange(0, n, step) + o
+
   return ModelTime365(values=vals, units=units, startdate=f)
 # }}}
 
-def modeltime365n(start, n, step=1, units='days', From=None):
+def modeltime365n(start, n, step=1, units='days', ref=None):
 # {{{
   r'''Creates a :class:`ModelTime365` axis of length n.
 
@@ -1125,21 +1130,21 @@ def modeltime365n(start, n, step=1, units='days', From=None):
     Interval between grid points. Default is 1.
   units : one of 'seconds', 'minutes', 'hours', 'days', optional
     Unit in which to define time step values. Default is 'days'.
-  From : string, optional
+  ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
   '''
   from timeutils import date_diff
   import numpy as np
   tdum = ModelTime365(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
-  if From is None: f = s
-  else: f = tdum.str_as_date(None, From)
+  if ref is None: f = s
+  else: f = tdum.str_as_date(None, ref)
   o = date_diff(tdum, f, s, units)
   vals = np.arange(0, n*step, step) + o
   return ModelTime365(values=vals, units=units, startdate=f)
 # }}}
 
-def modeltime360range(start, end, step=1, units='days', From=None):
+def modeltime360range(start, end, step=1, units='days', ref=None, inc=False):
 # {{{
   r'''Creates a :class:`ModelTime360` axis for the period from start to end.
 
@@ -1153,23 +1158,25 @@ def modeltime360range(start, end, step=1, units='days', From=None):
     Interval between grid points. Default is 1.
   units : one of 'seconds', 'minutes', 'hours', 'days', optional
     Unit in which to define time step values. Default is 'days'.
-  From : string, optional
+  ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
+  inc : boolean, optional (default False)
   '''
   from timeutils import date_diff
   import numpy as np
   tdum = ModelTime360(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
   e = tdum.str_as_date(None, end)
-  if From is None: f = s
-  else: f = tdum.str_as_date(None, From)
+  if ref is None: f = s
+  else: f = tdum.str_as_date(None, ref)
   n = date_diff(tdum, s, e, units)
   o = date_diff(tdum, f, s, units)
-  vals = np.arange(0, n, step) + o
+  if inc: vals = np.arange(0, n + step, step) + o
+  else: vals = np.arange(0, n, step) + o
   return ModelTime360(values=vals, units=units, startdate=f)
 # }}}
 
-def modeltime360n(start, n, step=1, units='days', From=None):
+def modeltime360n(start, n, step=1, units='days', ref=None):
 # {{{
   r'''Creates a :class:`ModelTime360` axis of length n.
 
@@ -1183,15 +1190,15 @@ def modeltime360n(start, n, step=1, units='days', From=None):
     Interval between grid points. Default is 1.
   units : one of 'seconds', 'minutes', 'hours', 'days', optional
     Unit in which to define time step values. Default is 'days'.
-  From : string, optional
+  ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
   '''
   from timeutils import date_diff
   import numpy as np
   tdum = ModelTime360(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
-  if From is None: f = s
-  else: f = tdum.str_as_date(None, From)
+  if ref is None: f = s
+  else: f = tdum.str_as_date(None, ref)
   o = date_diff(tdum, f, s, units)
   vals = np.arange(0, n*step, step) + o
   return ModelTime360(values=vals, units=units, startdate=f)
