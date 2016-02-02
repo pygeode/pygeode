@@ -1,3 +1,5 @@
+''' Module of plotting routines for pygeode variables. '''
+
 __all__ = []
 
 # Import old style plotting routines
@@ -8,5 +10,9 @@ __all__.extend(['plotvar', 'plotquiver', 'plotsigmask'])
 from pygeode.plot.wrappers import *
 
 from pygeode.plot.pyg_helpers import *
-from pygeode.plot.pyg_helpers import __all__ as help_all
-__all__.extend(help_all)
+from pygeode.plot.pyg_helpers import __all__ as phelp_all
+__all__.extend(phelp_all)
+
+from pygeode.plot.cnt_helpers import *
+from pygeode.plot.cnt_helpers import __all__ as chelp_all
+__all__.extend(chelp_all)

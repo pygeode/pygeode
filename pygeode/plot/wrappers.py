@@ -346,10 +346,12 @@ class Colorbar(PlotOp):
   def __init__(self, cnt, cax, *plot_args, **kwargs):
     self.cnt = cnt
     self.cax = cax
+    self.lcnt = kwargs.pop('lcnt', None)
     PlotOp.__init__(self, *plot_args, **kwargs)
 
   def render (self, axes):
-    pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
+    self._cbar = pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
+    if self.lcnt is not None: self._cbar.add_lines(self.lcnt._cnt)
 # }}}
 
 def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
@@ -390,6 +392,7 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
   else: ret = None
 
   ticklabels = kwargs.pop('ticklabels', None)
+  kwargs['spacing'] = kwargs.pop('spacing', 'proportional')
 
   cnt.axes.add_plot(Colorbar(cnt, cax, *args, **kwargs))
 

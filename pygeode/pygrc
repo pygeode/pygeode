@@ -20,5 +20,7 @@ MAX_SWAP_SIZE = 1073741824
 
 # What kind of parentheses to use to wrap around units
 # in plot labels
-unit_decoration = '()'
+unit_decoration = ()
+
+cmaps_path = /home/peterh/utils/cmaps/
 
