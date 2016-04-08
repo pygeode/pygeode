@@ -4,7 +4,14 @@ from distutils.core import setup, Extension
 import sys
 import numpy as np
 
-interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'], libraries=['gsl','gslcblas'])
+# Set this to False if you don't have the GSL development library, and don't
+# need a functional interpolation routine.
+enable_interp = True
+
+if enable_interp:
+  interpcore = Extension ('pygeode.interpcore', sources=['pygeode/interp.c'], libraries=['gsl','gslcblas'])
+else:
+  interpcore = None
 timeaxiscore = Extension ('pygeode.timeaxiscore', sources=['pygeode/timeaxis.c'], extra_compile_args=['-std=c99'])
 quadrulepy = Extension ('pygeode.quadrulepy', sources=['pygeode/quadrule.c','pygeode/quadrulepy.c'])
 toolscore = Extension ('pygeode.toolscore', sources=['pygeode/tools.c'], extra_compile_args=['-std=c99'])
@@ -44,6 +51,6 @@ the underlying computations and to create plots.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
 	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins", "pygeode.plot"],
 	include_dirs = [sys.prefix + '/include', np.get_include()],
-	ext_modules=[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore, opendapcore, gribcore]
+	ext_modules=filter(None,[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore, opendapcore, gribcore])
 )
 
