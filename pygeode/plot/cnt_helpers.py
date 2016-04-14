@@ -162,7 +162,7 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
     # Handle degenerate case
     if div == 0.: return 1., ndiv, style
 
-    p = np.floor(np.abs(np.log10(div)))
+    p = np.floor(np.log10(np.abs(div)))
     m = div / 10**p
     
     if m > 6.: spc = 10.
@@ -171,9 +171,10 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
     elif m > 3.: spc = 4.
     elif m > 2.: spc = 3.
     elif m > 1.5: spc = 2.
-    else: spc = 1.5
+    elif m > 1.: spc = 1.5
+    else: spc = 1.
 
-    #print style, p, m, spc
+    #print style, div, p, m, spc
 
     spc *= 10**p
     if clf: kws = dict(ndiv=ndiv, style=style)
@@ -182,11 +183,11 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
   elif style is 'seq':
     if ndiv is None: 
       if clf: ndiv = 5
-      else: ndiv = 21
+      else: ndiv = 10
 
     div = (dm + dl) / ndiv
 
-    p = np.floor(np.abs(np.log10(div)))
+    p = np.floor(np.log10(np.abs(div)))
     m = div / 10**p
     
     if m > 6.: spc = 10.
@@ -221,7 +222,7 @@ def cldict(cdelt, range=None, min=None, mid=0, cidelt=0., nozero=False, **kwargs
   elif min is None:
     cl = np.arange(mid - range, mid + range + cdelt/2, cdelt)
   else:
-    cl = np.arange(min, 2 * range + cdelt/2, cdelt)
+    cl = np.arange(min, min + 2 * range + cdelt/2, cdelt)
 
   return dict(clevs = None,
               clines = cl,
@@ -270,6 +271,7 @@ def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='di
     min = float(min)
     cmin = min
     cmax = min + crange
+    mid = (cmin + cmax) / 2.
   else:
     cmin = mid - crange / 2.
     cmax = mid + crange / 2.
@@ -285,13 +287,13 @@ def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='di
     cl = np.concatenate([np.linspace(cmin, 0, nl * ndiv + 1)[:-1],
                          np.linspace(0, cmax, nl * ndiv + 1)[1:]])
   else:
-    cl = np.linspace(cmin, cmax, 2 * nl * ndiv + 1)
+    cl = np.linspace(cmin, cmax, nl * ndiv + 1)
 
   if style == 'div':
     cf = np.concatenate([np.linspace(cmin, mid, nf * ndiv + 1)[:-1],
                          np.linspace(mid, cmax, nf * ndiv + 1)[1:]])
   else:
-    cf = np.linspace(cmin, cmax, 2 * nf * ndiv + 1)
+    cf = np.linspace(cmin, cmax, nf * ndiv + 1)
 
   cb = dict(ticks = tks)
 
@@ -338,47 +340,53 @@ def log1sdict(cmin, cdelt = 10., nf=6, nl=2, ndiv=5, **kwargs):
 
   nrm = LogNorm(vmin=cmin, vmax=cmax)
 
+  cmp = cm.get_cm('seq', ndiv)
+
   cb = dict(ticks=tks, width=1., ticklabels = [lfmt(x) for x in tks])
   return dict(clevs = cf,
               clines = cl,
               norm = nrm,
               colorbar = cb,
-              cmap=cm.jet5)
+              cmap=cmp)
 # }}}
 
-def log2sdict(cin, cmid, nf=6, nl=2, ndiv=3, **kwargs):
+def log2sdict(cmin, cdelt = 10, nf=6, nl=2, ndiv=3, nozero=False, **kwargs):
 # {{{
   ''' Returns kwargs to :meth:`showvar` for a two-sided logarithmically-spaced contour plot. '''
-  ci = np.linspace(-cin, cin, 2*nf+1)[1:-1]
-  cil = np.linspace(-cin, cin, 2*nl+1)[1:-1]
-  if cmid == 1.:
-    ce = cin ** np.linspace(1, -1, 2*nf+1)
-    cel = cin ** np.linspace(1, -1, 2*nl+1)
-  else:
-    x = np.log(cin) / np.log(cmid)
-    ce = cmid ** np.linspace(x, 2-x, 2*nf+1)
-    cel = cmid ** np.linspace(x, 2-x, 2*nl+1)
-  cmax = ce[-1]
 
-  tks = [-cmax, -cmid, -cin, 0., cin, cmid, cmax]
+  ce = cmin * cdelt ** np.linspace(0, ndiv-1, nf*(ndiv - 1)+1)
+  cel = cmin * cdelt ** np.linspace(0, ndiv-1, nl*(ndiv - 1)+1)
+  tks = cmin * cdelt ** np.arange(ndiv)
+  cmax = tks[-1]
+
+  tks = np.concatenate([-tks[::-1], [0.], tks])
+
   if nf > 0:
+    ci = np.linspace(-cmin, cmin, 2*nf+1)[1:-1]
     cf = np.concatenate([-ce[::-1], ci, ce])
   else:
     cf = None
 
   if nl > 0: 
+    if nozero:
+      cil = np.concatenate([np.linspace(-cmin, 0, nl+1)[1:-1], np.linspace(0, cmin, nl+1)[1:-1]])
+    else:
+      cil = np.linspace(-cmin, cmin, 2*nl+1)[1:-1]
     cl = np.concatenate([-cel[::-1], cil, cel])
   else:
     cl = None
 
-  nrm = LogNorm2Sided(vmin=-cmax, vmax=cmax, vin=cin, cin=0.167)
+  cin = 1. / (2 * ndiv)
+  nrm = LogNorm2Sided(vmin=-cmax, vmax=cmax, vin=cmin, cin=cin)
 
-  cb = dict(ticks=tks, width=1., ticklabels = [lfmt(x) for x in tks])
+  cmp = cm.get_cm('div', ndiv)
+
+  cb = dict(ticks=tks, width=1.4, rl=0.01, rr=0.16, ticklabels = [lfmt(x) for x in tks])
   return dict(clevs = cf,
               clines = cl,
               norm = nrm,
               colorbar = cb,
-              cmap=cm.rbw_l_r)
+              cmap=cmp)
 # }}}
 
 __all__ = ['clfdict', 'cldict', 'log1sdict', 'log2sdict', 'cm']

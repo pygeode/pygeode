@@ -149,7 +149,7 @@ def decorate_basemap(axes, **kwargs):
 
 def _parse_autofmt_kwargs(Z, kwargs):
 # {{{
-  ''' Used by showvar to parse kwargs for auto-contouring options. '''
+  ''' Used by showvar and showgrid to parse kwargs for auto-contouring options. '''
 
   # Process auto contouring dictionaries
   if 'clevs' in kwargs.keys() or 'clines' in kwargs.keys():
@@ -171,6 +171,9 @@ def _parse_autofmt_kwargs(Z, kwargs):
       cdelt, dct = ch.guessclimits(z, style=style, ndiv=ndiv)
     else:
       dct = {}
+      if kwargs.has_key('min') and not kwargs.has_key('style'):
+        dct['style'] = 'seq'
+        dct['ndiv'] = 5
     dct.update(kwargs)
     kwargs = ch.clfdict(cdelt, **dct)
     kwargs.update(dct)
@@ -183,19 +186,27 @@ def _parse_autofmt_kwargs(Z, kwargs):
       style = kwargs.pop('style',  None)
       ndiv = kwargs.pop('ndiv', None)
       cdelt, dct = ch.guessclimits(z, style=style, ndiv=ndiv, clf=False)
-      print 'Contour Interval: %2g' % cdelt
+      verbose = True
     else:
       ndiv = kwargs.pop('ndiv', 10)
       range = kwargs.pop('range', ndiv*cdelt)
       dct = dict(range=range)
+      verbose = False
     dct.update(kwargs)
     kwargs = ch.cldict(cdelt, **dct)
+    if verbose:
+      print 'Contour Interval: %0.2g' % cdelt
+      print 'Minimum value: %3g, Maximum value: %3g' % (np.min(z), np.max(z))
+      print 'Minimum contour: %3g, Maximum contour: %3g' % (kwargs['clines'][0], kwargs['clines'][-1])
+
     kwargs.update(dct)
     return kwargs
 
   elif typ in ['log', 'log1s']:
     dct = {}
     dct.update(kwargs)
+    if not dct.has_key('cmin'):
+      raise ValueError('Must specify cmin (lower bound) for logarithmically spaced contours')
     kwargs = ch.log1sdict(**dct)
     kwargs.update(dct)
     return kwargs
@@ -203,6 +214,8 @@ def _parse_autofmt_kwargs(Z, kwargs):
   elif typ == 'log2s':
     dct = {}
     dct.update(kwargs)
+    if not (dct.has_key('cmin')) :
+      raise ValueError('Must specify cmin (inner boundary for linear spaced interval) for two-sided logarithmically spaced contours')
     kwargs = ch.log2sdict(**dct)
     kwargs.update(dct)
     return kwargs
@@ -617,10 +630,10 @@ def showvar(var, *args, **kwargs):
   transpose: boolean, optional [False]
     If True, reverse axes.
 
-  lblx: boolean, optional [True}
+  lblx: boolean, optional [True]
     If True, label horizontal axes
 
-  lbly: boolean, optional [True}
+  lbly: boolean, optional [True]
     If True, label vertical axes
 
   *args, **kwargs :
@@ -681,7 +694,7 @@ def showvar(var, *args, **kwargs):
 def showcol(vs, size=(4.1,2), **kwargs):
 # {{{
   '''
-  Plot column of contour plots.
+  Plot column of contour plots. Superseded by :func:`showgrid`.
 
   Parameters
   ----------
