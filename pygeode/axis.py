@@ -104,6 +104,9 @@ class Axis(Var):
 
     values = np.asarray(values)
 
+    # Read configuration details
+    self.__class__._readaxisconfig(self)
+
     # Note: Call init before hasattr (or don't use hasattr at all in here)
     # (__getattr__ is overridden to call getaxis, which assumes axes are defined, otherwise __getattr__ is called to find an 'axes' property, ....)
     Var.__init__(self, [self], values=values, name=name, atts=atts, plotatts=plotatts)
@@ -111,6 +114,7 @@ class Axis(Var):
     # Compute size of spacing relative to magnitude for relative tolerances when mapping
     if rtol is None:
       rtol = 1e-5
+      rtol = self.rtol
       inz = np.where(values != 0.)[0]
       if len(inz) > 1:
         vnz = np.sort(values[inz]).astype('d')
@@ -138,9 +142,6 @@ class Axis(Var):
     self.auxarrays.update(auxarrays.copy())
     self.auxatts = self.__class__.auxatts.copy() 
     self.auxatts.update(auxatts.copy())    
-    
-    # name defaults
-    if self.name == '': self.name = self.__class__.__name__.lower()
 # }}}
 
   # 
@@ -161,6 +162,40 @@ class Axis(Var):
       True if ``other`` is an instance of this object's class
     """
     return isinstance(other,cls)
+  # }}}
+
+  @classmethod
+  def _readaxisconfig(cls, ax):
+  # {{{
+    from pygeode import _config
+    c = cls
+    while c is not Axis:
+      nm = c.__name__
+      if _config.has_option('Axes',  nm + '.name'):
+        ax.name = _config.get('Axes', nm + '.name')
+        break
+      else:
+        c = c.__bases__[0]
+
+    if c is Axis: ax.name = cls.__name__.lower()
+
+    # Set basic attributes
+    for p in ['formatstr', 'units']:
+      if _config.has_option('Axes',  nm + '.' + p):
+        setattr(ax, p, _config.get('Axes', nm + '.' + p))
+
+    for p in ['rtol']:
+      if _config.has_option('Axes',  nm + '.' + p):
+        setattr(ax, p, _config.getfloat('Axes', nm + '.' + p))
+
+    # Set plot attributes
+    for p in ['plottitle', 'plotfmt', 'plotscale']:
+      if _config.has_option('Axes',  nm + '.' + p):
+        ax.plotatts[p] = _config.get('Axes', nm + '.' + p)
+
+    for p in ['plotorder']:
+      if _config.has_option('Axes',  nm + '.' + p):
+        ax.plotatts[p] = int(_config.getfloat('Axes', nm + '.' + p))
   # }}}
 
   #TODO: fix inconsistency between Axis and Var, for == and !=
@@ -649,6 +684,7 @@ class Axis(Var):
   # }}}
 # }}}
 
+
 # Useful axis subclasses
 
 # Named axis
@@ -691,6 +727,7 @@ class Lon (XAxis):
 # {{{
   ''' Longitude axis. '''
   name = 'lon'
+  #name = _config.get('Axes', 'Lon.name')
   formatstr = '%.3g E<360'
 
   plotatts = XAxis.plotatts.copy()

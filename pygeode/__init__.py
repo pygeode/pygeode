@@ -7,10 +7,13 @@ __path__.append(libpath)
 pluginpath = os.getenv('PYGEODEPLUGINS', libpath+sep+'plugins')
 __path__.append(pluginpath)
 
+_config, _configfiles = None, None
+
 def readConfig():
   import ConfigParser as Cfg
   import sys, os
   from os.path import expanduser, dirname, sep
+  global _config, _configfiles
 
   if sys.platform.startswith('linux'):
     cfgpaths = ['/etc/', '/usr/local/etc/', dirname(__file__) + sep, \
@@ -20,9 +23,11 @@ def readConfig():
     
   c = Cfg.ConfigParser()
   files = c.read([p + 'pygrc' for p in cfgpaths])
-  return c, files
+  _config = c
+  _configfiles = files
+  #return c, files
 
-_config, _configfiles = readConfig()
+readConfig()
 
 del os, sep
 

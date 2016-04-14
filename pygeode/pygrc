@@ -16,6 +16,58 @@ MAX_SWAP_SIZE = 1073741824
 
 # Things like default names for axes could be customized
 
+# Axes format strings, default names
+Pres.name = pres
+Pres.formatstr = %.2g<100
+
+Lon.name = lon
+Lon.rtol = 1e-3
+Lon.formatstr = %.3g E<360
+Lon.plottitle =
+Lon.plotfmt = %.3g E
+
+Lat.name = lat
+Lat.formatstr = %.2g N
+Lat.plottitle =
+
+Height.name = z
+Height.formatstr = '%d'
+Height.units = 'm'
+Height.plotname = Height
+
+Hybrid.name = eta
+Hybrid.formatstr = %g
+Hybrid.plotorder = -1
+Hybrid.plotscale = log
+
+Pres.name = pres
+Pres.units = hPa
+Pres.formatstr = %.2g<100
+Pres.plotname = Pressure
+Pres.plotscale = log
+Pres.plotorder = -1
+
+Time.name = time
+Time.plottitle =
+Time.plotofsfmt =
+
+CalendarTime.formatstr = $b $d, $Y $H:$M:$S
+#CalendarTime.autofmts = [(365. , '$Y',       ''),         # Range larger than 1 year
+#                         (30.  , '$b $Y',    ''),         # Larger than 1 month
+#                         (1.   , '$d $b',    '$Y'),       # Larger than 1 day
+#                         (1/24., '$H:$M',    '$d $b $Y'), # Larger than 1 hour
+#                         (0.   , '$H:$M:$S', '$d $b $Y')] # Less than 1 hour
+CalendarTime.parse_pattern = ((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)
+
+Yearless.plotfmt = $d
+Yearless.formatstr = day $d, $H:$M:$S
+#Yearless.autofmts = [(1.,    '$d',       ''),       # Larger than 1 day
+#                     (1/24., '$H:$M',    'day $d'), # Larger than 1 hour
+#                     (0.  ,  '$H:$M:$S', 'day $d')] # Less than 1 hour
+Yearless.parse_pattern = ((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2})
+
+
+
 [Plotting]
 
 # What kind of parentheses to use to wrap around units
