@@ -408,3 +408,68 @@ def multifile (opener):
     return open_multi (files, pattern=pattern, file2date=file2date, opener=o)
   new_opener.__doc__ = opener.__doc__
   return new_opener
+
+
+def check_multi (*args, **kwargs):
+  ''' Validates the files for completeness and consistency with the assumptions
+      made by pygeode.formats.multifile.open_multi.
+  '''
+  from pygeode.timeutils import reltime
+  import numpy as np
+  # First, query open_multi to find out what we *expect* to see in all the files
+  full_dataset = open_multi (*args, **kwargs)
+  # Dig into this object, to find the list of files and the file opener.
+  # (this will break if open_multi or Multifile_Var are ever changed!)
+  sample = full_dataset.vars[0]
+  assert isinstance(sample,Multifile_Var)
+  files = sample.files
+  opener = sample.opener
+  del sample
+  # Loop over each file, and check the contents.
+  all_ok = True
+  for filename in files:
+    print "Scanning "+filename
+    try:
+      current_file = opener(filename)
+    except Exception as e:
+      print "  ERROR: Can't even open the file.  Reason: %s"%str(e)
+      all_ok = False
+      continue
+    for var in current_file:
+      if var.name not in full_dataset:
+        print "  ERROR: unexpected variable '%s'"%var.name
+        all_ok = False
+        continue
+    for var in full_dataset:
+      if var.name not in current_file:
+        print "  ERROR: missing variable '%s'"%var.name
+        all_ok = False
+        continue
+      try:
+        source_data = current_file[var.name].get().flatten()
+      except Exception as e:
+        print "  ERROR: unable to read source variable '%s'.  Reason: %s"%(var.name, str(e))
+        all_ok = False
+        continue
+      try:
+        file_taxis = current_file[var.name].getaxis('time')
+        full_taxis = full_dataset.vars[0].getaxis('time')
+        times = reltime(file_taxis, startdate=full_taxis.startdate, units=full_taxis.units)
+        multifile_data = var(l_time=list(times)).get().flatten()
+      except Exception as e:
+        print "  ERROR: unable to read multifile variable '%s'.  Reason: %s"%(var.name, str(e))
+        all_ok = False
+        continue
+      if len(source_data) != len(multifile_data):
+        print "  ERROR: size mismatch for variable '%s'"%var.name
+        all_ok = False
+        continue
+      if not np.all(source_data == multifile_data):
+        print "  ERROR: get different data from multifile vs. direct access for '%s'"%var.name
+        all_ok = False
+        continue
+  if all_ok:
+    print "Scan completed without any errors."
+  else:
+    print "One or more errors occurred while scanning the files."
+
