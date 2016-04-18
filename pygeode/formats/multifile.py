@@ -438,7 +438,7 @@ def check_multi (*args, **kwargs):
   all_ok = True
   all_expected_times = set(full_taxis.values)
   covered_times = set()
-  for filename in files:
+  for i,filename in enumerate(files):
     print "Scanning "+filename
     try:
       current_file = opener(filename)
@@ -478,7 +478,14 @@ def check_multi (*args, **kwargs):
         print "  ERROR: get different data from multifile vs. direct access for '%s'"%var.name
         all_ok = False
         continue
-      covered_times.update(times)
+
+    covered_times.update(times)
+    if i < len(files)-1 and np.any(times >= faxis[i+1]):
+      print "  ERROR: found timesteps beyond the expected range of this file."
+      all_ok = False
+    if np.any(times < faxis[i]):
+      print "  ERROR: found timestep(s) earlier than the expected start of this file."
+      all_ok = False
 
   if covered_times != all_expected_times:
     print "ERROR: did not get full time coverage.  Missing some timesteps for file(s):"
