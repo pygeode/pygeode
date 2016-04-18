@@ -113,14 +113,29 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
   ''' Guesses a round contour interval and style to display
   the array z. '''
 
-  pcs = [0, 2., 50, 98, 100]
-  mn, p2, md, p98, mx = np.percentile(z, pcs)
-
   if style not in [None, 'div', 'seq']:
     raise ValueError("style '%s' not recognized. Must be one of None, 'div', or 'seq'." % style)
 
   if ndiv is not None and ndiv <= 0.:
     raise ValueError("ndiv must be None or an integer greater than 0.")
+
+  zn = z.ravel()
+  zn = zn[np.isfinite(zn)]
+
+  if len(zn) < 1: 
+    if style is None: style = 'div'
+    if style == 'div': 
+      if ndiv is None: ndiv = 3
+      kws = dict(ndiv=ndiv, style=style)
+    elif style == 'seq':
+      if ndiv is None: ndiv = 5
+      kws = dict(ndiv=ndiv, min=0., style=style)
+
+    return 1., kws
+
+  pcs = [0, 2., 50, 98, 100]
+  mn, p2, md, p98, mx = np.percentile(zn, pcs)
+
 
   if style is None: # Guess style of cmap to use
     if p2 < 0 and p98 > 0: style = 'div'

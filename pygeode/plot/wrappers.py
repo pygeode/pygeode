@@ -352,6 +352,7 @@ class Colorbar(PlotOp):
   def render (self, axes):
     self._cbar = pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
     if self.lcnt is not None: self._cbar.add_lines(self.lcnt._cnt)
+    pyl.sca(axes)
 # }}}
 
 def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
