@@ -429,7 +429,8 @@ def check_multi (*args, **kwargs):
   del sample_var
   # Helper method - associate a time axis value with a particular file.
   def find_file (t):
-    i = np.searchsorted(faxis.values, t)
+    i = np.searchsorted(faxis.values, t, side='right') - 1
+    if i == -1:  return '(some missing file?)'
     return files[i]
   # Similar to above, but return all files that should cover all given timesteps.
   def find_files (t_array):
