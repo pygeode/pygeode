@@ -438,6 +438,18 @@ def check_multi (*args, **kwargs):
   # Loop over each file, and check the contents.
   all_ok = True
   all_expected_times = set(full_taxis.values)
+
+  # Check for uniformity in the data, and report any potential holes.
+  dt = np.diff(full_taxis.values)
+  expected_dt = min(dt[dt > 0])
+  gaps = full_taxis.values[np.where(dt > expected_dt)]
+  if len(gaps) > 0:
+    print "ERROR: detected gaps on or after file(s):"
+    for filename in find_files(gaps):
+      print filename
+    print "There may be missing files near those files."
+    all_ok = False
+
   covered_times = set()
   for i,filename in enumerate(files):
     print "Scanning "+filename
