@@ -420,13 +420,24 @@ def check_multi (*args, **kwargs):
   full_dataset = open_multi (*args, **kwargs)
   # Dig into this object, to find the list of files and the file opener.
   # (this will break if open_multi or Multifile_Var are ever changed!)
-  sample = full_dataset.vars[0]
-  assert isinstance(sample,Multifile_Var)
-  files = sample.files
-  opener = sample.opener
-  del sample
+  sample_var = full_dataset.vars[0]
+  assert isinstance(sample_var,Multifile_Var)
+  files = sample_var.files
+  faxis = sample_var.faxis
+  opener = sample_var.opener
+  full_taxis = sample_var.getaxis('time')
+  del sample_var
+  # Helper method - associate a time axis value with a particular file.
+  def find_file (t):
+    i = np.searchsorted(faxis.values, t)
+    return files[i]
+  # Similar to above, but return all files that should cover all given timesteps.
+  def find_files (t_array):
+    return sorted(set(map(find_file,t_array)))
   # Loop over each file, and check the contents.
   all_ok = True
+  all_expected_times = set(full_taxis.values)
+  covered_times = set()
   for filename in files:
     print "Scanning "+filename
     try:
@@ -453,7 +464,6 @@ def check_multi (*args, **kwargs):
         continue
       try:
         file_taxis = current_file[var.name].getaxis('time')
-        full_taxis = full_dataset.vars[0].getaxis('time')
         times = reltime(file_taxis, startdate=full_taxis.startdate, units=full_taxis.units)
         multifile_data = var(l_time=list(times)).get().flatten()
       except Exception as e:
@@ -468,6 +478,13 @@ def check_multi (*args, **kwargs):
         print "  ERROR: get different data from multifile vs. direct access for '%s'"%var.name
         all_ok = False
         continue
+      covered_times.update(times)
+
+  if covered_times != all_expected_times:
+    print "ERROR: did not get full time coverage.  Missing some timesteps for file(s):"
+    for filename in find_files(all_expected_times-covered_times):
+      print filename
+    all_ok = False
   if all_ok:
     print "Scan completed without any errors."
   else:
