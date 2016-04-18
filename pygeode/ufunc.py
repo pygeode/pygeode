@@ -182,6 +182,7 @@ tanh  = wrap_unary(np.tanh,  "Hyperbolic tangent")
 sqrt  = wrap_unary(np.sqrt,  "Square root")
 real  = wrap_unary(np.real,  "Real part of a complex array")
 imag  = wrap_unary(np.imag,  "Imaginary part of a complex array")
+conj  = wrap_unary(np.conj,  "Complex conjugate of a complex array"); conj.__name__ = 'conj'
 angle = wrap_unary(np.angle, "Angles (arguments) of a complex array")
 arccos  = wrap_unary(np.arccos,  "Inverse cosine (in radians)")
 arcsin  = wrap_unary(np.arcsin,  "Inverse sine (in radians)")
@@ -246,7 +247,7 @@ del np
 unary_flist = (abs, sign, exp, log, log10, cos, sin, tan, cosd, sind, tand,
     cosh, sinh, tanh, arccos, arcsin, arctan,
     arccosd, arcsind, arctand, arccosh, arcsinh, arctanh,
-    sqrt, nan_to_num, real, imag, angle
+    sqrt, nan_to_num, real, imag, conj, angle
 )
 
 binary_flist = (arctan2, arctand2, minimum, maximum)
