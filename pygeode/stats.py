@@ -289,6 +289,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
     * 'r': Fraction of the variance in Y explained by all Xs (:math:`R^2`)
     * 'p': Probability of this fit if the true linear coefficient was zero for each regressor
     * 'sb': Standard deviation of each linear coefficient
+    * 'covb': Covariance matrix of the linear coefficients
     * 'se': Standard deviation of residuals
 
     If the regression is computed over all axes so that the result is a scalar,
@@ -412,6 +413,16 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
         ret.append(sigbeta)
       else:
         ret.append([Var(oaxes, values=sigbeta[i], name='sig_%s' % xns[i]) for i in range(Nr)])
+    elif o == 'covb':
+      from axis import NonCoordinateAxis as nca
+      cr1 = nca(values=range(Nr), regressor1=[X.name for X in Xs], name='regressor1')
+      cr2 = nca(values=range(Nr), regressor2=[X.name for X in Xs], name='regressor2')
+      sigmat = np.zeros(os2, 'd')
+      for i in range(Nr):
+        for j in range(Nr):
+          #sigmat[..., i, j] = np.sqrt((yy - vare) * xxinv[..., i, j] / N_eff)
+          sigmat[..., i, j] = (yy - vare) * xxinv[..., i, j] / N_eff
+      ret.append(Var(oaxes + [cr1, cr2], values=sigmat, name='smat'))
     elif o == 'se':
       se = np.sqrt((yy - vare) / N_eff)
       if len(oaxes) == 0:
