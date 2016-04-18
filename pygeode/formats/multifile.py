@@ -488,11 +488,19 @@ def check_multi (*args, **kwargs):
       print "  ERROR: found timestep(s) earlier than the expected start of this file."
       all_ok = False
 
-  if covered_times != all_expected_times:
+  missing_times = all_expected_times - covered_times
+  if len(missing_times) > 0:
     print "ERROR: did not get full time coverage.  Missing some timesteps for file(s):"
-    for filename in find_files(all_expected_times-covered_times):
+    for filename in find_files(missing_times):
       print filename
     all_ok = False
+  extra_times = covered_times - all_expected_times
+  if len(extra_times) > 0:
+    print "ERROR: found extra (unexpected) timesteps in the following file(s):"
+    for filename in find_files(extra_times):
+      print filename
+    all_ok = False
+
   if all_ok:
     print "Scan completed without any errors."
   else:
