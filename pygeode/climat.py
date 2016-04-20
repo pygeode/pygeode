@@ -163,7 +163,7 @@ class TimeOp(Var):
 
     axes = list(var.axes)
     axes[ti] = outtime
-    Var.__init__ (self, axes+list(self.extra_dims), dtype = var.dtype)
+    Var.__init__ (self, axes+list(self.extra_dims), dtype = var.dtype, atts=var.atts)
 
 
 
