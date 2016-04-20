@@ -487,6 +487,14 @@ def check_multi (*args, **kwargs):
         print "  ERROR: size mismatch for variable '%s'"%var.name
         all_ok = False
         continue
+      source_mask = ~np.isfinite(source_data)
+      multifile_mask = ~np.isfinite(multifile_data)
+      if not np.all(source_mask == multifile_mask):
+        print "  ERROR: different missing value masks found in multifile vs. direct access for '%s'"%var.name
+        all_ok = False
+        continue
+      source_data = np.ma.masked_array(source_data, mask=source_mask)
+      multifile_data = np.ma.masked_array(multifile_data, mask=multifile_mask)
       if not np.all(source_data == multifile_data):
         print "  ERROR: get different data from multifile vs. direct access for '%s'"%var.name
         all_ok = False
