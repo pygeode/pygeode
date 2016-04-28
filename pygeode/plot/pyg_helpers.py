@@ -161,7 +161,7 @@ def _parse_autofmt_kwargs(Z, kwargs):
 
   if typ == 'raw':
     return kwargs
-
+      
   elif typ == 'clf':
     cdelt = kwargs.pop('cdelt', None)
     if cdelt is None:
@@ -176,7 +176,6 @@ def _parse_autofmt_kwargs(Z, kwargs):
         dct['ndiv'] = 5
     dct.update(kwargs)
     kwargs = ch.clfdict(cdelt, **dct)
-    kwargs.update(dct)
     return kwargs
 
   elif typ == 'cl':
@@ -199,7 +198,6 @@ def _parse_autofmt_kwargs(Z, kwargs):
       print 'Minimum value: %3g, Maximum value: %3g' % (np.min(z), np.max(z))
       print 'Minimum contour: %3g, Maximum contour: %3g' % (kwargs['clines'][0], kwargs['clines'][-1])
 
-    kwargs.update(dct)
     return kwargs
 
   elif typ in ['log', 'log1s']:
@@ -208,7 +206,6 @@ def _parse_autofmt_kwargs(Z, kwargs):
     if not dct.has_key('cmin'):
       raise ValueError('Must specify cmin (lower bound) for logarithmically spaced contours')
     kwargs = ch.log1sdict(**dct)
-    kwargs.update(dct)
     return kwargs
 
   elif typ == 'log2s':
@@ -217,7 +214,6 @@ def _parse_autofmt_kwargs(Z, kwargs):
     if not (dct.has_key('cmin')) :
       raise ValueError('Must specify cmin (inner boundary for linear spaced interval) for two-sided logarithmically spaced contours')
     kwargs = ch.log2sdict(**dct)
-    kwargs.update(dct)
     return kwargs
 
   else:
@@ -808,11 +804,11 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   nV = max(nVl, nVf)
   nrow = np.ceil(nV / float(ncol))
 
-  axpad = 0.2
-  aypad = 0.4
+  axpad = kwargs.pop('axpad', 0.2)
+  aypad = kwargs.pop('aypad', 0.4)
   if lbl:
-    axpadl = 0.9
-    aypadl = 0.55
+    axpadl = axpad + kwargs.pop('lblxpad', 0.7)
+    aypadl = aypad + kwargs.pop('lblypad', 0.15)
   else:
     axpadl = axpad
     aypadl = aypad

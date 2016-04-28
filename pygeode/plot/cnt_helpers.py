@@ -239,10 +239,12 @@ def cldict(cdelt, range=None, min=None, mid=0, cidelt=0., nozero=False, **kwargs
   else:
     cl = np.arange(min, min + 2 * range + cdelt/2, cdelt)
 
-  return dict(clevs = None,
+  kwa = dict(clevs = None,
               clines = cl,
               linewidths = 1.,
               colors='k')
+  kwa.update(kwargs)
+  return kwa
 # }}}
 
 def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='div', clr=True, **kwargs):
@@ -295,32 +297,33 @@ def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='di
 
   if style == 'div':
     tks = np.linspace(cmin, cmax, 2*ndiv + 1)
-  else:
-    tks = np.linspace(cmin, cmax, ndiv + 1)
-
-  if nozero:
-    cl = np.concatenate([np.linspace(cmin, 0, nl * ndiv + 1)[:-1],
-                         np.linspace(0, cmax, nl * ndiv + 1)[1:]])
-  else:
-    cl = np.linspace(cmin, cmax, nl * ndiv + 1)
-
-  if style == 'div':
     cf = np.concatenate([np.linspace(cmin, mid, nf * ndiv + 1)[:-1],
                          np.linspace(mid, cmax, nf * ndiv + 1)[1:]])
+    if nozero:
+      cl = np.concatenate([np.linspace(cmin, 0, nl * ndiv + 1)[:-1],
+                           np.linspace(0, cmax, nl * ndiv + 1)[1:]])
+    else:
+      cl = np.linspace(cmin, cmax, 2 * nl * ndiv + 1)
   else:
+    tks = np.linspace(cmin, cmax, ndiv + 1)
     cf = np.linspace(cmin, cmax, nf * ndiv + 1)
+    cl = np.linspace(cmin, cmax, nl * ndiv + 1)
 
+  kwcb = kwargs.pop('colorbar', {})
   cb = dict(ticks = tks)
+  cb.update(kwcb)
 
   if not clr: 
     cmp = pcm.gray
     cb = False
 
-  return dict(clevs = cf,
+  kwa = dict(clevs = cf,
               clines = cl,
               colorbar = cb,
               linewidths = 1.,
               cmap=cmp)
+  kwa.update(kwargs)
+  return kwa
 # }}}
 
 def lfmt(x, pos=None):
@@ -357,12 +360,17 @@ def log1sdict(cmin, cdelt = 10., nf=6, nl=2, ndiv=5, **kwargs):
 
   cmp = cm.get_cm('seq', ndiv)
 
-  cb = dict(ticks=tks, width=1., ticklabels = [lfmt(x) for x in tks])
-  return dict(clevs = cf,
+  kwcb = kwargs.pop('colorbar', {})
+  cb = dict(ticks=tks, width=1.4, rl=0.01, rr=0.16, ticklabels = [lfmt(x) for x in tks])
+  cb.update(kwcb)
+
+  kwa = dict(clevs = cf,
               clines = cl,
               norm = nrm,
               colorbar = cb,
               cmap=cmp)
+  kwa.update(kwargs)
+  return kwa
 # }}}
 
 def log2sdict(cmin, cdelt = 10, nf=6, nl=2, ndiv=3, nozero=False, **kwargs):
@@ -396,12 +404,17 @@ def log2sdict(cmin, cdelt = 10, nf=6, nl=2, ndiv=3, nozero=False, **kwargs):
 
   cmp = cm.get_cm('div', ndiv)
 
+  kwcb = kwargs.pop('colorbar', {})
   cb = dict(ticks=tks, width=1.4, rl=0.01, rr=0.16, ticklabels = [lfmt(x) for x in tks])
-  return dict(clevs = cf,
+  cb.update(kwcb)
+
+  kwa = dict(clevs = cf,
               clines = cl,
               norm = nrm,
               colorbar = cb,
               cmap=cmp)
+  kwa.update(kwargs)
+  return kwa
 # }}}
 
 __all__ = ['clfdict', 'cldict', 'log1sdict', 'log2sdict', 'cm']
