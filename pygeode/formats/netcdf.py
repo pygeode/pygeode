@@ -346,7 +346,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   from pygeode.formats import finalize_open
   from pygeode.axis import Axis
   if not filename.startswith('http://'):
-    assert exists(filename)
+    assert exists(filename), 'File open failed. "%s" does not exist.' % filename
 
 
   # Read variable dimensions and metadata from the file
