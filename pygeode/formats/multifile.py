@@ -155,7 +155,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
   However, no explicit check is made of the integrity of the files - if there
   are corrupt or missing data within individual files, this will not become
   clear until that data is actually accessed. This can be done explicitly with
-  :func:`check_dataset`, which explicitly attempts to access all the data and
+  :func:`check_multi`, which explicitly attempts to access all the data and
   returns a list of any problems encountered; this can take a long time, but is
   a useful check (and is more likely to provide helpful error messages). 
 
