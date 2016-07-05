@@ -82,6 +82,11 @@ int interpgsl (int narrays, int nxin, int nxout,
     // the output array with NaNs.
     if (j < type->min_size) {
       for (j = 0; j < nxout; j++, xout++, yout++) *yout = NAN;
+      // Update the input/output pointers, be consistent with the normal case
+      // below.
+      if (loop_xin) { xin += nxin; }
+      if (!loop_xout) { xout -= nxout; }
+      yin += nxin;
       continue;
     }
 
