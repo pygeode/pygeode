@@ -1,3 +1,14 @@
+1.0.5 - 2016/07/07
+ - Fixed segmentation fault when initializing a time axis with an invalid month.
+   (issue #76).
+ - Allow tools.loopover to handle Axis arguments.  Certain operations such as
+   smooth() were crashing when operating on an Axis object (issue #86).
+ - Preserve variable metadata when doing climatologies (issue #89).
+ - In multifile.openall(), don't require a format if an opener is provided.
+   (issue #90).
+ - Fixed a pointer issue in interpcore, in the case where there aren't enough
+   valid points to do an interpolation.
+
 1.0.4 - 2015/11/04
  - Set attribute Conventions="CF-1.0" in netcdf output files, so other netcdf
    utilities know how to parse our data.
