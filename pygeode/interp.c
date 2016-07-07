@@ -63,7 +63,7 @@ int interpgsl (int narrays, int nxin, int nxout,
   for (n = 0; n < narrays; n++) {
     // Search for nans, resort if necessary
     for (i = start, j = 0; i != end; i += step) {
-      if isfinite(yin[i]) {
+      if (isfinite(yin[i])) {
         local_xin[j] = xin[i];
         local_yin[j] = yin[i];
         j++;
