@@ -240,6 +240,12 @@ class Scatter(PlotOp):
     axes.scatter (*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class Errorbar(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.errorbar (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 class Histogram(PlotOp):
 # {{{
   def render (self, axes):
@@ -421,6 +427,7 @@ def make_plot_member(f):
 plot = make_plot_func(Plot)
 fill_between = make_plot_func(FillBetween)
 scatter = make_plot_func(Scatter)
+errorbar = make_plot_func(Errorbar)
 hist = make_plot_func(Histogram)
 axhline = make_plot_func(AxHLine)
 axvline = make_plot_func(AxVLine)
@@ -439,6 +446,7 @@ __all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'hist', 'axhline', 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.fill_between = make_plot_member(fill_between)
 AxesWrapper.scatter = make_plot_member(scatter)
+AxesWrapper.errorbar = make_plot_member(errorbar)
 AxesWrapper.hist = make_plot_member(hist)
 AxesWrapper.axhline = make_plot_member(axhline)
 AxesWrapper.axvline = make_plot_member(axvline)

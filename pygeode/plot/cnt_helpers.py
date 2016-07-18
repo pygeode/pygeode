@@ -385,7 +385,9 @@ def log2sdict(cmin, cdelt = 10, nf=6, nl=2, ndiv=3, nozero=False, **kwargs):
   tks = np.concatenate([-tks[::-1], [0.], tks])
 
   if nf > 0:
-    ci = np.linspace(-cmin, cmin, 2*nf+1)[1:-1]
+    #ci = np.linspace(-cmin, cmin, 2*nf+1)[1:-1]
+    ci = np.concatenate([np.linspace(-cmin, 0, nf + 1)[1:-1],
+                         np.linspace(0,  cmin, nf + 1)[1:-1]])
     cf = np.concatenate([-ce[::-1], ci, ce])
   else:
     cf = None
