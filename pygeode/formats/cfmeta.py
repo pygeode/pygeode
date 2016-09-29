@@ -66,11 +66,43 @@ def fix_name (name):
   return name
 
 
+# Convert a 1D string variable into a 2D character variable
+# (useful for encoding string arrays into netcdf)
+# Taken from EC-CAS diagnostic package.
+def encode_string_var (var):
+  import numpy as np
+  from pygeode.var import Var
+  from pygeode.axis import NamedAxis
+
+  # Construct a 2D character array to hold strings
+  strlen = max(len(string) for string in var.values)
+  #TODO: make this a simple dimension (no coordinate values needed!)
+  strlen_axis = NamedAxis (values=np.arange(strlen, dtype='int32'), name=var.name+"_strlen")
+  dtype = '|S'+str(strlen)  # For a convenient view on the character array
+                                      # (to help popluate it from strings)
+
+  data = np.zeros(list(var.shape)+[strlen], dtype='|S1')
+  data.view(dtype)[...,0] = var.values
+  var = Var(list(var.axes)+[strlen_axis], values=data, name=var.name+"_name")
+  return var
+
+# Convert a 2D character variable back into a 1D string variable
+# Taken from EC-CAS diagnostic package.
+def decode_string_var (var):
+  from pygeode.var import Var
+
+  name = var.name
+  if name.endswith('_name'):
+    name = name[:-5]
+  data = [''.join(s) for s in var.get()]
+  return Var(axes=var.axes[:-1], values=data, name=name)
+
+
 ###############################################################################
 # Encode a set of variables as cf-compliant
 def encode_cf (dataset):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
+  from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from pygeode.axis import NamedAxis
   from pygeode.var import Var
@@ -105,7 +137,7 @@ def encode_cf (dataset):
   # Metadata based on axis classes
   for name,a in axisdict.items():
     atts = a.atts.copy()
-    plotatts = a.plotatts.copy() # passed on to Axis constructor (l.139)
+    plotatts = a.plotatts.copy() # passed on to Axis constructor
     
     if isinstance(a,Lat):
       atts['standard_name'] = 'latitude'
@@ -145,6 +177,36 @@ def encode_cf (dataset):
       axisdict[name] = NamedAxis(values=reltime(a), name=name, atts=atts, plotatts=plotatts)
       continue
 
+    # Encode station (timeseries) data.
+    # Loosely follow http://cfconventions.org/cf-conventions/v1.6.0/cf-conventions.html#_orthogonal_multidimensional_array_representation_of_time_series
+    # Move station lat/lon/name data into separate variables.
+    if isinstance(a, Station):
+      # Encode station latitude.
+      if 'lat' in a.auxarrays:
+        lat = a.auxasvar('lat')
+        lat.atts.update(standard_name="latitude", long_name="station latitude", units="degrees_north")
+        varlist.append(lat)
+        a.auxarrays.pop('lat')
+      # Encode station longitude.
+      if 'lon' in a.auxarrays:
+        lon = a.auxasvar('lon')
+        lon.atts.update(standard_name="longitude", long_name="station longitude", units="degrees_east")
+        varlist.append(lon)
+        a.auxarrays.pop('lon')
+      # Encode other station attributes
+      for auxname in a.auxarrays.keys():
+        var = a.auxasvar(auxname)
+        if var.dtype.name.startswith('string'):
+          var = encode_string_var(var)
+        # Some extra CF encoding for the station name, to use it as the unique identifier.
+        if auxname == 'station':
+          var.atts.update(cf_role = "timeseries_id")
+        varlist.append(var)
+        a.auxarrays.pop(auxname)
+      # Identify this data as being timeseries data
+      global_atts['featureType'] = "timeSeries"
+
+
     # Add associated arrays as new variables
     auxarrays = a.auxarrays
     for aux,values in auxarrays.iteritems():
@@ -163,7 +225,7 @@ def encode_cf (dataset):
     name = oldvar.name
     try:
       #TODO: use Var.replace_axes instead?
-      varlist[i] = var_newaxes(oldvar, [axisdict[a.name] for a in oldvar.axes], atts=oldvar.atts, plotatts=oldvar.plotatts)
+      varlist[i] = var_newaxes(oldvar, [axisdict.get(a.name,a) for a in oldvar.axes], atts=oldvar.atts, plotatts=oldvar.plotatts)
     except KeyError:
       print '??', a.name, axisdict
       raise
