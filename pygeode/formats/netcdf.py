@@ -184,13 +184,13 @@ class NCFile:
 
 
 # A generic dimension (has no attributes except a name and a length)
-from pygeode.axis import Axis
-class NCDim (Axis):
+from pygeode.axis import NamedAxis
+class NCDim (NamedAxis):
   # Override axis equality checking - name needs to match.
   # (Work around the deficiencies of View.map_to)
   def __eq__ (self, other):
-    from pygeode.axis import Axis
-    return Axis.__eq__(self,other) and self.name == other.name
+    from pygeode.axis import NamedAxis
+    return NamedAxis.__eq__(self,other) and self.name == other.name
   # Make an axis from given fileid and dimid
   @staticmethod
   def from_id (f, dimid):
@@ -203,7 +203,7 @@ class NCDim (Axis):
     length = length.value
     return NCDim (length, name=name)
 
-del Axis
+del NamedAxis
 
 # constructor for the dims (wrapper for Dim so it's only created once)
 def makedim (f, dimid, dimdict={}):
@@ -420,8 +420,9 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
   # The output axes
   axes = combine_axes(v.axes for v in vars)
 
-  # Include axes in the list of vars (for writing to netcdf)
-  vars = list(axes) + vars 
+  # Include axes in the list of vars (for writing to netcdf).
+  # Exclude raw NCDim axes, which don't have any intrinsic values.
+  vars = vars + [a for a in axes if not isinstance(a,NCDim)]
   #vars.extend(axes)
 
   # Variables (and axes) must all have unique names
