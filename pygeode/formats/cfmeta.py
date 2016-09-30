@@ -107,6 +107,7 @@ def encode_cf (dataset):
   from pygeode.axis import NamedAxis, DummyAxis
   from pygeode.var import Var
   from pygeode.timeutils import reltime
+  from copy import copy
   dataset = asdataset(dataset)
   varlist = list(dataset)
   axisdict = dataset.axisdict.copy()
@@ -181,6 +182,16 @@ def encode_cf (dataset):
     # Loosely follow http://cfconventions.org/cf-conventions/v1.6.0/cf-conventions.html#_orthogonal_multidimensional_array_representation_of_time_series
     # Move station lat/lon/name data into separate variables.
     if isinstance(a, Station):
+
+      # For every variable using this axis, attach the station auxarrays as
+      # "coordinates".
+      coordinates = " ".join(a.auxarrays.keys())
+      for i,var in enumerate(varlist):
+        if var.hasaxis(a):
+          var = copy(var)
+          var.atts = dict(var.atts, coordinates=coordinates)
+          varlist[i] = var
+
       # Encode station latitude.
       if 'lat' in a.auxarrays:
         lat = a.auxasvar('lat')
