@@ -684,6 +684,12 @@ class NamedAxis (Axis):
     return Axis.map_to(self, other)
 # }}}
 
+# Dummy axis (values are just placeholders).
+# Useful when there is no intrinsic coordinate system for a dimension.
+# Example could be a dimension in a netCDF file that has no variable
+# associated with it.
+class DummyAxis (NamedAxis): pass
+
 class XAxis (Axis): pass
 class YAxis (Axis): pass
 

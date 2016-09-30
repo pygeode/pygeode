@@ -72,12 +72,12 @@ def fix_name (name):
 def encode_string_var (var):
   import numpy as np
   from pygeode.var import Var
-  from pygeode.formats.netcdf import NCDim
+  from pygeode.axis import DummyAxis
 
   # Construct a 2D character array to hold strings
   strlen = max(len(string) for string in var.values)
   #TODO: make this a simple dimension (no coordinate values needed!)
-  strlen_axis = NCDim (values=np.arange(strlen, dtype='int32'), name=var.name+"_strlen")
+  strlen_axis = DummyAxis (strlen, name=var.name+"_strlen")
   dtype = '|S'+str(strlen)  # For a convenient view on the character array
                                       # (to help popluate it from strings)
 
@@ -104,10 +104,9 @@ def encode_cf (dataset):
   from pygeode.dataset import asdataset, Dataset
   from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
-  from pygeode.axis import NamedAxis
+  from pygeode.axis import NamedAxis, DummyAxis
   from pygeode.var import Var
   from pygeode.timeutils import reltime
-  from pygeode.formats.netcdf import NCDim
   dataset = asdataset(dataset)
   varlist = list(dataset)
   axisdict = dataset.axisdict.copy()
@@ -205,10 +204,7 @@ def encode_cf (dataset):
         varlist.append(var)
         a.auxarrays.pop(auxname)
       # The values in the station axis itself are meaningless, so mark them as such
-      # (cast into a raw NCDim axis).
-      #TODO: Use a more generic class in pygeode.axis instead of this circular
-      #      reference to pygeode.formats.netcdf?
-      axisdict[name] = NCDim(len(a),name=name)
+      axisdict[name] = DummyAxis(len(a),name=name)
       # Identify this data as being timeseries data
       global_atts['featureType'] = "timeSeries"
       # Nothing more to do for this axis type
