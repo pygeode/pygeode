@@ -184,25 +184,23 @@ def encode_cf (dataset):
       # Encode station latitude.
       if 'lat' in a.auxarrays:
         lat = a.auxasvar('lat')
-        lat.atts.update(standard_name="latitude", long_name="station latitude", units="degrees_north")
+        lat.atts = dict(standard_name="latitude", long_name="station latitude", units="degrees_north")
         varlist.append(lat)
-        a.auxarrays.pop('lat')
       # Encode station longitude.
       if 'lon' in a.auxarrays:
         lon = a.auxasvar('lon')
-        lon.atts.update(standard_name="longitude", long_name="station longitude", units="degrees_east")
+        lon.atts = dict(standard_name="longitude", long_name="station longitude", units="degrees_east")
         varlist.append(lon)
-        a.auxarrays.pop('lon')
       # Encode other station attributes
       for auxname in a.auxarrays.keys():
+        if auxname in ('lat','lon'): continue  # Handled above
         var = a.auxasvar(auxname)
         if var.dtype.name.startswith('string'):
           var = encode_string_var(var)
         # Some extra CF encoding for the station name, to use it as the unique identifier.
         if auxname == 'station':
-          var.atts.update(cf_role = "timeseries_id")
+          var.atts = dict(cf_role = "timeseries_id")
         varlist.append(var)
-        a.auxarrays.pop(auxname)
       # The values in the station axis itself are meaningless, so mark them as such
       axisdict[name] = DummyAxis(len(a),name=name)
       # Identify this data as being timeseries data
