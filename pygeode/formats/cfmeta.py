@@ -249,7 +249,7 @@ def encode_cf (dataset):
 # Decode cf-compliant variables
 def decode_cf (dataset, ignore=[]):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
+  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from pygeode import timeutils
   from warnings import warn
@@ -282,7 +282,7 @@ def decode_cf (dataset, ignore=[]):
     if name in ignore: continue
 
     atts = a.atts.copy()
-    plotatts = a.plotatts.copy() # just carry along and pass to new Axis instance (l.282)
+    plotatts = a.plotatts.copy() # just carry along and pass to new Axis instance
 
     # Find any auxiliary arrays
     aux = auxdict[name]
@@ -371,6 +371,23 @@ def decode_cf (dataset, ignore=[]):
           continue
         axisdict[name] = timeutils.modify(axisdict[name], exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
+
+    # Check for station axis
+    if _st == 'station':
+      # Collect all the auxarrays (encoded as "coordinates" in all applicable vars).
+      coordinates = []
+      for var in varlist:
+        if var.hasaxis(a.name):
+          coordinates = var.atts.get("coordinates","").split()
+          break
+      auxarrays = {}
+      for var in varlist:
+        if var.name in coordinates:
+          auxarrays[var.name] = var.get()
+      for coord in coordinates:
+        if coord not in auxarrays:
+          warn ("cfmeta: can't find coordinate '%s' needed by '%s' axis."%(coord,a.name))
+      axisdict[name] = Station(a.values,name=name,**auxarrays)
 
     # put the units back (if we didn't use them)?
     if cls in [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
