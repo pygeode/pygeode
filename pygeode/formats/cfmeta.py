@@ -102,7 +102,7 @@ def decode_string_var (var):
 # Encode a set of variables as cf-compliant
 def encode_cf (dataset):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station
+  from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, NonCoordinateAxis, Station
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from pygeode.axis import NamedAxis, DummyAxis
   from pygeode.var import Var
@@ -178,44 +178,68 @@ def encode_cf (dataset):
       axisdict[name] = NamedAxis(values=reltime(a), name=name, atts=atts, plotatts=plotatts)
       continue
 
-    # Encode station (timeseries) data.
+    # Encode non-coordinate axes, including station (timeseries) data.
     # Loosely follow http://cfconventions.org/cf-conventions/v1.6.0/cf-conventions.html#_orthogonal_multidimensional_array_representation_of_time_series
     # Move station lat/lon/name data into separate variables.
-    if isinstance(a, Station):
+    if isinstance(a, NonCoordinateAxis):
 
-      # For every variable using this axis, attach the station auxarrays as
-      # "coordinates".
-      coordinates = " ".join(a.auxarrays.keys())
-      for i,var in enumerate(varlist):
-        if var.hasaxis(a):
-          var = copy(var)
-          var.atts = dict(var.atts, coordinates=coordinates)
-          varlist[i] = var
+      # Keep track of extra variables created from auxarray data.
+      extra_vars = []
+
+      # Detect certain arrays that should be treated as "coordinates".
+      coordinates = []
 
       # Encode station latitude.
       if 'lat' in a.auxarrays:
         lat = a.auxasvar('lat')
-        lat.atts = dict(standard_name="latitude", long_name="station latitude", units="degrees_north")
-        varlist.append(lat)
+        lat.atts = dict(standard_name="latitude", long_name=a.name+" latitude", units="degrees_north")
+        extra_vars.append(lat)
+        coordinates.append('lat')
       # Encode station longitude.
       if 'lon' in a.auxarrays:
         lon = a.auxasvar('lon')
-        lon.atts = dict(standard_name="longitude", long_name="station longitude", units="degrees_east")
-        varlist.append(lon)
-      # Encode other station attributes
+        lon.atts = dict(standard_name="longitude", long_name=a.name+" longitude", units="degrees_east")
+        extra_vars.append(lon)
+        coordinates.append('lon')
+
+      coordinates = " ".join(coordinates)
+
+      # Encode other auxarrays as generic "ancillary" arrays.
+      ancillary_variables = []
       for auxname in a.auxarrays.keys():
-        if auxname in ('lat','lon'): continue  # Handled above
+        if auxname in coordinates: continue  # Handled above
         var = a.auxasvar(auxname)
         if var.dtype.name.startswith('string'):
           var = encode_string_var(var)
         # Some extra CF encoding for the station name, to use it as the unique identifier.
         if auxname == 'station':
           var.atts = dict(cf_role = "timeseries_id")
-        varlist.append(var)
-      # The values in the station axis itself are meaningless, so mark them as such
+        extra_vars.append(var)
+        ancillary_variables.append(auxname)
+
+      ancillary_variables = " ".join(ancillary_variables)
+
+      # Attach these coordinates to all variables that use this axis.
+      #TODO: cleaner way of adding this information without having to do a shallow copy.
+      for i,var in enumerate(varlist):
+        if var.hasaxis(a):
+          var = copy(var)
+          var.atts = copy(var.atts)
+          if len(coordinates) > 0:
+            var.atts['coordinates'] = coordinates
+          if len(ancillary_variables) > 0:
+            var.atts['ancillary_variables'] = ancillary_variables
+          varlist[i] = var
+
+      # Add these coordinates / ancillary variables to the output.
+      varlist.extend(extra_vars)
+
+      # The values in the axis itself are meaningless, so mark them as such
       axisdict[name] = DummyAxis(len(a),name=name)
-      # Identify this data as being timeseries data
-      global_atts['featureType'] = "timeSeries"
+
+      # Special case: Station (timeseries) data.
+      if isinstance(a, Station):
+        global_atts['featureType'] = "timeSeries"
       # Nothing more to do for this axis type
       continue
 
@@ -396,7 +420,7 @@ def decode_cf (dataset, ignore=[]):
 
     # If we found any such information, then this is no longer a simple
     # "dummy" axis.
-    if cls is DummyAxis and len(dependencies) > 0:
+    if isinstance(a,DummyAxis) and len(dependencies) > 0:
       cls = NonCoordinateAxis
 
     # Attach the information from these dependent variables as auxiliary arrays.
