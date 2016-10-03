@@ -249,7 +249,7 @@ def encode_cf (dataset):
 # Decode cf-compliant variables
 def decode_cf (dataset, ignore=[]):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station
+  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station, DummyAxis, NonCoordinateAxis
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from pygeode import timeutils
   from warnings import warn
@@ -377,26 +377,39 @@ def decode_cf (dataset, ignore=[]):
         axisdict[name] = timeutils.modify(axisdict[name], exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
 
-    # Check for station axis
-    if _st == 'station':
-      # Collect all the auxarrays (encoded as "coordinates" in all applicable vars).
-      coordinates = []
+    # Check for non-coordinate axes (where there are no values in
+    # the axis itself, but it has auxiliary values from other variables).
+    # Also, it must be the axis for other coordinate-type variables,
+    # otherwise, it's just a dummy axis with nothing inside it.
+    noncoord = False
+    if isinstance(a,DummyAxis):
       for var in varlist:
-        if var.hasaxis(a.name):
-          coordinates = var.atts.get("coordinates","").split()
-          break
+        if var.hasaxis(a.name) and 'coordinates' in var.atts:
+          coordinates = var.atts['coordinates'].split()
+          # Only consider 1D coordinate variables, since we don't yet have
+          # a way to associate multidimensional coordinates as auxarrays in
+          # an axis.
+          coordinates = [v for v in varlist if v.name in coordinates and v.naxes == 1]
+          if any(c.hasaxis(a.name) for c in coordinates):
+            noncoord = True
+            break
+    if noncoord:
+      cls = NonCoordinateAxis
+      # Special case: a "station" axis
+      if _st == 'station':
+        cls = Station
       auxarrays = {}
       for i,var in enumerate(varlist):
-        if var.name in coordinates:
+        if any(c is var for c in coordinates):
           auxarrays[var.name] = var.get()
           # Remove these coordinate variables from the list, since they're
           # now attached to the station axis.
           varlist[i] = None
       varlist = filter(None,varlist)
       for coord in coordinates:
-        if coord not in auxarrays:
-          warn ("cfmeta: can't find coordinate '%s' needed by '%s' axis."%(coord,a.name))
-      axisdict[name] = Station(a.values,name=name,**auxarrays)
+        if coord.name not in auxarrays:
+          warn ("cfmeta: can't find coordinate '%s' needed by '%s' axis."%(coord.name,a.name))
+      axisdict[name] = cls(a.values,name=name,**auxarrays)
 
     # put the units back (if we didn't use them)?
     if cls in [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
