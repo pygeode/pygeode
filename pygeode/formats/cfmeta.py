@@ -377,10 +377,9 @@ def decode_cf (dataset, ignore=[]):
         axisdict[name] = timeutils.modify(axisdict[name], exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
 
-    # Check for non-coordinate axes (where there are no values in
-    # the axis itself, but it has auxiliary values from other variables).
-    # Also, it must be the axis for other coordinate-type or ancillary-type
-    # variables, otherwise, it's just a dummy axis with nothing inside it.
+    # Find any other information that should be put inside this axis.
+    # Look for anything that's identified as a coordinate or anicllary
+    # variable, and that has this axis as its only dimension.
     dependencies = set()
     for var in varlist:
       if var.hasaxis(a.name):
@@ -390,27 +389,28 @@ def decode_cf (dataset, ignore=[]):
     # don't yet have a way to associate multidimensional arrays as auxarrays
     # in an axis.
     dependencies = [v for v in varlist if v.name in dependencies and v.naxes == 1 and v.hasaxis(a.name)]
+
+    # If we found any such information, then this is no longer a simple
+    # "dummy" axis.
     if isinstance(a,DummyAxis) and len(dependencies) > 0:
       cls = NonCoordinateAxis
       # Special case: a "station" axis
       if _st == 'station':
         cls = Station
-      # Attach the information from these dependent variables as auxiliary arrays.
-      auxarrays = dict((dep.name,dep.get()) for dep in dependencies)
-      # Remove these variables from the list, since they're now inside this axis.
-      varlist = [v for v in varlist if v.name not in auxarrays]
-      # Define the new axis.
-      axisdict[name] = cls(a.values,name=name,**auxarrays)
+
+    # Attach the information from these dependent variables as auxiliary arrays.
+    aux.update((dep.name,dep.get()) for dep in dependencies)
+
+    # Anything that got attached to this axis should be removed from the
+    # list of variables, since it's just extra info specific to the axis.
+    varlist = [v for v in varlist if v.name not in aux]
 
 
     # put the units back (if we didn't use them)?
     if cls in [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
 
-    # create new axis instance if need be (only if a is a generic axis, to prevent replacement of custom axes)
-    # TODO: don't do this check.  This filter *should* be called before any
-    # custom axis overrides, so we *should* be able to assume we only have
-    # generic Axis objects at this point (at least, from the netcdf_new module)
-    if (type(a) in (Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis)) and (cls != type(a)): 
+    # create new axis instance if need be.
+    if cls != type(a):
       axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
 
   # Apply these new axes to the variables
