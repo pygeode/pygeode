@@ -295,7 +295,7 @@ def decode_cf (dataset, ignore=[]):
       _anc = atts.pop('ancillary_variables')
       remove_from_dataset = []  # vars to remove from the dataset
       for auxname in _anc.split(' '):
-        assert any(v.name == auxname for v in varlist), "ancilliary variable '%s' not found"%auxname
+        assert any(v.name == auxname for v in varlist), "ancillary variable '%s' not found"%auxname
         newname = auxname
         # Remove the axis name prefix, if it was used
         if newname.startswith(name+'_'): newname = newname[len(name)+1:]
@@ -379,37 +379,29 @@ def decode_cf (dataset, ignore=[]):
 
     # Check for non-coordinate axes (where there are no values in
     # the axis itself, but it has auxiliary values from other variables).
-    # Also, it must be the axis for other coordinate-type variables,
-    # otherwise, it's just a dummy axis with nothing inside it.
-    noncoord = False
-    if isinstance(a,DummyAxis):
-      for var in varlist:
-        if var.hasaxis(a.name) and 'coordinates' in var.atts:
-          coordinates = var.atts['coordinates'].split()
-          # Only consider 1D coordinate variables, since we don't yet have
-          # a way to associate multidimensional coordinates as auxarrays in
-          # an axis.
-          coordinates = [v for v in varlist if v.name in coordinates and v.naxes == 1]
-          if any(c.hasaxis(a.name) for c in coordinates):
-            noncoord = True
-            break
-    if noncoord:
+    # Also, it must be the axis for other coordinate-type or ancillary-type
+    # variables, otherwise, it's just a dummy axis with nothing inside it.
+    dependencies = set()
+    for var in varlist:
+      if var.hasaxis(a.name):
+        dependencies.update(var.atts.get('coordinates','').split())
+        dependencies.update(var.atts.get('ancillary_variables','').split())
+    # Look up these dependencies.  Only consider 1D information, since we
+    # don't yet have a way to associate multidimensional arrays as auxarrays
+    # in an axis.
+    dependencies = [v for v in varlist if v.name in dependencies and v.naxes == 1 and v.hasaxis(a.name)]
+    if isinstance(a,DummyAxis) and len(dependencies) > 0:
       cls = NonCoordinateAxis
       # Special case: a "station" axis
       if _st == 'station':
         cls = Station
-      auxarrays = {}
-      for i,var in enumerate(varlist):
-        if any(c is var for c in coordinates):
-          auxarrays[var.name] = var.get()
-          # Remove these coordinate variables from the list, since they're
-          # now attached to the station axis.
-          varlist[i] = None
-      varlist = filter(None,varlist)
-      for coord in coordinates:
-        if coord.name not in auxarrays:
-          warn ("cfmeta: can't find coordinate '%s' needed by '%s' axis."%(coord.name,a.name))
+      # Attach the information from these dependent variables as auxiliary arrays.
+      auxarrays = dict((dep.name,dep.get()) for dep in dependencies)
+      # Remove these variables from the list, since they're now inside this axis.
+      varlist = [v for v in varlist if v.name not in auxarrays]
+      # Define the new axis.
       axisdict[name] = cls(a.values,name=name,**auxarrays)
+
 
     # put the units back (if we didn't use them)?
     if cls in [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
