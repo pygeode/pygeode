@@ -262,6 +262,11 @@ def decode_cf (dataset, ignore=[]):
   global_atts = dataset.atts
   del dataset
 
+  # Decode string variables
+  for i,var in enumerate(varlist):
+    if var.name.endswith("_name") and var.dtype.name == "string8" and var.axes[-1].name.endswith("_strlen"):
+      varlist[i] = decode_string_var(var)
+
   # data for auxiliary arrays
   auxdict = {}
   for name in axisdict.iterkeys(): auxdict[name] = {}
@@ -381,9 +386,13 @@ def decode_cf (dataset, ignore=[]):
           coordinates = var.atts.get("coordinates","").split()
           break
       auxarrays = {}
-      for var in varlist:
+      for i,var in enumerate(varlist):
         if var.name in coordinates:
           auxarrays[var.name] = var.get()
+          # Remove these coordinate variables from the list, since they're
+          # now attached to the station axis.
+          varlist[i] = None
+      varlist = filter(None,varlist)
       for coord in coordinates:
         if coord not in auxarrays:
           warn ("cfmeta: can't find coordinate '%s' needed by '%s' axis."%(coord,a.name))
