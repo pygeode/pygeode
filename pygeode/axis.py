@@ -1104,9 +1104,17 @@ class NonCoordinateAxis(Axis):
     return -1
   # Modify formatvalue to convert dummy indices to the appropriate values
   def formatvalue(self, value, fmt=None, units=False, unitstr=None):
-    if value not in range(len(self)) or self._name not in self.auxarrays:
+    # Check if the value is in range.
+    if value not in range(len(self)):
       return "?%s?"%value
-    return str(self.auxarrays[self._name][value])
+    # Check if we have a special aux array with the same name as the axis.
+    # In this case, use those values as the string.
+    if self._name in self.auxarrays:
+      return str(self.auxarrays[self._name][value])
+    # Otherwise, return all the key/value pairs for all aux arrays.
+    out = [name+"="+str(array[value]) for name,array in self.auxarrays.iteritems()]
+    out = ",".join(out)
+    return "("+out+")"
   # Modify map_to do use exact matching.
   # (Avoids use of tools.map_to, which assumes the values are numerical)
   #TODO: Make this the default for Axis (don't assume we have numerical values?)
