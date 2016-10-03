@@ -338,6 +338,10 @@ def decode_cf (dataset, ignore=[]):
         cls = Hybrid
       else:
         warn ("Cannot create a proper Hybrid vertical axis, since 'A' and 'B' coefficients aren't found.")
+
+    if _st == 'station':
+      cls = Station
+
     if (_st == 'time' or cls == TAxis or _units.startswith('days since') or _units.startswith('hours since') or _units.startswith('minutes since') or _units.startswith('seconds since')) and ' since ' in _units:
       _calendar = atts.pop('calendar', 'standard')
       if _calendar in ('standard', 'gregorian', 'proleptic_gregorian'): cls = StandardTime
@@ -392,11 +396,8 @@ def decode_cf (dataset, ignore=[]):
 
     # If we found any such information, then this is no longer a simple
     # "dummy" axis.
-    if isinstance(a,DummyAxis) and len(dependencies) > 0:
+    if cls is DummyAxis and len(dependencies) > 0:
       cls = NonCoordinateAxis
-      # Special case: a "station" axis
-      if _st == 'station':
-        cls = Station
 
     # Attach the information from these dependent variables as auxiliary arrays.
     aux.update((dep.name,dep.get()) for dep in dependencies)
