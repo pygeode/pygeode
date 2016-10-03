@@ -1073,16 +1073,12 @@ class NonCoordinateAxis(Axis):
   # Refresh the coordinate values (should always be monotonically increasing integers).
   def __init__ (self, *args, **kwargs):
     import numpy as np
-    values = kwargs.pop('values',None)
-    if values is None and len(args) > 0:
-      values = args[0]
-      args = args[1:]
-    if values is not None:
-      N = len(values)
-    else:
-      N = [len(kw) for kw in kwargs.values() if hasattr(kw,'__len__')][0]
-    values = np.arange(N)
-    Axis.__init__(self, values, *args, **kwargs)
+    lengths = [len(kw) for kw in kwargs.values() if isinstance(kw,(list,tuple,np.ndarray))]
+    if len(lengths) == 0:
+      raise ValueError("Unable to determine a length for the non-coordinate axis.")
+    N = lengths[0]
+    kwargs['values'] = np.arange(N)
+    Axis.__init__(self, **kwargs)
     # Remember original name
     self._name = self.name
 
