@@ -113,4 +113,15 @@ def test_concat():
   print 'x.slice[:,7:9]:', test2
   assert np.all(test1 == test2)
 
-
+# Test writing to netcdf, and reading back in
+def test_encode_decode():
+  from pygeode.formats import netcdf
+  import numpy as np
+  x = make_var()
+  netcdf.save("issue068_test.nc", x)
+  y = netcdf.open("issue068_test.nc").dummy
+  type1 = type(x.station)
+  type2 = type(y.station)
+  assert type1 is type2, (type1, type2)
+  assert x.station == y.station
+  assert np.all(x.get() == y.get())

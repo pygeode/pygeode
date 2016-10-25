@@ -66,15 +66,48 @@ def fix_name (name):
   return name
 
 
+# Convert a 1D string variable into a 2D character variable
+# (useful for encoding string arrays into netcdf)
+# Taken from EC-CAS diagnostic package.
+def encode_string_var (var):
+  import numpy as np
+  from pygeode.var import Var
+  from pygeode.axis import DummyAxis
+
+  # Construct a 2D character array to hold strings
+  strlen = max(len(string) for string in var.values)
+  #TODO: make this a simple dimension (no coordinate values needed!)
+  strlen_axis = DummyAxis (strlen, name=var.name+"_strlen")
+  dtype = '|S'+str(strlen)  # For a convenient view on the character array
+                                      # (to help popluate it from strings)
+
+  data = np.zeros(list(var.shape)+[strlen], dtype='|S1')
+  data.view(dtype)[...,0] = var.values
+  var = Var(list(var.axes)+[strlen_axis], values=data, name=var.name+"_name")
+  return var
+
+# Convert a 2D character variable back into a 1D string variable
+# Taken from EC-CAS diagnostic package.
+def decode_string_var (var):
+  from pygeode.var import Var
+
+  name = var.name
+  if name.endswith('_name'):
+    name = name[:-5]
+  data = [''.join(s) for s in var.get()]
+  return Var(axes=var.axes[:-1], values=data, name=name)
+
+
 ###############################################################################
 # Encode a set of variables as cf-compliant
 def encode_cf (dataset):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
+  from pygeode.axis import Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, NonCoordinateAxis, Station
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
-  from pygeode.axis import NamedAxis
+  from pygeode.axis import NamedAxis, DummyAxis
   from pygeode.var import Var
   from pygeode.timeutils import reltime
+  from copy import copy
   dataset = asdataset(dataset)
   varlist = list(dataset)
   axisdict = dataset.axisdict.copy()
@@ -105,7 +138,7 @@ def encode_cf (dataset):
   # Metadata based on axis classes
   for name,a in axisdict.items():
     atts = a.atts.copy()
-    plotatts = a.plotatts.copy() # passed on to Axis constructor (l.139)
+    plotatts = a.plotatts.copy() # passed on to Axis constructor
     
     if isinstance(a,Lat):
       atts['standard_name'] = 'latitude'
@@ -145,6 +178,71 @@ def encode_cf (dataset):
       axisdict[name] = NamedAxis(values=reltime(a), name=name, atts=atts, plotatts=plotatts)
       continue
 
+    # Encode non-coordinate axes, including station (timeseries) data.
+    # Loosely follow http://cfconventions.org/cf-conventions/v1.6.0/cf-conventions.html#_orthogonal_multidimensional_array_representation_of_time_series
+    # Move station lat/lon/name data into separate variables.
+    if isinstance(a, NonCoordinateAxis):
+
+      # Keep track of extra variables created from auxarray data.
+      extra_vars = []
+
+      # Detect certain arrays that should be treated as "coordinates".
+      coordinates = []
+
+      # Encode station latitude.
+      if 'lat' in a.auxarrays:
+        lat = a.auxasvar('lat')
+        lat.atts = dict(standard_name="latitude", long_name=a.name+" latitude", units="degrees_north")
+        extra_vars.append(lat)
+        coordinates.append('lat')
+      # Encode station longitude.
+      if 'lon' in a.auxarrays:
+        lon = a.auxasvar('lon')
+        lon.atts = dict(standard_name="longitude", long_name=a.name+" longitude", units="degrees_east")
+        extra_vars.append(lon)
+        coordinates.append('lon')
+
+      coordinates = " ".join(coordinates)
+
+      # Encode other auxarrays as generic "ancillary" arrays.
+      ancillary_variables = []
+      for auxname in a.auxarrays.keys():
+        if auxname in coordinates: continue  # Handled above
+        var = a.auxasvar(auxname)
+        if var.dtype.name.startswith('string'):
+          var = encode_string_var(var)
+        # Some extra CF encoding for the station name, to use it as the unique identifier.
+        if auxname == 'station':
+          var.atts = dict(cf_role = "timeseries_id")
+        extra_vars.append(var)
+        ancillary_variables.append(auxname)
+
+      ancillary_variables = " ".join(ancillary_variables)
+
+      # Attach these coordinates to all variables that use this axis.
+      #TODO: cleaner way of adding this information without having to do a shallow copy.
+      for i,var in enumerate(varlist):
+        if var.hasaxis(a):
+          var = copy(var)
+          var.atts = copy(var.atts)
+          if len(coordinates) > 0:
+            var.atts['coordinates'] = coordinates
+          if len(ancillary_variables) > 0:
+            var.atts['ancillary_variables'] = ancillary_variables
+          varlist[i] = var
+
+      # Add these coordinates / ancillary variables to the output.
+      varlist.extend(extra_vars)
+
+      # The values in the axis itself are meaningless, so mark them as such
+      axisdict[name] = DummyAxis(len(a),name=name)
+
+      # Special case: Station (timeseries) data.
+      if isinstance(a, Station):
+        global_atts['featureType'] = "timeSeries"
+      # Nothing more to do for this axis type
+      continue
+
     # Add associated arrays as new variables
     auxarrays = a.auxarrays
     for aux,values in auxarrays.iteritems():
@@ -163,7 +261,7 @@ def encode_cf (dataset):
     name = oldvar.name
     try:
       #TODO: use Var.replace_axes instead?
-      varlist[i] = var_newaxes(oldvar, [axisdict[a.name] for a in oldvar.axes], atts=oldvar.atts, plotatts=oldvar.plotatts)
+      varlist[i] = var_newaxes(oldvar, [axisdict.get(a.name,a) for a in oldvar.axes], atts=oldvar.atts, plotatts=oldvar.plotatts)
     except KeyError:
       print '??', a.name, axisdict
       raise
@@ -175,7 +273,7 @@ def encode_cf (dataset):
 # Decode cf-compliant variables
 def decode_cf (dataset, ignore=[]):
   from pygeode.dataset import asdataset, Dataset
-  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis
+  from pygeode.axis import Axis, NamedAxis, Lat, Lon, Pres, Hybrid, XAxis, YAxis, ZAxis, TAxis, Station, DummyAxis, NonCoordinateAxis
   from pygeode.timeaxis import Time, ModelTime365, ModelTime360, StandardTime, Yearless
   from pygeode import timeutils
   from warnings import warn
@@ -187,6 +285,11 @@ def decode_cf (dataset, ignore=[]):
   axisdict = dataset.axisdict.copy()
   global_atts = dataset.atts
   del dataset
+
+  # Decode string variables
+  for i,var in enumerate(varlist):
+    if var.name.endswith("_name") and var.dtype.name == "string8" and var.axes[-1].name.endswith("_strlen"):
+      varlist[i] = decode_string_var(var)
 
   # data for auxiliary arrays
   auxdict = {}
@@ -208,7 +311,7 @@ def decode_cf (dataset, ignore=[]):
     if name in ignore: continue
 
     atts = a.atts.copy()
-    plotatts = a.plotatts.copy() # just carry along and pass to new Axis instance (l.282)
+    plotatts = a.plotatts.copy() # just carry along and pass to new Axis instance
 
     # Find any auxiliary arrays
     aux = auxdict[name]
@@ -216,7 +319,7 @@ def decode_cf (dataset, ignore=[]):
       _anc = atts.pop('ancillary_variables')
       remove_from_dataset = []  # vars to remove from the dataset
       for auxname in _anc.split(' '):
-        assert any(v.name == auxname for v in varlist), "ancilliary variable '%s' not found"%auxname
+        assert any(v.name == auxname for v in varlist), "ancillary variable '%s' not found"%auxname
         newname = auxname
         # Remove the axis name prefix, if it was used
         if newname.startswith(name+'_'): newname = newname[len(name)+1:]
@@ -259,6 +362,10 @@ def decode_cf (dataset, ignore=[]):
         cls = Hybrid
       else:
         warn ("Cannot create a proper Hybrid vertical axis, since 'A' and 'B' coefficients aren't found.")
+
+    if _st == 'station':
+      cls = Station
+
     if (_st == 'time' or cls == TAxis or _units.startswith('days since') or _units.startswith('hours since') or _units.startswith('minutes since') or _units.startswith('seconds since')) and ' since ' in _units:
       _calendar = atts.pop('calendar', 'standard')
       if _calendar in ('standard', 'gregorian', 'proleptic_gregorian'): cls = StandardTime
@@ -298,14 +405,37 @@ def decode_cf (dataset, ignore=[]):
         axisdict[name] = timeutils.modify(axisdict[name], exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
 
+    # Find any other information that should be put inside this axis.
+    # Look for anything that's identified as a coordinate or anicllary
+    # variable, and that has this axis as its only dimension.
+    dependencies = set()
+    for var in varlist:
+      if var.hasaxis(a.name):
+        dependencies.update(var.atts.get('coordinates','').split())
+        dependencies.update(var.atts.get('ancillary_variables','').split())
+    # Look up these dependencies.  Only consider 1D information, since we
+    # don't yet have a way to associate multidimensional arrays as auxarrays
+    # in an axis.
+    dependencies = [v for v in varlist if v.name in dependencies and v.naxes == 1 and v.hasaxis(a.name)]
+
+    # If we found any such information, then this is no longer a simple
+    # "dummy" axis.
+    if isinstance(a,DummyAxis) and len(dependencies) > 0:
+      cls = NonCoordinateAxis
+
+    # Attach the information from these dependent variables as auxiliary arrays.
+    aux.update((dep.name,dep.get()) for dep in dependencies)
+
+    # Anything that got attached to this axis should be removed from the
+    # list of variables, since it's just extra info specific to the axis.
+    varlist = [v for v in varlist if v.name not in aux]
+
+
     # put the units back (if we didn't use them)?
     if cls in [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis] and _units != '': atts['units'] = _units
 
-    # create new axis instance if need be (only if a is a generic axis, to prevent replacement of custom axes)
-    # TODO: don't do this check.  This filter *should* be called before any
-    # custom axis overrides, so we *should* be able to assume we only have
-    # generic Axis objects at this point (at least, from the netcdf_new module)
-    if (type(a) in (Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis)) and (cls != type(a)): 
+    # create new axis instance if need be.
+    if cls != type(a):
       axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
 
   # Apply these new axes to the variables

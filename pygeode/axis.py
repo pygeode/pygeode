@@ -684,6 +684,12 @@ class NamedAxis (Axis):
     return Axis.map_to(self, other)
 # }}}
 
+# Dummy axis (values are just placeholders).
+# Useful when there is no intrinsic coordinate system for a dimension.
+# Example could be a dimension in a netCDF file that has no variable
+# associated with it.
+class DummyAxis (NamedAxis): pass
+
 class XAxis (Axis): pass
 class YAxis (Axis): pass
 
@@ -1067,16 +1073,12 @@ class NonCoordinateAxis(Axis):
   # Refresh the coordinate values (should always be monotonically increasing integers).
   def __init__ (self, *args, **kwargs):
     import numpy as np
-    values = kwargs.pop('values',None)
-    if values is None and len(args) > 0:
-      values = args[0]
-      args = args[1:]
-    if values is not None:
-      N = len(values)
-    else:
-      N = [len(kw) for kw in kwargs.values() if hasattr(kw,'__len__')][0]
-    values = np.arange(N)
-    Axis.__init__(self, values, *args, **kwargs)
+    lengths = [len(kw) for kw in kwargs.values() if isinstance(kw,(list,tuple,np.ndarray))]
+    if len(lengths) == 0:
+      raise ValueError("Unable to determine a length for the non-coordinate axis.")
+    N = lengths[0]
+    kwargs['values'] = np.arange(N)
+    Axis.__init__(self, **kwargs)
     # Remember original name
     self._name = self.name
 
@@ -1102,9 +1104,17 @@ class NonCoordinateAxis(Axis):
     return -1
   # Modify formatvalue to convert dummy indices to the appropriate values
   def formatvalue(self, value, fmt=None, units=False, unitstr=None):
-    if value not in range(len(self)) or self._name not in self.auxarrays:
+    # Check if the value is in range.
+    if value not in range(len(self)):
       return "?%s?"%value
-    return str(self.auxarrays[self._name][value])
+    # Check if we have a special aux array with the same name as the axis.
+    # In this case, use those values as the string.
+    if self._name in self.auxarrays:
+      return str(self.auxarrays[self._name][value])
+    # Otherwise, return all the key/value pairs for all aux arrays.
+    out = [name+"="+str(array[value]) for name,array in self.auxarrays.iteritems()]
+    out = ",".join(out)
+    return "("+out+")"
   # Modify map_to do use exact matching.
   # (Avoids use of tools.map_to, which assumes the values are numerical)
   #TODO: Make this the default for Axis (don't assume we have numerical values?)
