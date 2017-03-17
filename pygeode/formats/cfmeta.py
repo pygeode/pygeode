@@ -305,7 +305,7 @@ def decode_cf (dataset, ignore=[]):
     # TODO: don't do this check.  This filter *should* be called before any
     # custom axis overrides, so we *should* be able to assume we only have
     # generic Axis objects at this point (at least, from the netcdf_new module)
-    if (type(a) in (Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis)) and (cls != type(a)): 
+    if type(a) is NamedAxis or (type(a) in (Axis, XAxis, YAxis, ZAxis, TAxis) and cls != type(a)): 
       axisdict[name] = cls(values=a.values, name=name, atts=atts, **aux)
 
   # Apply these new axes to the variables
