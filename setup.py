@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 import sys
 import numpy as np
 
@@ -15,7 +15,7 @@ gribcore = Extension ('pygeode.formats.gribcore', sources=['pygeode/formats/grib
 
 # PyGeode installation script
 
-setup (	name="python-pygeode",
+setup (	name="pygeode",
 	version="1.0.5",
         description = "Gridded data manipulator for Python",
 	long_description = """\
@@ -38,7 +38,7 @@ the underlying computations and to create plots.
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="pygeode-users@googlegroups.com",
         url="http://pygeode.github.io",
-	requires=['numpy','matplotlib','progressbar'], # NOTE: distutils doesn't ever check this!
+	install_requires=['numpy','scipy','matplotlib','progressbar'],
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
