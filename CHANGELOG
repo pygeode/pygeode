@@ -1,3 +1,8 @@
+1.0.6 - 2017/03/31
+ - Fixed missing parentheses in interp.c, which could cause a compilation failure.
+ - Fixed RPM installation configuration.
+ - Switched from distutils to setuptools, in order to make wheel files.
+
 1.0.5 - 2016/07/07
  - Fixed segmentation fault when initializing a time axis with an invalid month.
    (issue #76).
