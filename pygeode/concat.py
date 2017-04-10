@@ -86,8 +86,9 @@ class ConcatVar(Var):
 
 def concat (*vars, **kwargs):
   from pygeode.var import Var
+  from pygeode.tools import islist
   # Already passed a list?
-  if len(vars) == 1 and isinstance(vars[0], (list,tuple)):
+  if len(vars) == 1 and islist(vars[0]):
     vars = vars[0]
   # Degenerate case: only one segment
   if len(vars) == 1: return vars[0]

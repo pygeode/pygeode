@@ -71,7 +71,23 @@ __all__.extend(taxis_all)
 
 # Static methods
 
-#TODO: concat method, which can work on both Datasets and Vars?
+# Top-level concat method, which can work on both Datasets and Vars.
+def concat (*items, **kwargs):
+  """
+  Concatenates multiple Var or Dataset objects together.
+  """
+  from pygeode.tools import islist
+  from pygeode.var import Var
+  from pygeode.dataset import Dataset, concat as concat_datasets
+  from concat import concat as concat_vars
+  # Items already wrapped as a list (now inside another list)?
+  if len(items) == 1 and islist(items[0]):
+    return concat(*items[0], **kwargs)
+  if isinstance(items[0],Var):
+    return concat_vars(*items, **kwargs)
+  if isinstance(items[0],Dataset):
+    return concat_datasets(*items, **kwargs)
+  raise TypeError("Unable to concatenate objects of type '%s'"%type(items[0]))
 
 from pygeode.ufunc import *
 from pygeode.ufunc import __all__ as ufunc_all
