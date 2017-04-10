@@ -152,7 +152,8 @@ class Interp (Var):
 # }}}
 
 def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
-                d_below = float('nan'), d_above = float('nan')):
+                d_below = float('nan'), d_above = float('nan'),
+                transpose = True):
 # {{{
   """
   Interpolates a variable along a single dimension.
@@ -185,6 +186,9 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
   d_above : float (optional)
     The slope for linearly extrapolating above the input data.
     By default, no extrapolation is done.
+  transpose : boolean (optional)
+    If True, tranposes the output axes so the interpolated one first.
+    Default is True.
 
   Returns
   -------
@@ -239,7 +243,13 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
     using log(pressure) internally as the coordinate over which to perform
     the interpolation.
   """
-  return Interp(var, inaxis, outaxis, inx, outx, interp_type, d_below, d_above)
+  out = Interp(var, inaxis, outaxis, inx, outx, interp_type, d_below, d_above)
+  # Do we need to un-tranpose the axes back to the original order?
+  if transpose is False:
+    out_order = map(type,var.axes)
+    out_order[var.whichaxis(inaxis)] = type(outaxis)
+    out = out.transpose(*out_order)
+  return out
 # }}}
 
 del Var
