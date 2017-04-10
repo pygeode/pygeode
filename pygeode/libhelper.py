@@ -9,7 +9,11 @@ def get_library_paths():
   # Search in PyGeode directory
   paths = [p for p in pygeode.__path__]
   # Search relative to python install prefix
+  paths.append(path.join(path.sep, sys.prefix, 'lib', 'pygeode'))
   paths.append(path.join(path.sep, sys.prefix, 'lib'))
+  # Search in linux system paths
+  paths.append(path.join(path.sep, 'usr', 'lib', 'pygeode'))
+  paths.append(path.join(path.sep, 'usr', 'local', 'lib', 'pygeode'))
   # Search LD_LIBRARY_PATH
   paths += [d for d in os.environ.get('LD_LIBRARY_PATH','').split(':')]
   return paths

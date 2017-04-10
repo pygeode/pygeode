@@ -32,6 +32,34 @@
     files together into a dataset.
   - Added some new and interesting bugs to the code.
 
+1.0.6 - 2017/03/31
+ - Fixed missing parentheses in interp.c, which could cause a compilation failure.
+ - Fixed RPM installation configuration.
+ - Switched from distutils to setuptools, in order to make wheel files.
+
+1.0.5 - 2016/07/07
+ - Fixed segmentation fault when initializing a time axis with an invalid month.
+   (issue #76).
+ - Allow tools.loopover to handle Axis arguments.  Certain operations such as
+   smooth() were crashing when operating on an Axis object (issue #86).
+ - Preserve variable metadata when doing climatologies (issue #89).
+ - In multifile.openall(), don't require a format if an opener is provided.
+   (issue #90).
+ - Fixed a pointer issue in interpcore, in the case where there aren't enough
+   valid points to do an interpolation.
+
+1.0.4 - 2015/11/04
+ - Set attribute Conventions="CF-1.0" in netcdf output files, so other netcdf
+   utilities know how to parse our data.
+ - Added system include paths for non-standard prefix installs (conda), as well
+   as to the libhelper routines for finding libraries
+
+1.0.3 - 2015/06/16
+ - Allow other PyGeode formats to be installed in parallel Python paths.
+ - Add LD_LIBRARY_PATH to search path in libhelper.find_library().
+ - Force double-precision in val_as_date, to prevent precision loss when
+   computing dates.
+
 1.0.2 - 2015/03/24
  - Fixed bugs in regress and correlate in axis matching logic.
  - Allow timeaxes to support unordered values (issue 69).
