@@ -1,6 +1,36 @@
 1.1.0 - UNRELEASED
+  - Allow some settings to be read from a configuration file (pygrc).
   - Added an option to disable lazy array evaluation, for cases where this
     feature gets in the way.
+  - Option to back variables into "shorts" when saving netCDF files,
+    triggered by passing pack=True to netcdf.save().
+  - Allow specifying an "unlimited" dimension when saving netCDF files.
+  - Added load() method to Dataset objects, to load all the associated
+    variables in memory.
+  - New plot routines: vstreamplot, vhist, and fill_between.
+  - New plot.cm module to help with colormaps.
+  - New plot.cnt_helpers module for setting up contour intervals.
+  - New "yearlymean" and "climstdev" operators in climat module.
+  - Allow weights to be used in variance operator.
+  - Added second-derivative operator (triggered by passing df=2 to "deriv").
+  - New forward difference operator ("diff").
+  - Added conjugation operator ("conj").
+  - Added option to compute covariance matrix of regression coefficients in
+    multiple_regress.
+  - New "s_" prefix for axis subsetting, to "squeeze" the axis out after
+    selecting a particular value.
+  - New "n_" prefix for axis subsetting, to "negate" the selection criteria.
+  - New "station" axis, for data that's sample at predetermined surface stations.
+  - Also, added more general "non-coordinate" axes where the values are not
+    part of a continuum, and need not even be numeric.
+  - New time axis constructor helpers (standardtimerange, standardtimen,
+    modeltime365range, modeltime365n, modeltime360range, modeltime360n,
+    yearlessn).
+  - New "check_multi" routine in formats.multifile, to pre-scan all files and
+    report any problems with the files.
+  - New "formats.data_scanner" module for loading more general (heterogeneous)
+    files together into a dataset.
+  - Added some new and interesting bugs to the code.
 
 1.0.2 - 2015/03/24
  - Fixed bugs in regress and correlate in axis matching logic.
