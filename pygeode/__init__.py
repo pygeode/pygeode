@@ -119,6 +119,9 @@ from pygeode.spectral import *
 from pygeode.spectral import __all__ as spectral_all
 __all__.extend(spectral_all)
 
+# Dataset shortcuts
+from pygeode.dataset import asdataset
+
 #from pygeode.composite import composite
 
 #### Dynamic shortcuts to plugins ####
