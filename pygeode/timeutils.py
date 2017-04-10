@@ -288,6 +288,8 @@ class LagVar(Var):
   # }}}
 
 del Yearless
+def lag (var, iaxis, lags, reverse=False):
+  return LagVar (var, iaxis, lags, reverse=reverse)
 
 
 # Split a time axis into year,<everything else>
