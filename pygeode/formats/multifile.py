@@ -220,7 +220,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
       d = regex.search(f)
       assert d is not None, "can't use the pattern on the filenames?"
       d = d.groupdict()
-      d = dict([k,int(v)] for k,v in d.iteritems())
+      d = dict([k,int(v)] for k,v in d.iteritems() if v is not None)
       # Apply default values (i.e. for minutes, seconds if they're not in the file format?)
       d = dict({'hour':0, 'minute':0,'second':0}, **d)
       return d

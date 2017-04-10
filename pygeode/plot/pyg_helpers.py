@@ -2,6 +2,7 @@
 # Extends wrapper.py to automatically use information from the Pygeode Vars.
 
 import wrappers as wr
+import cnt_helpers as ch
 import numpy as np
 
 def _getplotatts(var):
@@ -30,7 +31,7 @@ def _buildvartitle(axes=None, plotname=None, plottitle=None, plotunits=None, **d
   else: title = ''
 
   if plotunits not in [None, '']: title += ' [%s]' % plotunits
-    
+
   # Add information on degenerate axes to the title
   if axes is not None:
     for a in [a for a in axes if len(a) == 1]:
@@ -103,7 +104,7 @@ def build_basemap(lons, lats, **kwargs):
 
   if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
                         'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho', 'nsper']:
-    bnds = {'llcrnrlat':lats.min(), 
+    bnds = {'llcrnrlat':lats.min(),
             'urcrnrlat':lats.max(),
             'llcrnrlon':lons.min(),
             'urcrnrlon':lons.max()}
@@ -116,7 +117,7 @@ def build_basemap(lons, lats, **kwargs):
 
   bnds.update(prd)
   prd.update(bnds)
-  
+
   return wr.BasemapAxes(**prd)
 # }}}
 
@@ -146,21 +147,93 @@ def decorate_basemap(axes, **kwargs):
     axes.drawparallels(**pard)
 # }}}
 
+def _parse_autofmt_kwargs(Z, kwargs):
+# {{{
+  ''' Used by showvar and showgrid to parse kwargs for auto-contouring options. '''
+
+  # Process auto contouring dictionaries
+  if 'clevs' in kwargs.keys() or 'clines' in kwargs.keys():
+    tdef = 'raw'
+  else:
+    tdef = 'clf'
+
+  typ = kwargs.pop('type', tdef)
+
+  if typ == 'raw':
+    return kwargs
+      
+  elif typ == 'clf':
+    cdelt = kwargs.pop('cdelt', None)
+    if cdelt is None:
+      z = scalevalues(Z)
+      style = kwargs.pop('style',  None)
+      ndiv  = kwargs.pop('ndiv',  None)
+      cdelt, dct = ch.guessclimits(z, style=style, ndiv=ndiv)
+    else:
+      dct = {}
+      if kwargs.has_key('min') and not kwargs.has_key('style'):
+        dct['style'] = 'seq'
+        dct['ndiv'] = 5
+    dct.update(kwargs)
+    kwargs = ch.clfdict(cdelt, **dct)
+    return kwargs
+
+  elif typ == 'cl':
+    cdelt = kwargs.pop('cdelt', None)
+    if cdelt is None:
+      z = scalevalues(Z)
+      style = kwargs.pop('style',  None)
+      ndiv = kwargs.pop('ndiv', None)
+      cdelt, dct = ch.guessclimits(z, style=style, ndiv=ndiv, clf=False)
+      verbose = True
+    else:
+      ndiv = kwargs.pop('ndiv', 10)
+      range = kwargs.pop('range', ndiv*cdelt)
+      dct = dict(range=range)
+      verbose = False
+    dct.update(kwargs)
+    kwargs = ch.cldict(cdelt, **dct)
+    if verbose:
+      print 'Contour Interval: %0.2g' % cdelt
+      print 'Minimum value: %3g, Maximum value: %3g' % (np.min(z), np.max(z))
+      print 'Minimum contour: %3g, Maximum contour: %3g' % (kwargs['clines'][0], kwargs['clines'][-1])
+
+    return kwargs
+
+  elif typ in ['log', 'log1s']:
+    dct = {}
+    dct.update(kwargs)
+    if not dct.has_key('cmin'):
+      raise ValueError('Must specify cmin (lower bound) for logarithmically spaced contours')
+    kwargs = ch.log1sdict(**dct)
+    return kwargs
+
+  elif typ == 'log2s':
+    dct = {}
+    dct.update(kwargs)
+    if not (dct.has_key('cmin')) :
+      raise ValueError('Must specify cmin (inner boundary for linear spaced interval) for two-sided logarithmically spaced contours')
+    kwargs = ch.log2sdict(**dct)
+    return kwargs
+
+  else:
+    raise ValueError("Unrecognized 2d plot type '%s'" % typ)
+# }}}
+
 # Do a 1D line plot
 def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwargs):
 # {{{
-  ''' 
-  Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+  '''
+  Create a line plot of a variable.
 
   Parameters
   ----------
   var :  :class:`Var`
-     The variable to plot. Should have either 1 or 2 non-degenerate axes.
+     The variable to plot. Should have 1 non-degenerate axis.
 
-  Notes
-  -----
-  This function is intended as the simplest way to display the contents of a variable,
-  choosing appropriate parameter values as automatically as possible.
+  fmt :  string, optional
+     Format of the line. See :func:`pylab.plot`.
+
   '''
 
   Y = var.squeeze().load()
@@ -193,18 +266,13 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
 
 def vhist(var, axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
-  ''' 
-  Plot histogram of values taken by a variable.
+  '''
+  Create a histogram of values taken by a variable.
 
   Parameters
   ----------
   var :  :class:`Var`
-     The variable to compute the histogram of. 
-
-  Notes
-  -----
-  This function is intended as the simplest way to display the contents of a variable,
-  choosing appropriate parameter values as automatically as possible.
+     The variable to compute the histogram of.
   '''
 
   V = var.squeeze().load()
@@ -226,8 +294,8 @@ def vhist(var, axes=None, lblx=True, lbly=True, **kwargs):
 # Do a scatter plot
 def vscatter(varx, vary, axes=None, lblx=True, lbly=True, **kwargs):
 # {{{
-  ''' 
-  Do a scatter plot of a variable.
+  '''
+  Create a scatter plot from two variables with the same shape.
 
   Parameters
   ----------
@@ -268,28 +336,28 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
     The variable to plot. Should have 2 non-degenerate axes.
 
   clevs : integer or collection of numbers, optional
-    Levels at which to construct filled contours through an underlying call to 
-    :func:`matplotlib.contourf`. If None is specified, no filled contours will 
-    be produced, unless clines is also None. If a number is specified, that 
+    Levels at which to construct filled contours through an underlying call to
+    :func:`matplotlib.contourf`. If None is specified, no filled contours will
+    be produced, unless clines is also None. If a number is specified, that
     number of equally spaced contours are chosen. Otherwise the explicit
     values are used.
 
   clines : integer or collection of numbers, optional
-    Levels at which to construct contour lines through an underlying call to 
+    Levels at which to construct contour lines through an underlying call to
     :func:`matplotlib.contour`. If None is specified, no contour lines are
     produced.  If a number is specified, that number of equally spaced contours
     are chosen. Otherwise the explicit values are used.
 
   axes : :class:`AxisWrapper`, optional
-    Axes on which to produce contour plot. If none is specified, one is created. 
+    Axes on which to produce contour plot. If none is specified, one is created.
 
   lblx : bool, optional
     If True, add appropriate tick labels and an axis label on the x axis; if
-    False, the x axis a is left unlabeled. Defaults to True. 
+    False, the x axis a is left unlabeled. Defaults to True.
 
   lbly : bool, optional
     If True, add appropriate tick labels and an axis label on the y axis; if
-    False, the y axis a is left unlabeled. Defaults to True. 
+    False, the y axis a is left unlabeled. Defaults to True.
 
   transpose : bool, optional
     The x and y axes are chosen based on the two degenerate axes of the variable
@@ -309,7 +377,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   Notes
   -----
   If the two axes of the variable are a :class:`Lat` and :class:`Lon` axes,
-  a map projection is created automatically. 
+  a map projection is created automatically.
 
   See Also
   --------
@@ -333,13 +401,13 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   y = scalevalues(Y)
   z = scalevalues(Z.transpose(Y, X))
 
-  if axes is None: 
+  if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and kwargs.get('map', None) is not False:
       axes = build_basemap(x, y, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
-  if clevs is None and clines is None: 
+  if clevs is None and clines is None:
     # If both clevs and clines are None, use default
     axes.contourf(x, y, z, 21, **kwargs)
 
@@ -371,6 +439,12 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 # Do a 2D significance mask
 def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9', mnalpha=1., transpose=None):
 # {{{
+  '''
+  Add significance shading to a contour plot from a variable.
+
+  Parameters
+  ----------
+  '''
   Z = var.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
   X, Y = Z.axes
@@ -411,6 +485,12 @@ def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9',
 # Do a stream plot
 def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
 # {{{
+  '''
+  Create a streamplot from two variables.
+
+  Parameters
+  ----------
+  '''
   U = varu.squeeze()
   V = varv.squeeze()
   assert U.naxes == 2 and V.naxes == 2, 'Variables to quiver must have two non-degenerate axes.'
@@ -434,7 +514,7 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
 
   map = kwargs.pop('map', None)
 
-  if axes is None: 
+  if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
       axes = build_basemap(x, y, map = map, **kwargs)
     else:
@@ -459,6 +539,12 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
 # Do a quiver plot
 def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, transpose=None, **kwargs):
 # {{{
+  '''
+  Create a quiver plot from two variables.
+
+  Parameters
+  ----------
+  '''
   U = varu.squeeze()
   V = varv.squeeze()
   assert U.naxes == 2 and V.naxes == 2, 'Variables to quiver must have two non-degenerate axes.'
@@ -489,7 +575,7 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
 
   map = kwargs.pop('map', None)
 
-  if axes is None: 
+  if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
       axes = build_basemap(x, y, map = map, **kwargs)
     else:
@@ -517,15 +603,38 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
 # Generic catch all interface (plotvar replacement)
 def showvar(var, *args, **kwargs):
 # {{{
-  '''Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+  '''Plot variable, showing a contour plot for 2d variables or a line plot for
+  1d variables.
 
   Parameters
   ----------
   var :  :class:`Var`
      The variable to plot. Should have either 1 or 2 non-degenerate axes.
+     Arguments below relevant only for the 1 dimensional case are labelled [1D],
+     those relevant only for the 2 dimensional case are labelled [2D].
 
-  *args, **kwargs : arguments to pass on to underlying plotting routines, see
-      Notes.
+  fmt : string, optional
+    [1D] matplotlib format to plot line. See :func:`matplotlib.plot()`. Will also
+    be recognized as the second positional argument (after var).
+
+  type : string, optional ['clf']
+    [2D] style of plot to produce. See Notes.
+
+  axes : :class:`AxesWrapper` instance, optional
+    Axes object on which to plot variable. A new one is created if this is not specified.
+
+  transpose: boolean, optional [False]
+    If True, reverse axes.
+
+  lblx: boolean, optional [True]
+    If True, label horizontal axes
+
+  lbly: boolean, optional [True]
+    If True, label vertical axes
+
+  *args, **kwargs :
+    Further arguments are passed on to the underlying plotting routine. See
+    Notes.
 
   Notes
   -----
@@ -537,11 +646,16 @@ def showvar(var, *args, **kwargs):
   pass arguments through. Setting ``colorbar`` to ``False`` suppresses the
   colorbar.
 
+  Returns
+  -------
+  :class:`AxesWrapper` object with plot.
+
   See Also
   --------
   vplot, vcontour, colorbar
   '''
 
+  var = var.load()
   Z = var.squeeze()
   assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.naxes)
 
@@ -553,12 +667,18 @@ def showvar(var, *args, **kwargs):
     if size is not None: ax.size = size
 
   elif Z.naxes == 2:
-    ax = vcontour(var, *args, **kwargs)
-    if size is not None: ax.size = size
+    kwargs = _parse_autofmt_kwargs(Z, kwargs)
 
     cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
+
+    ax = vcontour(var, *args, **kwargs)
+
+    if size is not None: ax.size = size
+
     cf = ax.find_plot(wr.Contourf)
+    cl = ax.find_plot(wr.Contour)
     if cbar and cf is not None:
+      if cl is not None: cbar['lcnt'] = cl
       ax = wr.colorbar(ax, cf, **cbar)
 
   import pylab as pyl
@@ -569,8 +689,8 @@ def showvar(var, *args, **kwargs):
 
 def showcol(vs, size=(4.1,2), **kwargs):
 # {{{
-  ''' 
-  Plot variable, showing a contour plot for 2d variables or a line plot for 1d variables.
+  '''
+  Plot column of contour plots. Superseded by :func:`showgrid`.
 
   Parameters
   ----------
@@ -629,18 +749,16 @@ def showcol(vs, size=(4.1,2), **kwargs):
 
 def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
 # {{{
-  ''' 
-  Plot contours
+  '''
+  Create grid of contour plots of multiple variables.
 
   Parameters
   ----------
-  v :  list of lists of :class:`Var`
-     The variables to plot. Should have either 1 or 2 non-degenerate axes.
+  vf :  list of lists of :class:`Var`
+    The variables to plot. Should have 2 non-degenerate axes.
 
-  Notes
-  -----
-  This function is intended as the simplest way to display the contents of a variable,
-  choosing appropriate parameter values as automatically as possible.
+  ncol : integer
+    Number of columns
   '''
 
   from pygeode import Var
@@ -653,8 +771,11 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   assert all([v.squeeze().naxes == 2 for v in vl]), 'Variables (vl) should have 2 degenerate axes.'
   nVl = len(vl)
   if nVf > 1 and nVl > 1: assert nVl == nVf, 'Must have the same number of filled and contour-line variables.'
-    
+
   fig = kwargs.pop('fig', None)
+
+  kwargs = _parse_autofmt_kwargs(vf[0], kwargs)
+
   cbar = kwargs.pop('colorbar', dict(orientation='vertical'))
   xpad = 0.
   ypad = 0.
@@ -671,23 +792,23 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
     kwfill['clevs'] = kwargs.pop('clevs', 31)
     kwfill['cmap'] = kwargs.pop('cmap', None)
     kwlines['label'] = False
-    if cbar: 
+    if cbar:
       if cbar.get('orientation', 'vertical') == 'vertical':
         ypad = cbar.get('width', 0.8)
       else:
         xpad = cbar.get('height', 0.4)
 
-  
+
   kwcb = {}
 
   nV = max(nVl, nVf)
   nrow = np.ceil(nV / float(ncol))
 
-  axpad = 0.2
-  aypad = 0.4
+  axpad = kwargs.pop('axpad', 0.2)
+  aypad = kwargs.pop('aypad', 0.4)
   if lbl:
-    axpadl = 0.9
-    aypadl = 0.55
+    axpadl = axpad + kwargs.pop('lblxpad', 0.7)
+    aypadl = aypad + kwargs.pop('lblypad', 0.15)
   else:
     axpadl = axpad
     aypadl = aypad
@@ -702,7 +823,7 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
     lblx = (i / ncol == nrow - 1)
     lbly = (i % ncol == 0)
     ax = None
-    if nVf > 0: 
+    if nVf > 0:
       v = vf[i % nVf]
       kwfill.update(kwargs)
       ax = vcontour(v, axes=ax, lblx = lblx, lbly = lbly, **kwfill)
@@ -726,7 +847,7 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
       axs.append(row)
       row = []
 
-  if len(row) > 0: 
+  if len(row) > 0:
     row.extend([None] * (ncol - len(row)))
     axs.append(row)
 
@@ -743,8 +864,8 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
 
 def showlines(vs, fmts=None, labels=None, size=(4.1,2), lblx=True, lbly=True, **kwargs):
 # {{{
-  ''' 
-  Plot line plots of a list of 1D variables on the same plot.
+  '''
+  Produce line plots of a list of 1D variables on a single figure.
 
   Parameters
   ----------

@@ -240,6 +240,12 @@ class Scatter(PlotOp):
     axes.scatter (*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class Errorbar(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.errorbar (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 class Histogram(PlotOp):
 # {{{
   def render (self, axes):
@@ -346,10 +352,13 @@ class Colorbar(PlotOp):
   def __init__(self, cnt, cax, *plot_args, **kwargs):
     self.cnt = cnt
     self.cax = cax
+    self.lcnt = kwargs.pop('lcnt', None)
     PlotOp.__init__(self, *plot_args, **kwargs)
 
   def render (self, axes):
-    pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
+    self._cbar = pyl.colorbar(self.cnt._cnt, cax=self.cax.ax, *self.plot_args, **self.plot_kwargs)
+    if self.lcnt is not None: self._cbar.add_lines(self.lcnt._cnt)
+    pyl.sca(axes)
 # }}}
 
 def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
@@ -390,6 +399,7 @@ def colorbar(axes, cnt, cax=None, rect=None, *args, **kwargs):
   else: ret = None
 
   ticklabels = kwargs.pop('ticklabels', None)
+  kwargs['spacing'] = kwargs.pop('spacing', 'proportional')
 
   cnt.axes.add_plot(Colorbar(cnt, cax, *args, **kwargs))
 
@@ -417,6 +427,7 @@ def make_plot_member(f):
 plot = make_plot_func(Plot)
 fill_between = make_plot_func(FillBetween)
 scatter = make_plot_func(Scatter)
+errorbar = make_plot_func(Errorbar)
 hist = make_plot_func(Histogram)
 axhline = make_plot_func(AxHLine)
 axvline = make_plot_func(AxVLine)
@@ -435,6 +446,7 @@ __all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'hist', 'axhline', 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.fill_between = make_plot_member(fill_between)
 AxesWrapper.scatter = make_plot_member(scatter)
+AxesWrapper.errorbar = make_plot_member(errorbar)
 AxesWrapper.hist = make_plot_member(hist)
 AxesWrapper.axhline = make_plot_member(axhline)
 AxesWrapper.axvline = make_plot_member(axvline)
