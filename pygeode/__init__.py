@@ -72,7 +72,7 @@ __all__.extend(taxis_all)
 # Static methods
 
 # Top-level concat method, which can work on both Datasets and Vars.
-def concat (*items, **kwargs):
+def concatenate(*items, **kwargs):
   """
   Concatenates multiple Var or Dataset objects together.
   """
