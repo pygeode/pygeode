@@ -169,13 +169,14 @@ class Axis(Var):
   # {{{
     from pygeode import _config
     c = cls
+    nm = c.__name__
     while c is not Axis:
-      nm = c.__name__
       if _config.has_option('Axes',  nm + '.name'):
         ax.name = _config.get('Axes', nm + '.name')
         break
       else:
         c = c.__bases__[0]
+        nm = c.__name__
 
     if c is Axis: ax.name = cls.__name__.lower()
 
