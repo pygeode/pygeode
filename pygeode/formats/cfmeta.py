@@ -420,7 +420,7 @@ def decode_cf (dataset, ignore=[]):
 
     # If we found any such information, then this is no longer a simple
     # "dummy" axis.
-    if isinstance(a,DummyAxis) and len(dependencies) > 0:
+    if issubclass(cls, DummyAxis) and len(dependencies) > 0:
       cls = NonCoordinateAxis
 
     # Attach the information from these dependent variables as auxiliary arrays.
