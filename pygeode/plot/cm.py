@@ -39,7 +39,10 @@ def build_cmap(stops):
       ct['red'].append((s['s'], s['r'], s['r']))
       ct['green'].append((s['s'], s['g'], s['g']))
       ct['blue'].append((s['s'], s['b'], s['b']))
-  return LinearSegmentedColormap('loaded_colourmap', ct, 256)
+  cm = LinearSegmentedColormap('loaded_colourmap', ct, 256)
+  cm.set_under((stops[ 0]['r'], stops[ 0]['g'], stops[ 0]['b']))
+  cm.set_over ((stops[-1]['r'], stops[-1]['g'], stops[-1]['b']))
+  return cm
 # }}}
 
 def build_stops(hues, sat, rval):

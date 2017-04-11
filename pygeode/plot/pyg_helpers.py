@@ -53,7 +53,7 @@ def scalevalues(var):
 def axes_parm(axis):
 # {{{
   vals = scalevalues(axis).ravel()
-  lims = min(vals), max(vals)
+  lims = np.nanmin(vals), np.nanmax(vals)
   plt = _getplotatts(axis)
   return plt.get('plotscale', 'linear'), \
          _buildaxistitle(**plt), \
@@ -62,34 +62,65 @@ def axes_parm(axis):
          axis.locator()
 # }}}
 
-def set_xaxis(axes, axis, lbl):
+def set_xaxis(axes, axis, lbl, xscale=True):
 # {{{
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
+
+  prm = {}
+  axprm = dict(major_locator = loc)
+  if xscale:
+    prm['xscale'] = scale
+    prm['xlim']   = lim
+
   if lbl:
-     axes.setp(xscale = scale, xlabel = label, xlim = lim)
-     axes.setp_xaxis(major_formatter = form, major_locator = loc)
+    prm['xlabel'] = label
+    axprm['major_formatter'] = form
   else:
-     axes.setp(xscale = scale, xlim = lim, xticklabels=[])
-     axes.setp_xaxis(major_locator = loc)
+    prm['xticklabels'] = []
+
+  axes.setp(**prm)
+  axes.setp_xaxis(**axprm)
 
   if len(label) > 0 and lbl:
-     axes.pad = [pl, 0.5, pr, 0.3]
+    axes.pad = [pl, 0.5, pr, 0.3]
   else:
-     axes.pad = [pl, 0.3, pr, 0.3]
- # }}}
+    axes.pad = [pl, 0.3, pr, 0.3]
+# }}}
 
-def set_yaxis(axes, axis, lbl):
+def set_yaxis(axes, axis, lbl, yscale=True):
 # {{{
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
+
+  prm = {}
+  axprm = dict(major_locator = loc)
+  if yscale:
+    prm['yscale'] = scale
+    prm['ylim']   = lim
+
   if lbl:
-     axes.setp(yscale = scale, ylabel = label, ylim = lim)
-     axes.setp_yaxis(major_formatter = form, major_locator = loc)
-     axes.pad = [0.8, pb, 0.1, pt]
+    prm['ylabel'] = label
+    axprm['major_formatter'] = form
   else:
-     axes.setp(yscale = scale, ylim = lim, yticklabels=[])
-     axes.pad = [0.1, pb, 0.1, pt]
+    prm['yticklabels'] = []
+
+  #print yscale, prm, axprm
+  axes.setp(**prm)
+  axes.setp_yaxis(**axprm)
+
+  if len(label) > 0 and lbl:
+    axes.pad = [0.8, pb, 0.1, pt]
+  else:
+    axes.pad = [0.1, pb, 0.1, pt]
+
+# if lbl:
+#    axes.setp(yscale = scale, ylabel = label, ylim = lim)
+#    axes.setp_yaxis(major_formatter = form, major_locator = loc)
+#    axes.pad = [0.8, pb, 0.1, pt]
+# else:
+#    axes.setp(yscale = scale, ylim = lim, yticklabels=[])
+#    axes.pad = [0.1, pb, 0.1, pt]
 # }}}
 
 def build_basemap(lons, lats, **kwargs):
@@ -240,13 +271,26 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   assert Y.naxes == 1, 'Variable to plot must have exactly one non-degenerate axis.'
   X = Y.axes[0].load()
 
+  yord = True
+
   # If a vertical axis is present transpose the plot
   from pygeode.axis import ZAxis
   if isinstance(X, ZAxis):
     X, Y = Y, X
+    yord = False
 
   if transpose:
     X, Y = Y, X
+    yord = not yord
+
+  if yord:
+    scalex = kwargs.get('scalex', True)
+    scaley = kwargs.get('scaley', False)
+  else:
+    scalex = kwargs.get('scalex', False)
+    scaley = kwargs.get('scaley', True)
+
+  hold = kwargs.pop('hold', False)
 
   x = scalevalues(X)
   y = scalevalues(Y)
@@ -254,12 +298,13 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   axes = wr.plot(x, y, fmt, axes=axes, **kwargs)
 
   # Apply the custom axes args
-  axes.pad = (0.1, 0.1, 0.1, 0.1)
-  set_xaxis(axes, X, lblx)
-  set_yaxis(axes, Y, lbly)
-  plt = _getplotatts(var)
-  lbl = _buildvartitle(var.axes, **plt)
-  axes.setp(title=lbl, label=lbl)
+  if not hold:
+    axes.pad = (0.1, 0.1, 0.1, 0.1)
+    set_xaxis(axes, X, lblx, scalex)
+    set_yaxis(axes, Y, lbly, scaley)
+    plt = _getplotatts(var)
+    lbl = _buildvartitle(var.axes, **plt)
+    axes.setp(title=lbl, label=lbl)
 
   return axes
 # }}}
@@ -655,9 +700,10 @@ def showvar(var, *args, **kwargs):
   vplot, vcontour, colorbar
   '''
 
-  var = var.load()
   Z = var.squeeze()
   assert Z.naxes in [1, 2], 'Variable %s has %d non-generate axes; must have 1 or 2.' % (var.name, Z.naxes)
+
+  var = var.load()
 
   fig = kwargs.pop('fig', None)
   size = kwargs.pop('size', None)
@@ -900,8 +946,8 @@ def showlines(vs, fmts=None, labels=None, size=(4.1,2), lblx=True, lbly=True, **
     vplot(v, axes=ax, fmt=fmt, label=lbl)
     ydat.append(ax.find_plot(wr.Plot).plot_args[1])
 
-  ylim = (np.min([np.min(y) for y in ydat]), np.max([np.max(y) for y in ydat]))
-  kwargs.update(dict(ylim=ylim))
+  #ylim = (np.min([np.min(y) for y in ydat]), np.max([np.max(y) for y in ydat]))
+  #kwargs.update(dict(ylim=ylim))
 
   kwleg = kwargs.pop('legend', dict(loc='best', frameon=False))
   ax.legend(**kwleg)

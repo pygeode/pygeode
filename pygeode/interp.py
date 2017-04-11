@@ -35,7 +35,7 @@ def sorted (var, iaxis, reverse=False):
 class Interp (Var):
 # {{{
   def __init__ (self, invar, inaxis, outaxis, inx, outx, interp_type, \
-                d_below, d_above):
+                d_below, d_above, omit_nonmonotonic):
 # {{{
     from pygeode.var import Var
     from pygeode.axis import Axis
@@ -87,6 +87,8 @@ class Interp (Var):
 
     self.d_below = d_below
     self.d_above = d_above
+
+    self.omit_nonmonotonic = omit_nonmonotonic
 
     Var.__init__ (self, outaxes, name=invar.name, dtype='d', atts=invar.atts, plotatts=invar.plotatts)
 # }}}
@@ -141,11 +143,21 @@ class Interp (Var):
     interp_type = self.interp_type
 
     # Do the interpolation
-    ret = interpcore.interpgsl (narrays, ninx, noutx,
-            inx_data, indata, outx_data, outdata,
-            loop_inx, loop_outx,
-            self.d_below, self.d_above,
-            interp_type)
+    try:
+      ret = interpcore.interpgsl (narrays, ninx, noutx,
+              inx_data, indata, outx_data, outdata,
+              loop_inx, loop_outx,
+              self.d_below, self.d_above,
+              interp_type, self.omit_nonmonotonic)
+    except ValueError as e:
+      i = e.message.find('In array')
+      if i == -1: raise e
+
+      idx_ar = np.unravel_index(int(e.message[i+9:-1]), inview.shape[:-1])
+      loc = ['%s: %s' % (ax.name, ax.formatvalue(ax[j])) for ax, j in zip(inview.subaxes()[:-1], idx_ar)]
+      msg = '. Interpolation error at (' + '; '.join(loc) + ').'
+      raise ValueError(e.message + msg)
+
 
     return outdata
 # }}}
@@ -153,7 +165,7 @@ class Interp (Var):
 
 def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline', \
                 d_below = float('nan'), d_above = float('nan'),
-                transpose = True):
+                transpose = True, omit_nonmonotonic=False):
 # {{{
   """
   Interpolates a variable along a single dimension.
@@ -187,8 +199,15 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
     The slope for linearly extrapolating above the input data.
     By default, no extrapolation is done.
   transpose : boolean (optional)
-    If True, tranposes the output axes so the interpolated one first.
+    If True, tranposes the output axes so that the axis to which we are interpolating
+    replaces the input axis in the axes order. Otherwise the new axis becomes the last
+    dimension.
     Default is True.
+  omit_nonmonotonic : boolean (optional)
+    If True, the interpolation routine skips over any non-monotonic datapoints
+    in the coordinate field from which we are interpolating. This is an experimental
+    feature; do not use unless you know what you are doing!
+    Default is False.
 
   Returns
   -------
@@ -219,14 +238,6 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
 
     To interpolate onto pressure levels:
     newvar = Interp (invar = o3, inaxis = 'eta', outaxis = paxis, inx = pfield)
-
-    To go backwards, and convert from pressure levels back to model levels:
-    whyohwhy = Interp (invar = newvar, inaxis = paxis,
-                       outaxis = o3.getaxis('eta'), outx = pfield)
-
-    Observe that here, we have 2 different units of coordinates ('eta' and 
-    pressure (hPa)).  In this case, we had to provide an explicit mapping
-    between these 2 coordinates, by use of pfield (pressure field on eta
     levels).
 
     Now, you may be asking yourself "shouldn't pressure be interpolated on a
@@ -243,7 +254,7 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
     using log(pressure) internally as the coordinate over which to perform
     the interpolation.
   """
-  out = Interp(var, inaxis, outaxis, inx, outx, interp_type, d_below, d_above)
+  out = Interp(var, inaxis, outaxis, inx, outx, interp_type, d_below, d_above, omit_nonmonotonic)
   # Do we need to un-tranpose the axes back to the original order?
   if transpose is False:
     out_order = map(type,var.axes)
@@ -253,4 +264,12 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
 # }}}
 
 del Var
+
+# Interface to the GNU Scientific Library interpolation routines
+# Requires the GSL shared libraries and header files.
+
+#TODO
+
+from pygeode.var import Var
+from pygeode import interpcore
 

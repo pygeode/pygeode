@@ -5,6 +5,7 @@ import numpy as np
 from pygeode.var import Var
 from pygeode.axis import XAxis, YAxis
 from pygeode.interp import interpolate
+from nose.tools import raises
 
 # Helper function - array comparison with nan support
 def alleq (x1, x2):
@@ -19,11 +20,12 @@ class TestInterp(unittest.TestCase):
     x = np.array([0,1,2])
     y = np.array([0,1,2,3])
     # Some simple data with a hole in it
-    self.data = np.array([[1,2,3],[4,float('nan'),6],[7,8,9],[10,11,12]])
+    self.data    = np.array([[1,2,3],[4,float('nan'),6],[7,8,9],[10,11,12]])
+    self.data_nm = np.array([[1,2,3],[4,5,6],[7,11,9],[10,8,12]])
     # Construct a Var object
     x = XAxis(x)
     y = YAxis(y)
-    var = Var(axes=[y,x], values=self.data)
+    var    = Var(axes=[y,x], values=self.data)
 
     self.x = x
     self.y = y
@@ -42,6 +44,9 @@ class TestInterp(unittest.TestCase):
     # Single non-midpoint
     self.x5 = XAxis(values=[1.4])
     self.y5 = YAxis(values=[2.2])
+
+    # Non-monotonic axis
+    self.y_nm = Var(axes=[y,x], values=[[0,0,0], [1,1,2], [2,2,1], [3,3,3]])
 
     # 2D interpolation
     xfield = np.array([[-1,0,1],[0,1,2],[1,2,3],[0,1,2]])
@@ -102,6 +107,12 @@ class TestInterp(unittest.TestCase):
         # Check extrapolation (out of range by half a coordinate unit)
         self.assertTrue(np.all(output[0,:] == input[0,:] - 0.5*slope), output)
         self.assertTrue(np.all(output[-1,:] == input[-1,:] + 0.5*slope), output)
+
+  # Test out non-monotonic interpolation
+  @raises(ValueError)
+  def test_nm_interp (self):
+    # Interpolation with non-monotonic source data - should fail with ValueError
+    output = interpolate(self.var, inaxis=self.y, outaxis=self.y2, inx=self.y_nm, interp_type='linear').transpose(YAxis,XAxis).get()
 
   # Test interpolation via 2D coordinate field
   def test_2d_interp(self):

@@ -72,7 +72,7 @@ class Strans(Var):
       X = np.concatenate((X,X), axis=-1)
 
       F = v.get(self.faxis) * self.dt * T
-      F = np.asarray(np.round(F),int)
+      F = np.asarray(np.round(F.squeeze()),int)
 
       #TODO
       outsl = list(v.slices) # what part of the output we're looking at

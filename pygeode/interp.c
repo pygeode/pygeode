@@ -4,6 +4,7 @@
 // Wrapper for GSL functions
 
 #include <gsl/gsl_interp.h>
+#include <gsl/gsl_errno.h>
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
@@ -31,15 +32,26 @@ int interpgsl (int narrays, int nxin, int nxout,
                double *xin, double *yin, double *xout, double *yout,
                int loop_xin, int loop_xout,
                double d_below, double d_above,
-               const gsl_interp_type *type)                          {
+               const gsl_interp_type *type, int omit_nm)           {
 
-  int i, j, n, start, end, step; 
+  int i, j, n, start, end, step, status; 
   double *local_xin, *local_xout, *local_yin;
-  double xmin, ymin, xmax, ymax;
+  double dx, xmin, ymin, xmax, ymax;
 
   // Check the order of the x coordinates
   // If the order seems to be reversed, then flip the sign of the coordinates
-  if (nxin > 1 && xin[0] > xin[1]) { 
+  if (nxin > 1) {
+    i = 0;
+    do {
+      dx = xin[i + 1] - xin[i];
+    } while (!isfinite(dx) && ++i < nxin);
+  } else {
+    dx = 1.;
+  }
+
+  if (!isfinite(dx) || dx == 0. ) { return -1; }
+  
+  if (dx < 0.) {
     start = nxin - 1; 
     end = -1;
     step = -1;
@@ -57,13 +69,20 @@ int interpgsl (int narrays, int nxin, int nxout,
     for (i = 0; i < nxout; i++) local_xout[i] = xout[i]; 
   }
 
-  gsl_interp *interp;
+  gsl_set_error_handler_off();
+
+  gsl_interp *interp = NULL;
   gsl_interp_accel *acc = gsl_interp_accel_alloc();
+  if (NULL == acc) { PyErr_SetString(PyExc_MemoryError, "Failed to allocate gsl_interp_accel object."); goto clean_err;}
 
   for (n = 0; n < narrays; n++) {
     // Search for nans, resort if necessary
     for (i = start, j = 0; i != end; i += step) {
-      if (isfinite(yin[i])) {
+      if (isfinite(yin[i]) && isfinite(xin[i])) {
+        // !!! Omit non-monotonic bits if flag is set
+        if (omit_nm && j > 0 && xin[i] < local_xin[j - 1]) {
+          continue;
+        }
         local_xin[j] = xin[i];
         local_yin[j] = yin[i];
         j++;
@@ -91,7 +110,10 @@ int interpgsl (int narrays, int nxin, int nxout,
     }
 
     interp = gsl_interp_alloc (type, j);
-    gsl_interp_init (interp, local_xin, local_yin, j);
+    if (NULL == interp) { PyErr_SetString(PyExc_MemoryError, "Failed to allocate interp object."); goto clean_err;}
+
+    status = gsl_interp_init (interp, local_xin, local_yin, j);
+    if (status) { PyErr_Format(PyExc_ValueError, "Interpolation error (%s), usually due to non-monotonic source data. In array %d.", gsl_strerror(status), n); goto clean_err;}
 
     gsl_interp_eval_e (interp, local_xin, local_yin, xmin, acc, &ymin);
     gsl_interp_eval_e (interp, local_xin, local_yin, xmax, acc, &ymax);
@@ -124,22 +146,31 @@ int interpgsl (int narrays, int nxin, int nxout,
 
   return 0;
 
+clean_err:
+  if (interp) { gsl_interp_free (interp); }
+  if (acc)    { gsl_interp_accel_free (acc); }
+
+  free (local_xin);
+  free (local_yin);
+  free (local_xout);
+
+  return -1;
 }
 
 static PyObject *interpcore_interpgsl (PyObject *self, PyObject *args) {
-  int narrays, nxin, nxout;
+  int narrays, nxin, nxout, status;
   double *xin, *yin, *xout, *yout;
-  int loop_xin, loop_xout;
+  int loop_xin, loop_xout, omit_nm;
   double d_below, d_above;
   const gsl_interp_type *type;
   PyObject *xin_obj, *yin_obj, *xout_obj;
   PyArrayObject *xin_array, *yin_array, *xout_array, *yout_array;
   const char *type_str;
   // Assume the output array is contiguous and of the right type
-  if (!PyArg_ParseTuple(args, "iiiOOOO!iidds",
+  if (!PyArg_ParseTuple(args, "iiiOOOO!iiddsi",
     &narrays, &nxin, &nxout, &xin_obj, &yin_obj, &xout_obj,
     &PyArray_Type, &yout_array,
-    &loop_xin, &loop_xout, &d_below, &d_above, &type_str)) return NULL;
+    &loop_xin, &loop_xout, &d_below, &d_above, &type_str, &omit_nm)) return NULL;
   // Make sure the input arrays are contiguous and of the right type
   xin_array = (PyArrayObject*)PyArray_ContiguousFromObject(xin_obj,NPY_DOUBLE,1,0);
   yin_array = (PyArrayObject*)PyArray_ContiguousFromObject(yin_obj,NPY_DOUBLE,1,0);
@@ -164,12 +195,15 @@ static PyObject *interpcore_interpgsl (PyObject *self, PyObject *args) {
   }
 
   // Call the C function
-  interpgsl (narrays, nxin, nxout, xin, yin, xout, yout, loop_xin, loop_xout, d_below, d_above, type);
+  status = interpgsl (narrays, nxin, nxout, xin, yin, xout, yout, loop_xin, loop_xout, d_below, d_above, type, omit_nm);
 
   // Clean up internal objects
   Py_DECREF(xin_array);
   Py_DECREF(xout_array);
   Py_DECREF(yin_array);
+
+  // If the interpolation fails the error string should be set by interpgsl
+  if (status) { return NULL; }
 
   Py_RETURN_NONE;
 }
