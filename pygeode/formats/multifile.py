@@ -93,7 +93,7 @@ def openall (files, format=None, opener=None, **kwargs):
   
   datasets = [ opener(f, **kwargs) for f in files]
 
-  ds = concat(*datasets)
+  ds = concat(*[d for d in datasets if d is not None])
   if sort: ds = ds.sorted()
   return ds
 
