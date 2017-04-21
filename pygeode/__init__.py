@@ -82,7 +82,7 @@ def concatenate(*items, **kwargs):
   from concat import concat as concat_vars
   # Items already wrapped as a list (now inside another list)?
   if len(items) == 1 and islist(items[0]):
-    return concat(*items[0], **kwargs)
+    return concatenate(*items[0], **kwargs)
   if isinstance(items[0],Var):
     return concat_vars(*items, **kwargs)
   if isinstance(items[0],Dataset):
