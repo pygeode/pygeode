@@ -190,10 +190,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
   from pygeode.varoperations import fill
   from pygeode import svdcore as lib
 
-  # Iterate over more EOFs than we need
-  # (this helps with convergence)
-  # TODO: a more rigorous formula for the optimum number of EOFs to use
-  if subspace <= 0: subspace = 2*num + 8
+  # Need vector subspace to be at least as large as the number of EOFs extracted.
   if subspace < num: subspace = num
 
   # Run the single-pass guess to seed the first iteration
