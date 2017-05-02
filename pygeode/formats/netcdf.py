@@ -481,6 +481,9 @@ def save (filename, in_dataset, version=3, compress=False, cfmeta = True):
 
   # variable attributes
   for i, var in enumerate(vars):
+    # Hotfix for netcdf4 - can't explicitly set _FillValue attribute?
+    if version == 4 and '_FillValue' in var.atts:
+      del var.atts['_FillValue']
     # modify axes to be netcdf friendly (CF-compliant, etc.)
     put_attributes (fileid, varids[i], var.atts, version)
 
