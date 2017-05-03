@@ -153,9 +153,12 @@ class Interp (Var):
       i = e.message.find('In array')
       if i == -1: raise e
 
-      idx_ar = np.unravel_index(int(e.message[i+9:-1]), inview.shape[:-1])
-      loc = ['%s: %s' % (ax.name, ax.formatvalue(ax[j])) for ax, j in zip(inview.subaxes()[:-1], idx_ar)]
-      msg = '. Interpolation error at (' + '; '.join(loc) + ').'
+      if len(inview.shape) > 1:
+        idx_ar = np.unravel_index(int(e.message[i+9:-1]), inview.shape[:-1])
+        loc = ['%s: %s' % (ax.name, ax.formatvalue(ax[j])) for ax, j in zip(inview.subaxes()[:-1], idx_ar)]
+        msg = '. Interpolation error at (' + '; '.join(loc) + ').'
+      else:
+        msg = '.'
       raise ValueError(e.message + msg)
 
 
