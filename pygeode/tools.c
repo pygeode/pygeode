@@ -114,6 +114,9 @@ int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices, double
   // Fill indices with non-matching values (-1)
   for (int k = 0; k < nb; k++) indices[k] = -1;
 
+  // Early termination for empty a array.
+  if (na == 0) return 0;
+
   int ai = 0;
   for (int bi = 0; bi < nb; bi++) {
     double B = b[bi];
