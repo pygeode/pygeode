@@ -101,7 +101,7 @@ class View:
     if slices is None: slices = [slice(None)] * len(axes)
 
     # don't allow a generic 'None' as a slice - it causes problems in numpy
-    assert None not in slices
+    assert not any(s is None for s in slices)
     assert len(axes) == len(slices)
 
     if force_integer_indices is not None:
@@ -168,7 +168,7 @@ class View:
 # assume our view is on the output
 # view.map_to(in) = [[0,1,2,3,4,5,6,7,8,9,10,11,0,1,2,3,4,5,6,7,8,9,10,11,...],x,y]
 #             = [out_time.map_to(in_time), out_x.map_to(in_x), ...]
-    assert None not in slices
+    assert not any(s is None for s in slices)
     return View(axes, slices = slices)
 
   # }}}
