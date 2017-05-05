@@ -48,7 +48,7 @@ the underlying computations and to create plots.
 	install_requires=['numpy','scipy','matplotlib','progressbar'],
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
-	package_data={'pygeode': ['*.dll'], 'pygeode.formats': ['*.dll']},
+	package_data={'pygeode': ['*.dll','pygrc'], 'pygeode.formats': ['*.dll']},
 	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins", "pygeode.plot"],
 	include_dirs = [sys.prefix + '/include', np.get_include()],
 	ext_modules=[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore, opendapcore, gribcore]
