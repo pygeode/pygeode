@@ -1,4 +1,4 @@
-1.1.0 - UNRELEASED
+1.1.0 - 2017/06/17
   - Allow some settings to be read from a configuration file (pygrc).
   - Added an option to disable lazy array evaluation, for cases where this
     feature gets in the way.
