@@ -687,7 +687,7 @@ def showvar(var, *args, **kwargs):
   variable, choosing appropriate parameter values as automatically as possible.
   For 1d variables it calls :func:`Var.vplot()`, and for 2d variables
   :func:`Var.vcontour`. In the latter case, if filled contours were produced, it
-  calls `AxesWrapper.colorbar()'. A dictionary ``colorbar`` can be provided to
+  calls :func:`AxesWrapper.colorbar()`. A dictionary ``colorbar`` can be provided to
   pass arguments through. Setting ``colorbar`` to ``False`` suppresses the
   colorbar.
 

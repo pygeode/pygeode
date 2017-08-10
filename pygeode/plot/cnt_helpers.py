@@ -136,11 +136,6 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
   pcs = [0, 2., 50, 98, 100]
   mn, p2, md, p98, mx = np.percentile(zn, pcs)
 
-
-  if style is None: # Guess style of cmap to use
-    if p2 < 0 and p98 > 0: style = 'div'
-    else: style = 'seq'
-
   dmn = md - mn
   dp2 = md - p2
   dp98 = p98 - md
@@ -150,22 +145,29 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
   # and the 2nd/98th percentile and the median are too large, 
   # consider the minimum/maximum values outliers, do not include them
   # in the range
-  if dp2 > 0 and dmn / dp2  > 50: 
-    dl = dp2
-    lo = p2
-  else: 
-    dl = dmn
-    lo = mn
-  if dp98 > 0 and dmx / dp98 > 50: 
-    dm = dp98
-    hi = p98
-  else: 
-    dm = dmx
-    hi = mx
+  if mx - mn > 0.:
+    if dp2 > 0 and dmn / dp2  > 50:
+      dl = dp2
+      lo = p2
+    else:
+      dl = dmn
+      lo = mn
+    if dp98 > 0 and dmx / dp98 > 50:
+      dm = dp98
+      hi = p98
+    else:
+      dm = dmx
+      hi = mx
+  else:
+    lo = mn - 1.
+    dl = 1.0
+    dm = 1.0
+    hi = mn + 1.
+    if style is None: style = 'div'
 
-  #print mn, p2, md, p98, mx
-  #print dmn, dp2, dp98, dmx
-  #print dl, dm, lo
+  if style is None: # Guess style of cmap to use
+    if p2 < 0 and p98 > 0: style = 'div'
+    else: style = 'seq'
 
   if style is 'div':
     if ndiv is None: 
