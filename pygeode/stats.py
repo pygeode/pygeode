@@ -58,6 +58,9 @@ def correlate(X, Y, axes=None, pbar=None):
   iview = View(inaxes) 
   siaxes = range(len(oaxes), len(srcaxes))
 
+  print oaxes
+  print inaxes
+
   # Construct work arrays
   x  = np.zeros(oview.shape, 'd')*np.nan
   y  = np.zeros(oview.shape, 'd')*np.nan
@@ -93,12 +96,30 @@ def correlate(X, Y, axes=None, pbar=None):
     # Sum of weights (kludge to get masking right)
     Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xydata*0., siaxes)], 0) 
 
+  print 'x NaNs:  %d of %d' % (np.sum(np.isnan(x)), x.size)
+  print 'y NaNs:  %d of %d' % (np.sum(np.isnan(y)), y.size)
+  print 'xx NaNs: %d of %d' % (np.sum(np.isnan(xx)), xx.size)
+  print 'xx < 0:  %d of %d' % (np.sum(xx < 0.), xx.size)
+  print 'xy NaNs: %d of %d' % (np.sum(np.isnan(xy)), xy.size)
+  print 'yy NaNs: %d of %d' % (np.sum(np.isnan(yy)), yy.size)
+  print 'yy < 0:  %d of %d' % (np.sum(yy < 0.), yy.size)
+  print 'Na NaNs: %d of %d' % (np.sum(np.isnan(Na)), Na.size)
+
   xx -= x**2/Na
   yy -= y**2/Na
   xy -= (x*y)/Na
+
+  print 'xx < 0:  %d of %d' % (np.sum(xx <= 0.), xx.size)
+  print 'yy < 0:  %d of %d' % (np.sum(yy <= 0.), yy.size)
   
   # Compute correlation coefficient, t-statistic, p-value
-  rho = xy/np.sqrt(xx*yy)
+  den = np.sqrt(xx*yy)
+  rho = xy / [rho > 0.]
+  rho = xy.copy()
+  rho[rho > 0.] = rho[rho > 0.] / np.sqrt(xx*yy)[rho > 0.]
+  print 'den NaNs:  %d of %d' % (np.sum(np.sqrt(xx*yy)[rho > 0.] <= 0.), rho[rho > 0.].size)
+  print 'rho NaNs:  %d of %d' % (np.sum(np.isnan(rho)), rho.size)
+
   den = 1 - rho**2
   den[den < 1e-14] = 1e-14 # Saturate the denominator to avoid div by zero warnings
   t = np.abs(rho) * np.sqrt((Na - 2.)/den)
@@ -584,8 +605,8 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
 def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
 # {{{
   r'''Computes the mean value and statistics of X - Y, assuming that individual elements
-  of X and Y can be directly paired. In contrast to :func:`difference', X and Y must have the same
-  shape 
+  of X and Y can be directly paired. In contrast to :func:`difference`, X and Y must have the same
+  shape.
 
   Parameters
   ==========

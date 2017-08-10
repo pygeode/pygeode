@@ -31,8 +31,8 @@ Lat.formatstr = %.2g N
 Lat.plottitle =
 
 Height.name = z
-Height.formatstr = '%d'
-Height.units = 'm'
+Height.formatstr = %d
+Height.units = m
 Height.plotname = Height
 
 Hybrid.name = eta
@@ -74,5 +74,5 @@ Yearless.parse_pattern = ((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{
 # in plot labels
 unit_decoration = ()
 
-cmaps_path = /home/peterh/utils/cmaps/
+cmaps_path =
 

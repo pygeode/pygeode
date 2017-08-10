@@ -10,6 +10,7 @@ __path__.append(pluginpath)
 _config, _configfiles = None, None
 
 def readConfig():
+# {{{
   import ConfigParser as Cfg
   import sys, os
   from os.path import expanduser, dirname, sep
@@ -26,6 +27,7 @@ def readConfig():
   _config = c
   _configfiles = files
   #return c, files
+# }}}
 
 readConfig()
 
@@ -138,5 +140,5 @@ for _plugin_path in plugins.__path__:
     exec "from pygeode.plugins import %s as _x"%_plugin
     del _x, _plugin
 
-del glob, join, sep, _plugin_path, _plugins, sys
+del glob, join, sep, _plugin_path, _plugins, sys, A
 

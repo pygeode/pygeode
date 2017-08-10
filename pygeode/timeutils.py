@@ -84,14 +84,22 @@ def modify (taxis, resolution=None, exclude=[], include=[], uniquify=False):
 
 # Get a relative time array with the given parameters
 def reltime (taxis, startdate=None, units=None):
+# {{{
+  ''' Returns time axis values relative to a given reference date. The units can be
+  be specified, if none are given the units of the given time axis are used.'''
   if units is None: units = taxis.units
   return taxis.date_as_val (startdate=startdate, units=units)
+# }}}
 
 
 # Get time increment
 # Units: day, hour, minute, second
 def delta (taxis, units=None):
 # {{{
+  ''' Returns the interval between values of a given time axis. If
+  non-unique intervals are found an exception is raised. The units
+  can be specified; if none are given the units of the given time axis
+  are used.'''
   import numpy as np
 
   delt = np.diff(reltime(taxis, units=units))
@@ -109,17 +117,24 @@ def delta (taxis, units=None):
 # Helper function; normalizes date object so that all fields are within the standard range
 def wrapdate(taxis, dt, allfields=False):
 # {{{
+  ''' Returns a modified date dictionary such that all fields
+  lie within standard values. '''
   return taxis.val_as_date(taxis.date_as_val(dt), allfields=allfields)
 # }}}
 
 # Helper function; returns time between two dates in specified units
 def date_diff(taxis, dt1, dt2, units = None):
 # {{{
+  ''' Returns time interval between two dates. A time axis must be given
+  to specify the calendar. If no units are specified the units of the given
+  time axis are used.'''
   return taxis.date_as_val(dt2, startdate=dt1, units = units)
 # }}}
 
 # Conform two time axes so their values are comparable
 def conform_values (taxis1, taxis2):
+# {{{
+  '''Given two time axes, return new axes such that their values are comparable.'''
   from pygeode.timeaxis import Time
   assert isinstance(taxis1, Time)
   assert isinstance(taxis2, Time)
@@ -154,6 +169,7 @@ def conform_values (taxis1, taxis2):
   taxis1 = type(taxis1)(units=units, startdate=startdate, **taxis1.auxarrays)
 
   return taxis1, taxis2
+# }}}
 
 
 from pygeode.var import Var
@@ -175,6 +191,34 @@ class Lag(Yearless):
 # 365-day calendar.
 from pygeode.timeaxis import ModelTime365
 def removeleapyears(data, omitdoy_leap=[60], omitdoy_noleap=[], new_axis_type=ModelTime365):
+# {{{
+  '''Removes leap day(s) from data on a standard calendar. Casts variable with
+  a :class:`StandardTime` time axis onto a time axis with a uniform year length
+  by removing days from leap years.
+  
+  Parameters
+  ----------
+  data :  :class:`Var`
+    The variable to modify. Should have a :class:`Time` axis.
+  
+  omitdoy_leap : list, optional [ [60] ]
+    A list of days of the year (e.g. 1 is 1 January, 60 is 29 February) to remove
+    from leap years.
+
+  omitdoy_noleap : list, optional [ [] ]
+    A list of days of the year (e.g. 1 is 1 January, 60 is 1 March) to remove
+    from non-leap years. Can be empty.
+  
+  new_axis_type : :class:`CalendarTime`, optional
+    Time axis class to use instead. Default is :class:`ModelTime365`. Should
+    expect a year length consistent with the lists passed to omitdoy_leap and
+    omitdoy_noleap
+
+  Returns
+  -------
+  New :class:`Var` object with modified time axis and specified days removed
+  from leap year.'''
+
   from pygeode.timeaxis import Time, StandardTime
   import numpy as np
 
@@ -231,10 +275,12 @@ def removeleapyears(data, omitdoy_leap=[60], omitdoy_noleap=[], new_axis_type=Mo
   data = data.replace_axes(time = new_taxis)
 
   return data
+# }}}
+
 del ModelTime365
 
-
 class LagVar(Var):
+# {{{
   def __init__(self, var, iaxis, lags, reverse=False):
   # {{{
     import numpy as np
@@ -286,14 +332,20 @@ class LagVar(Var):
     
     return out
   # }}}
+# }}}
 
 del Yearless
+
 def lag (var, iaxis, lags, reverse=False):
+# {{{
+  ''' Adds a lag axis with offset values. '''
   return LagVar (var, iaxis, lags, reverse=reverse)
+# }}}
 
 
 # Split a time axis into year,<everything else>
 def _splittime (taxis):
+# {{{
   from pygeode.timeaxis import CalendarTime
   from pygeode.axis import NamedAxis
   import numpy as np
@@ -309,12 +361,14 @@ def _splittime (taxis):
   days = modify(taxis, exclude='year', uniquify=True).rename('day')
 
   return years, days
+# }}}
 
 
 # Join 2 axes (year,<everything else>) into a single time axis
 # 'years' is an axis, 'days' is a CalendarTime axis.
 # NOTE: magical things can happen when the calendar year doesn't have a fixed length
 def _jointime (years, days):
+# {{{
   from pygeode.axis import Axis
   from pygeode.timeaxis import CalendarTime
   assert isinstance(years, Axis)
@@ -342,15 +396,16 @@ def _jointime (years, days):
   out_times = timetype(units=timeunits, **fields)
 
   return out_times
-
-
+# }}}
 
 # Now, define some Var classes that apply the above split/join to
 # variables that contain time axes.
 
 # Split a time axis into a 2D representation (year,<everything else>)
 class SplitTime (Var):
+# {{{
   def __init__ (self, var, iaxis):
+# {{{
     from pygeode.var import copy_meta, Var
 
     # Get the time axis to split
@@ -369,8 +424,10 @@ class SplitTime (Var):
 
     self.iaxis = iaxis
     self.var = var
+# }}}
 
   def getview (self, view, pbar):
+# {{{
     import numpy as np
 
     # Get the selected years and days
@@ -409,15 +466,22 @@ class SplitTime (Var):
     out = out.reshape(view.shape)
 
     return out
+# }}}
+# }}}
 
 def splittimeaxis (var, iaxis='time'):
+# {{{
+  '''Convert a variable with a 1D time axis into one with a 2D time axis.'''
   return SplitTime (var, iaxis)
+# }}}
 
 
 # Join a 2D time representation (year,<everything else>) into a single
 # 1D time axis.
 class JoinTime(Var):
+# {{{
   def __init__(self, var, yaxis, daxis):
+# {{{
     from pygeode.var import copy_meta, Var
 
     yaxis = var.whichaxis(yaxis)
@@ -440,8 +504,10 @@ class JoinTime(Var):
     self.yaxis = yaxis
     self.daxis = daxis
     self.var = var
+# }}}
 
   def getview (self, view, pbar):
+# {{{
     import numpy as np
 
     yaxis = self.yaxis
@@ -481,8 +547,13 @@ class JoinTime(Var):
     slices = [slice(None)] * data.ndim
     slices[taxis] = uber_time.map_to(times)
     return data[slices]
+# }}}
+# }}}
 
 def jointimeaxes(var, yaxis='year', daxis='day'):
+# {{{
+  '''Convert a variable with a 2D time axis into one with a 1D time axis.'''
   return JoinTime(var, yaxis, daxis)
+# }}}
 
 del Var

@@ -336,7 +336,7 @@ def replace_axes (self, axisdict={}, ignore_mismatch=False, newaxes=None, keep_o
     If ``True``, will keep the old axis name (with the new values).  If
     ``False``, the name ofthe new axis will be used.  Default is ``True``.
   **kwargs : keyword arguments
-    Similar to `axisdict`, but using keyword parameters instead of a
+    Similar to 'axisdict', but using keyword parameters instead of a
     dictionary.
 
   Returns

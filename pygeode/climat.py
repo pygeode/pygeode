@@ -333,6 +333,9 @@ class climstdev(Clim,Stdev):
 # I.e., A*t + B
 class from_trend (Var):
 # {{{
+  """
+  Reconstructs linear timeseries from a given trend.
+  """
   def __init__ (self, taxis, coef=None, A=None, B=None):
     from pygeode.tools import merge_coefs
     from pygeode.var import Var

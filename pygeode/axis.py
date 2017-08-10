@@ -56,17 +56,20 @@ class Axis(Var):
   
   # Default dictionaries: these are class defaults and are overwritten by child class defaults    
   
-  #: Auxiliary arrays (provides some more context than just the regular value array)
+  #: Auxiliary arrays. These contain additionnal fields beyond the regular value array.
   auxarrays = {}
 
-  #: Auxiliary attributes (attributes which should be preserved during merge/slice/etc.)
+  #: Auxiliary attributes. These are preserved during merge/slice/etc operations.
   auxatts = {}  
 
-  #: Format specification for plotting values
+  #: Format specification for plotting values.
   formatstr = '%g'
 
   #: Relative tolerance for identifying two values of this axis as equal
   rtol = 1e-5
+
+  #: Dictionary of attributes for plotting; see plotting documentation.
+  plotatts = Var.plotatts.copy()
 
   def __init__(self, values, name=None, atts=None, plotatts=None, rtol=None, **kwargs):
 # {{{ 
@@ -599,6 +602,19 @@ class Axis(Var):
   # Rename an axis
   def rename (self, name):
 # {{{
+    """
+    Assigns a new name to this axis.
+
+    Parameters
+    ----------
+    name : string
+      The new name of this axis.
+
+    Returns
+    -------
+    renamed_axis : Axis
+      An instance of the same axis class with the new name.
+    """
     aux = {}
     for k,v in self.auxatts.iteritems(): aux[k] = v
     for k,v in self.auxarrays.iteritems(): aux[k] = v
@@ -809,9 +825,9 @@ class Lon (XAxis):
 
 def regularlon(n, origin=0., order=1, repeat_origin=False):
 # {{{
-  '''Constructs a regularly spaced :class:`Lon` axis with n longitudes, from
-  origin to origin + 360. If repeat_origin is set to True, the final point is
-  equal to origin + 360. '''
+  '''Constructs a regularly spaced :class:`Lon` axis with n longitudes. The
+  values range from origin to origin + 360. If repeat_origin is set to True,
+  the final point is equal to origin + 360. '''
   import numpy as np
   vals = np.linspace(0., 360, n, endpoint=repeat_origin)[::order] + origin
 
@@ -1085,6 +1101,7 @@ class TAxis(Axis): pass
 
 
 class Freq(Axis):
+# {{{
   name = 'freq'
 #  plotscale = 'log'
   def __init__ (self, values, inv_units=None, *args, **kwargs):
@@ -1094,6 +1111,7 @@ class Freq(Axis):
     kwargs = kwargs.copy()
     kwargs['inv_units'] = inv_units
     Axis.__init__ (self, values, *args, **kwargs)
+# }}}
 
 # Indexing arrays (represent discrete items, such as EOF number, ensemble number, etc.)
 class Index(Axis):
@@ -1107,9 +1125,11 @@ class Index(Axis):
 class Coef(Index): pass
 
 class NonCoordinateAxis(Axis):
+# {{{
   '''Non-coordinate axis (disables nearest-neighbour value matching, etc.)'''
   # Refresh the coordinate values (should always be monotonically increasing integers).
   def __init__ (self, *args, **kwargs):
+# {{{
     import numpy as np
     lengths = [len(kw) for kw in kwargs.values() if isinstance(kw,(list,tuple,np.ndarray))]
     if len(lengths) == 0:
@@ -1119,20 +1139,24 @@ class NonCoordinateAxis(Axis):
     Axis.__init__(self, **kwargs)
     # Remember original name
     self._name = self.name
+# }}}
 
   # Modify test for equality to look for an exact match
   #TODO: Make the default Axis.__eq__ logic do this, and move the "close"
   # matching to a subclass of Axis.
   def __eq__ (self, other):
+# {{{
     # For simplicity, expect them to be the same type of axis.
     if type(self) != type(other): return False
     if set(self.auxarrays.keys()) != set(other.auxarrays.keys()): return False
     for k in self.auxarrays.keys():
       if list(self.auxarrays[k]) != list(other.auxarrays[k]): return False
     return True
+# }}}
 
   # How to map string values to dummy indices
   def str_as_val(self, key, s):
+# {{{
     # Special case: referencing an aux array with the same name as the axis.
     if self._name in self.auxarrays:
       values = list(self.auxarrays[self._name])
@@ -1140,8 +1164,11 @@ class NonCoordinateAxis(Axis):
         return values.index(s)
     # Otherwise, return an invalid index (no match)
     return -1
+# }}}
+
   # Modify formatvalue to convert dummy indices to the appropriate values
   def formatvalue(self, value, fmt=None, units=False, unitstr=None):
+# {{{
     # Check if the value is in range.
     if value not in range(len(self)):
       return "?%s?"%value
@@ -1153,10 +1180,13 @@ class NonCoordinateAxis(Axis):
     out = [name+"="+str(array[value]) for name,array in self.auxarrays.iteritems()]
     out = ",".join(out)
     return "("+out+")"
+# }}}
+
   # Modify map_to do use exact matching.
   # (Avoids use of tools.map_to, which assumes the values are numerical)
   #TODO: Make this the default for Axis (don't assume we have numerical values?)
   def map_to (self, other):
+# {{{
     import numpy as np
     # Only allow mapping non-coordinate axes if they're the exact same type.
     if not isinstance(other,type(self)): return None
@@ -1172,11 +1202,14 @@ class NonCoordinateAxis(Axis):
       if v not in values_set: continue
       indices.append(values.index(v))
     return indices
+# }}}
+# }}}
 
 class Station(NonCoordinateAxis):
+# {{{
   '''Station axis (for timeseries data at fixed station locations)'''
   name = "station"
-
+# }}}
 
 # Concatenate a bunch of axes together.
 # Find a common parent class for all of them, and call that class's concat function.
@@ -1197,4 +1230,4 @@ def concat (axes):
 
 
 # List of axes provided in this module (for easy importing)
-standard_axes = [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis, Lon, regularlon, Lat, gausslat, regularlat, Pres, Hybrid, Height, SpectralM, SpectralN, Freq, Index]
+standard_axes = [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis, Lon, NonCoordinateAxis, regularlon, Lat, gausslat, regularlat, Pres, Hybrid, Height, SpectralM, SpectralN, Freq, Index]

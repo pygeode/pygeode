@@ -11,43 +11,46 @@ from pygeode.timeaxis import Time
 # Finds the coupled EOFs between two fields
 def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True, matrix='cov'):
   """
-  SVD (var1, var2, num=1, weight1=None, weight2=None)
+  Finds coupled EOFs of two fields.  Note that the mean/trend/etc. is NOT
+  removed in this routine.
 
-  Finds coupled EOFs of two fields.
+  Parameters
+  ----------
+  var1, var2 : :class:`Var`
+    The variables to analyse.
 
-  Note that the mean/trend/etc. is NOT removed in this routine.
+  num : integer
+    The number of EOFs to compute (default is ``1``).
 
-  Input parameters:
-    var1, var2   - the input fields
+  weight1, weight2 : optional 
+    Weights to use for defining orthogonality in the var1, var2 domains,
+    respectively.  Patterns X and Y in the var1 domain are orthogonal if the
+    sum over X*Y*weights1 is 0. Patterns Z and W in the var2 domain are
+    orthogonal if the sum over Z*W*weights2 is 0. Default is to use internal
+    weights defined for var1 accessed by :meth:`Var.getweights()`. If set to
+    ``False`` no weighting is used.
 
-  Optional parameters:
-    num   - the number of EOFs to compute (default is 1)
-    weight1,   - weights to use for defining 'orthogonality'
-    weight2        Patterns X and Y in the var1 domain are 'orthogonal' if:
-                     sum (X*Y*weights1) == 0
-                   and patterns Z and W in the var2 domain are 'orthogonal' if:
-                     sum (Z*W*weights2) == 0
-                 If not specified, the default is to use whatever internal
-                 weights are available from the var, using var.getweights()
-                 If set to False, no weights will be applied.
+  matrix : string, optional ['cov']
+    Which matrix we are diagonalizing (default is 'cov'). 
+     * 'cov': covariance matrix of var1 & var2
+     * 'cov': correlation matrix of var1 & var2
 
-  More optionaller parameters:
-    matrix   - which matrix we are diagonalizing (default is 'cov')
-               'cov' = covariance matrix of var1 & var2
-               'cor' = correlation matrix of var1 & var2
-    iaxis   - the principal component / expansion coefficient axis
-                i.e., the 'time' axis.
-                Can be an integer (the axis number, leftmost = 0),
-                the axis name (string), or a Pygeode axis class.
-                If not specified, will try to use pygeode.timeaxis.Time,
-                and if that fails, the leftmost axis.
+  iaxis : Axis identifier
+    The principal component / expansion coefficient axis, i.e., the 'time'
+    axis. Can be an integer (the axis number, leftmost = 0), the axis name
+    (string), or a Pygeode axis class.  If not specified, will try to use
+    pygeode.timeaxis.Time, and if that fails, the leftmost axis.
 
-  Returns:
-    eof1   - the coupled eof patterns for var1
-    pc1   - the principal component / expansion coefficients for var1
-    eof2   - the coupled eof patterns for var2
-    pc2   - the principal component / expansion coefficients for var2
+  Returns
+  -------
+  (eof1, pc1, eof2, pc2): tuple
+    * eof1: The coupled eof patterns for var1. 
+    * pc1: The principal component / expansion coefficients for var1.
+    * eof2: The coupled eof patterns for var2.
+    * pc2: The principal component / expansion coefficients for var2.
 
+  Notes
+  -----
     Multiple orders of EOFs are concatenated along an 'order' axis.
   """
   import numpy as np

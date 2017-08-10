@@ -427,18 +427,22 @@ def EOF (x, num=1, iaxis=None, weight=True, out=None):
     ----------
     x : Var object
         The data of interest
+
     num : integer, optional
-        The number of leading EOFs to calculate.  Default is ``1``.
+        The number of leading EOFs to calculate. Default is ``1``.
+
     iaxis : Axis object, Axis class, string, or integer, optional
         Which axis/axes to treat as the record axis.  Multiple axes can be
         passed as a tuple.  Default is the ``Time`` axis of the data
         (if found), otherwise the leftmost axis.
+
     weight : Var object or boolean, optional
         Weights to use use for the orthogonality condition.
         If ``True``, it uses whatever internal weights the variable posesses.
         If ``False`` or ``None``, it doesn't use any weights.
         You can also pass in a Var object with explicit weights.
         Default is ``True``.
+
     out : string, optional
         Which outputs to return.  This is a comma-separated string,
         built from the following keywords:
@@ -463,7 +467,7 @@ def EOF (x, num=1, iaxis=None, weight=True, out=None):
     -------
     eof_decomposition : tuple
       A combination of EOFs, eignenvalues or other computed quantities specified
-      by `out`.
+      by ``out``.
 
     Notes
     -----
@@ -488,7 +492,6 @@ def EOF (x, num=1, iaxis=None, weight=True, out=None):
                   large dataset, and you just want the qualitative features
                   of the EOF spatial patterns.
       =========   ============================================================
-
   """
   from math import sqrt
   from pygeode import MAX_ARRAY_SIZE

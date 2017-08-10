@@ -7,28 +7,64 @@ class Dataset(object):
   """
     Container class for :class:`Var` objects. Provides tools for organizing and
     working with a set of variables. 
+
+    :ivar vars
+    :ivar axes
   """
+
+  #: A list of variables contained by the Dataset. See `Var` class.
+  vars = None
+
+  #: A dictionary of variables contained by the Dataset, indexed by name.
+  vardict = None
+
+  #: A list of axes contained by the Dataset. See `Axis` class.
+  axes = None
+
+  #: A dictionary of metadata associated with the dataset. Sometimes referred
+  #: to as global attributes.
+  atts = None
+
   # Get a variable by name
   def __getitem__ (self, key):
+# {{{
+    '''Gets a variable or axis object.
+
+    Parameters
+    ----------
+    key : string
+      Name of axis or variable to return.
+
+    Returns
+    -------
+    :class:`Var` or :class:`Axis` object matching the requested name. Raises :class:`KeyError` if
+    no such member is found.'''
     if key in self.vardict: return self.vardict[key]
     if key in self.axisdict: return self.axisdict[key]
     raise KeyError("%s not in %s.  Valid keys are %s"%(key,repr(self),self.vardict.keys()))
-
+# }}}
 
   # Check if we have a variable of the given name
   def __contains__ (self, key):
+# {{{
     return key in self.vardict or key in self.axisdict
+# }}}
+
   # Reference a axis/variable as an attribute (for the super lazy)
   def __getattr__ (self, name):
+# {{{
     # Disregard metaclass stuff
     if name.startswith('__'): raise AttributeError
 #    print 'dataset getattr ??', name
     if name in self: return self[name]
     raise AttributeError (name)
+# }}}
 
   def __dir__(self):
+# {{{
     l = self.__dict__.keys() + dir(self.__class__)
     return l + self.vardict.keys() + self.axisdict.keys()
+# }}}
 
   # Iterate over the variables
   def __iter__(self): return iter(self.vars)
@@ -37,6 +73,32 @@ class Dataset(object):
   # Takes a list of Vars, and any global attributes
   # Vars and axes may be renamed within the Dataset to ensure uniqueness
   def __init__ (self, vars, atts={}, print_warnings=True):
+# {{{
+    ''' Create a new :class:`Dataset` from a list of variables.
+
+    Parameters
+    ----------
+    vars: list
+      The list of :class:`Var` objects to include.
+    
+    atts: dictionary, optional
+      A dictionary of attributes available in the :attr:`Dataset.atts` attribute.
+
+    print_warnings: boolean, optional [True]
+      If True, print out warnings when variables and axes are renamed.
+
+    Returns
+    -------
+    The new :class:`Dataset` object.
+
+    Notes
+    -----
+    Variable names and axis names must be unique. If multiple variables share
+    the same name they will be renamed so that they are unique. If variables
+    have axes with matching names but which are not matching, they will also be
+    renamed. If any names are modified and ``print_warnings`` is True, a
+    warning will be displayed indicating how objects have been renamed.
+    '''
     from pygeode.var import Var
     from warnings import warn
     atts = atts.copy()
@@ -118,11 +180,12 @@ class Dataset(object):
 
     self.vars = vars
     self.vardict = dict([v.name,v] for v in vars)
-
+# }}}
 
   # String arrays representing the variables, dimensions, etc.
   # Feeds into __str__ below, to simplify it a bit
   def __str_vararr__ (self):
+# {{{
     for v in self.vars:
       oldname = v.name
       # Get the name used as the reference for the dataset
@@ -131,9 +194,11 @@ class Dataset(object):
       axes = '(' + ','.join(a.name for a in v.axes) + ')'
       shape = ' (' + ','.join(str(len(a)) for a in v.axes) + ')'
       yield name, axes, shape
+# }}}
 
   # String representation
   def __str__ (self):
+# {{{
     from textwrap import TextWrapper
     # Degenerate case - no variables??
     if len(self.vars) == 0:
@@ -156,14 +221,71 @@ class Dataset(object):
     s = s + 'Global Attributes:\n' + w.fill(str(self.atts))
 
     return s
+# }}}
 
   # Make a copy of a dataset
   # (copies the internal lists and dictionaries, does *not* copy the vars)
-  def copy (self): return asdataset(self, copy=True)
+  def copy (self): 
+# {{{
+    '''Creates a new copy of this dataset. New instances of the internal lists
+    and dictionaries are created, but the variable still rever to the same
+    :class:`Var` objects.
+
+    Returns
+    -------
+    A new :class:`Dataset` object.'''
+    return asdataset(self, copy=True)
+# }}}
 
   # Rename some variables in the dataset
   # (need to update vars, vardict)
   def rename_vars (self, vardict={}, **kwargs):
+# {{{
+    ''' Rename variables in dataset. Variables to rename can be passed
+    as keyword arguments, or as a dictionary.
+
+    Parameters
+    ----------
+    vardict: dictionary, optional
+      A dictionary with keys corresponding to the existing variables to rename and 
+      values giving their new names.
+    
+    **kwargs: keyword arguments
+      One or more keyword arguments. The parameters are the existing variable names
+      and the values are the new names to substitute.
+
+    Returns
+    -------
+    A new :class:`Dataset` object with the same contents but renamed variables.
+
+    Examples
+    --------
+    >>> from pygeode.tutorial import t2
+    >>> print t2  
+    <Dataset>:
+    Vars:
+      Temp (time,pres,lat,lon)  (3650,20,31,60)
+      U    (time,pres,lat,lon)  (3650,20,31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    >>> print t2.rename_vars(Temp = 'T', U = 'Wind')
+    <Dataset>:
+    Vars:
+      T    (time,pres,lat,lon)  (3650,20,31,60)
+      Wind (time,pres,lat,lon)  (3650,20,31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    '''
     vardict = dict(vardict, **kwargs)
     varlist = list(self.vars)
     for i, v in enumerate(varlist):
@@ -174,21 +296,134 @@ class Dataset(object):
         assert isinstance(newname,str)
         varlist[i] = v.rename(newname)
     return Dataset(varlist, atts=self.atts)
+# }}}
 
   # Remove some variables from the dataset
   def remove (self, *varnames):
+# {{{
+    '''Removes variables from the dataset.
+
+    Parameters
+    ----------
+    *varnames : strings
+      The names of the variables to remove.
+
+    Returns
+    -------
+    A new :class:`Dataset` with the specified variables removed.
+
+    Notes
+    -----
+    The sutraction operator is also overloaded to do the same thing;
+    in that case provide a list of strings again specifying the names
+    of the variables to remove.
+    
+    Examples
+    --------
+    >>> from pygeode.tutorial import t2
+    >>> print t2  
+    <Dataset>:
+    Vars:
+      Temp (time,pres,lat,lon)  (3650,20,31,60)
+      U    (time,pres,lat,lon)  (3650,20,31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    >>> print t2.remove('Temp')
+    <Dataset>:
+    Vars:
+      U    (time,pres,lat,lon)  (3650,20,31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    >>> print t2 - ['U']
+    <Dataset>:
+    Vars:
+      Temp (time,pres,lat,lon)  (3650,20,31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    '''
     for n in varnames:
       assert isinstance(n,str)
       assert n in self.vardict, "'%s' not found in the dataset"%n
     vars = [v for v in self.vars if v.name not in varnames]
     d = Dataset(vars, atts=self.atts)
     return d
+# }}}
+
   def __sub__ (self, varnames):
+# {{{
     if isinstance (varnames,(list,tuple)): return self.remove(*varnames)
     return self.remove(varnames)
+# }}}
 
   # Add some more variables to the dataset
   def add (self, *vars):
+# {{{
+    '''Adds variables to the dataset.
+
+    Parameters
+    ----------
+    *vars : :class:`Var` objects
+      The variables to add
+
+    Returns
+    -------
+    A new :class:`Dataset` with the variables added. 
+
+    Notes
+    -----
+    The same naming rules are applied in case of name collisions as in
+    :meth:`Dataset.__init__`. The addition operator is also overloaded to do
+    the same thing; in that case provide a list of the variables to add.
+
+		See Also
+		--------
+		
+    
+    Examples
+    --------
+    >>> from pygeode.tutorial import t1, t2
+    >>> print t2.add(t1.Temp.rename('Temp2'))
+    <Dataset>:
+    Vars:
+      Temp  (time,pres,lat,lon)  (3650,20,31,60)
+      U     (time,pres,lat,lon)  (3650,20,31,60)
+      Temp2 (lat,lon)            (31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    >>> print t2 + t1.Temp.rename('Temp2')
+    <Dataset>:
+    Vars:
+      Temp  (time,pres,lat,lon)  (3650,20,31,60)
+      U     (time,pres,lat,lon)  (3650,20,31,60)
+      Temp2 (lat,lon)            (31,60)
+    Axes:
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    '''
     from pygeode.var import Var
     from pygeode.tools import common_dict
     # Collect global attributes (from any Datasets passsed to us)
@@ -202,23 +437,78 @@ class Dataset(object):
     vars = list(self.vars) + list(vars)
     d = Dataset(vars, atts=self.atts)
     return d
+# }}}
   def __add__ (self, vars):
+# {{{
     if isinstance(vars,(list,tuple)): return self.add(*vars)
     return self.add(vars)
+# }}}
   def __radd__ (self, vars): return self.__add__(vars)
 
   # Replace one or more variables
   def replace_vars (self, vardict={}, **kwargs):
+# {{{
+    '''Replaces variables in the dataset.
+
+    Parameters
+    ----------
+    vardict: dictionary, optional
+      A dictionary with keys corresponding to the existing variables to replace and 
+      values giving the new :class:`Var` instances.
+    
+    **kwargs: keyword arguments
+      One or more keyword arguments. The parameters are the existing variable names
+      and the values are the new :class:`Var` instances.
+
+    Returns
+    -------
+    A new :class:`Dataset` with the specified variables replaced.
+    
+    Examples
+    --------
+    >>> from pygeode.tutorial import t1, t2
+    >>> print t2.replace_vars(Temp = t1.Temp)
+    <Dataset>:
+    Vars:
+      Temp (lat,lon)            (31,60)
+      U    (time,pres,lat,lon)  (3650,20,31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+      time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+    Global Attributes:
+      {'history': 'Synthetic Temperature and Wind data generated by pygeode'}
+    '''
     vardict = dict(vardict, **kwargs)
     varlist = list(self.vars)
     for i, v in enumerate(varlist):
       if v.name in vardict:
         varlist[i] = vardict[v.name]
     return Dataset(varlist, atts=self.atts)
+# }}}
 
   # Apply the specified var->var function to all variables in the dataset,
   # and make a new dataset.  Anything that gets mapped to 'None' is ignored.
   def map (self, f, *args, **kwargs):
+# {{{
+    ''' Calls a given function on every variable in the dataset.
+
+    Parameters
+    ----------
+    f: callable
+      Method to call. Must take the variable as its first argument, and return
+      either a single variable, or None. Further positional and keyword
+      arguments can be passed through ``args`` and ``kwargs``.
+
+    args, kwargs: positional and keyword arguments
+      These are passed on to f.
+
+    Returns
+    -------
+    A new :class:`Dataset` with the results of the calls to f. f can return None; in that
+    case no corresponding variable is included in the new Dataset object.
+    '''
     from pygeode.var import Var
     # Special case: f is a string representing a Var method
     if isinstance(f,str):
@@ -234,18 +524,54 @@ class Dataset(object):
     varlist = [v for v in varlist if v is not None]
     for v in varlist: assert isinstance(v,Var), "%s does not map vars to vars"%f
     return Dataset(varlist, atts=self.atts.copy())
+# }}}
 
   # Load all the variables in the dataset
   def load(self):
+# {{{
+    ''' Loads data from all variables in the dataset.
+
+    Returns
+    -------
+    A new dataset in which :meth:`Var.load()` has been called
+    on each variable, loading their data into memory.
+    '''
     vars = [v.load() for v in self.vars]
     d = Dataset(vars, atts=self.atts)
     return d
+# }}}
 
   # Slicing
   # Applies the keyword-based axis slicing to *all* the vars in the dataset.
   #TODO: more efficient method?
   # Right now, each var is sliced independantly, so the same axis will be sliced multiple times.
   def __call__ (self, **kwargs):
+    '''
+    Subsets all variables in this dataset. Behaves in the same way as :meth:`Var.__call__`.
+
+    Parameters
+    ----------
+    slices : list of slices
+      See :meth:`Var.__call__` for details.
+
+    Returns
+    -------
+    :class:`Dataset`
+      A new Dataset, in which all variables have been restricted to the
+      specified domain.
+
+    Notes
+    -----
+    Not all variables need to have the axes being sliced (any slice that
+    doesn't apply to a given variable is simply ignored). This is usually
+    more convenient, but it does mean that if an axis name is misspelled (for
+    example), the call will return successfully without performing any 
+    subsetting.
+
+    See Also
+    --------
+    Var.__call__
+    '''
     return self.map ('__call__', **kwargs)
 # }}}
 
@@ -297,7 +623,6 @@ def asdataset (vars, copy=False, print_warnings=True):
   return Dataset(vars, print_warnings=print_warnings)
 # }}}
 
-
 def axis_name_clumping (varlist):
 # {{{
   # Name-based dictionary pointing to all related axes
@@ -326,6 +651,7 @@ def axis_name_clumping (varlist):
 
 # Concatenate a bunch of datasets together
 def concat(*datasets):
+# {{{
   from pygeode.concat import concat
   from pygeode.tools import common_dict, islist
 
@@ -361,9 +687,7 @@ def concat(*datasets):
   if len(atts) > 0:
     d.atts = atts
   return d
-
-
-
+# }}}
 
 ##################################################
 # Hook in Var methods
@@ -371,6 +695,7 @@ def concat(*datasets):
 
 # Wrapper to convert functions from working on Vars to Datasets
 def dataset_method (f):
+# {{{
   from pygeode.var import Var
   def new_f (dataset, *args, **kwargs):
     # Degenerate case: passed a single var (return a single var)
@@ -378,8 +703,9 @@ def dataset_method (f):
     # Otherwise, apply the function to the vars in the dataset, construct a new dataset
     return dataset.map(f, *args, **kwargs)
   new_f.__name__ = f.__name__
-  new_f.__doc__ = f.__doc__
+  new_f.__doc__ = 'Returns new dataset calling `Var.%s` on each variable.' % (f.__name__)
   return new_f
+# }}}
 
 from pygeode.var import class_hooks
 for f in class_hooks:

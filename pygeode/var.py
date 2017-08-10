@@ -34,7 +34,6 @@ class Var(object):
     See Also
     --------
     :doc:`axis`
-
   """
 
   # Default attributes
@@ -44,15 +43,36 @@ class Var(object):
   #: when saving to an output file.
   name = '' # default name (blank)
 
-  #: A string representation of the units of the variable
+  #: A string representation of the units of the variable.
   units = '' # default units (none)
 
-  formatstr = '%g' # Formatting code to use for printint values
+  #: Formatting code to use for printing values.
+  formatstr = '%g' 
+
+  #: Dictionary of metadata associated with the variable.
   atts = {} # shared dictionary - replace this in init!
 
-  # attributes for plotting; see plotting documentation
+  #: Dictionary of attributes for plotting; see plotting documentation.
   plotatts = {'plotscale': 'linear',  # default scale for plotting
               'plotorder': 1}  # By default, plot with axis values increasing away from origin
+
+  #: The axes of the variable. A ``tuple`` of :class:`Axis` instances.
+  axes = None
+
+  #: The number of axes of this variable.
+  naxes = 0
+
+  #: The dimensions of this variable, as a ``tuple``. Similar to :attr:`numpy.ndarray.shape`.
+  shape = None
+
+  #: The total number of data points represented by this variable. 
+  size = 0
+
+  #: The numerical type of the data as a :class:`numpy.dtype`. See also :meth:`Var.__init__`.
+  dtype = None
+
+  #: A helper to select subsets of this variable using slice notation. See :meth:`Var._getitem_asvar`.
+  slice = None
 
   # This method should be called by all subclasses
   def __init__ (self, axes, dtype=None, name=None, values=None, atts=None, plotatts=None):
@@ -70,7 +90,7 @@ class Var(object):
     name : string (optional)
         What to call the variable (i.e. for plot titles & when saving to file)
     values : numpy.ndarray
-        The data to be wrapped.
+        The data to be wrapped. 
     atts : dict (optional)
         Any additional metadata to associate with the variable. The dictionary
         keys should be strings.
@@ -85,9 +105,11 @@ class Var(object):
 
     Notes
     -----
-    All subclasses of :class:`Var` need to call this __init__ method within
+    The :class:`Var` class can be instantiated directly (see `constructing-vars`),
+    in which case providing an array for the values argument is necessary. Sub-classes
+    of `Var` which define their values based on some operation need not provide any
+    data; however all subclasses of :class:`Var` need to call this __init__ method within
     their own __init__, to properly initialize all attributes.
-
     """
 
 
@@ -99,7 +121,7 @@ class Var(object):
     # changing the variable itself
     # Do this before calling 'hasattr', or you're in for a world of pain
     assert all(isinstance(a,Axis) for a in axes)
-    self.axes = tuple(axes) #: Stuff
+    self.axes = tuple(axes)
     self.naxes = len(axes)
     
     # If we're given a Var as the input data, then we need to grab the data.
@@ -173,6 +195,59 @@ class Var(object):
   # Subset by integer indices - wrapped as Var object
   def _getitem_asvar (self, slices):
 # {{{
+    '''
+    Slice-based data subsetting.
+
+    Parameters
+    ----------
+    slices : list of slices
+
+    Returns
+    -------
+    subset_var : Var
+      A new Var, restricted to the specified domain.
+
+    Notes
+    -----
+    A helper function so that standard python slicing notation
+    can be used to subset a Var without loading the underlying
+    data. A new Var object is returned.
+
+    See Also
+    --------
+    Var.slice, Var.__call__, Var.__getitem__
+
+    Examples
+    --------
+    >>> from pygeode.tutorial import t1
+    >>> print t1.Temp
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (31,60)
+      Axes:
+        lat <Lat>      :  90 S to 90 N (31 values)
+        lon <Lon>      :  0 E to 354 E (60 values)
+      Attributes:
+        {}
+      Type:  Add_Var (dtype="float64")
+    >>> print t1.Temp.slice[10:-10, ::10]
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (11,6)
+      Axes:
+        lat <Lat>      :  30 S to 30 N (11 values)
+        lon <Lon>      :  0 E to 300 E (6 values)
+      Attributes:
+        {}
+      Type:  SlicedVar (dtype="float64")
+    >>> print t1.Temp.slice[17, :]
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (1,60)
+      Axes:
+        lat <Lat>      :  12 N
+        lon <Lon>      :  0 E to 354 E (60 values)
+      Attributes:
+        {}
+      Type:  SlicedVar (dtype="float64")
+    '''
     from pygeode.varoperations import SlicedVar
     newvar = SlicedVar(self, slices)
 
@@ -189,6 +264,34 @@ class Var(object):
   # Subset by integer indices
   def __getitem__ (self, slices):
 # {{{
+    """
+    Gets a raw numpy array containing a subset of values of the variable.
+
+    Parameters
+    ----------
+    slices : list of slices
+
+    Returns
+    -------
+    out : numpy.ndarray
+      The requested values, as a numpy array.
+
+    See Also
+    --------
+    Var.get, Var.slice, Var.__call__
+
+    Examples
+    --------
+    >>> from pygeode.tutorial import t1
+    >>> print t1.Temp[:].shape
+    (31, 60)
+    >>> print t1.Temp[20:-6, ::12]
+    [[ 285.64721554  287.07380031  286.52889342  284.76553766  284.22063076]
+     [ 281.09169696  282.80359869  282.14971042  280.03368351  279.37979523]
+     [ 276.73945224  278.73667093  277.97380127  275.50510321  274.74223356]
+     [ 272.82122084  275.10375648  274.23190545  271.41053624  270.5386852 ]
+     [ 269.47711035  272.04496294  271.06413053  267.89009017  266.90925775]]
+    """
     # Get the raw numpy array (with degenerate axes intact)
     array = self._getitem_asvar(slices).get()
     # If any single integer indices were passed, then reduce out those
@@ -651,6 +754,13 @@ class Var(object):
   # If the values are already loaded, then return self
   def load (self, pbar=True):
   # {{{
+    ''' Returns a version of this variable with all data loaded into memory.
+
+    Parameters
+    ----------
+    pbar : boolean
+      If True, display a progress bar while loading data.
+    '''
     from pygeode.progress import PBar
     if hasattr(self, 'values'): return self
     if pbar is True:
