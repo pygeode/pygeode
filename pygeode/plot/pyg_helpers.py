@@ -105,22 +105,13 @@ def set_yaxis(axes, axis, lbl, yscale=True):
   else:
     prm['yticklabels'] = []
 
-  #print yscale, prm, axprm
   axes.setp(**prm)
   axes.setp_yaxis(**axprm)
 
   if len(label) > 0 and lbl:
     axes.pad = [0.8, pb, 0.1, pt]
   else:
-    axes.pad = [0.1, pb, 0.1, pt]
-
-# if lbl:
-#    axes.setp(yscale = scale, ylabel = label, ylim = lim)
-#    axes.setp_yaxis(major_formatter = form, major_locator = loc)
-#    axes.pad = [0.8, pb, 0.1, pt]
-# else:
-#    axes.setp(yscale = scale, ylim = lim, yticklabels=[])
-#    axes.pad = [0.1, pb, 0.1, pt]
+    axes.pad = [0.5, pb, 0.1, pt]
 # }}}
 
 def build_basemap(lons, lats, **kwargs):
@@ -860,8 +851,6 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
     aypadl = aypad
 
   axw, axh = size
-  ypad = ypad + aypadl + aypad * (nrow-1)
-  xpad = xpad + axpadl + axpad * (ncol-1)
 
   axs = []
   row = []
@@ -882,10 +871,18 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
       w = axw
       h = axh
     else:
-      if lblx: h = axh + aypadl
-      else: h = axh + aypad
-      if lbly: w = axw + axpadl
-      else: w = axw + axpad
+      pl, pb, pr, pt = ax.pad
+      if lblx:
+        py = aypadl
+      else:
+        py = aypad
+      if lbly:
+        px = axpadl
+      else:
+        px = axpad
+      h = axh + py
+      w = axw + px
+      ax.pad = [px-pr, py-pt, pr, pt]
 
     ax.size = (w, h)
     row.append(ax)
