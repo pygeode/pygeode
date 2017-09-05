@@ -536,7 +536,7 @@ class FillVar(Var):
   def __init__(self, var, fill):
     from pygeode.var import Var, copy_meta
     self.var = var
-    self.fill = fill
+    self._fill = fill
     Var.__init__(self, var.axes, var.dtype)
     copy_meta(var, self)
   def getview (self, view, pbar):
@@ -544,7 +544,7 @@ class FillVar(Var):
     data = view.get(self.var, pbar=pbar).copy()
 #    data[where(data == float('NaN'))] = self.fill
     w = np.where(np.isnan(data))
-    data[w] = self.fill
+    data[w] = self._fill
     return data
 
 def fill (self, fill):
@@ -577,7 +577,7 @@ class UnfillVar(Var):
     from numpy import float32, float64
     from pygeode.var import Var, copy_meta
     self.var = var
-    self.fill = fill
+    self._fill = fill
     # We need floating-point values to have a nan
     if var.dtype not in (float32, float64):
       dtype = float32
@@ -588,7 +588,7 @@ class UnfillVar(Var):
     import numpy as np
     data = view.get(self.var, pbar=pbar).copy()
     data = np.asarray(data, self.dtype)
-    data[np.where(data == self.fill)] = float('NaN')
+    data[np.where(data == self._fill)] = float('NaN')
     return data
 
 def unfill (self, fill):
