@@ -118,7 +118,7 @@ class Interp (Var):
     else:
       loop_inx = 1
       # Expand this out (can't use broadcasting in the C code)
-      for i in range(inx.naxes):
+      for i in range(inview.naxes):
         if inx_data.shape[i] == 1:
           inx_data = np.repeat(inx_data, indata.shape[i], axis=i)
 
@@ -128,7 +128,7 @@ class Interp (Var):
     else:
       loop_outx = 1
       # Expand this out
-      for i in range(outx.naxes):
+      for i in range(view.naxes):
         if outx_data.shape[i] == 1:
           outx_data = np.repeat(outx_data, outdata.shape[i], axis=i)
 
