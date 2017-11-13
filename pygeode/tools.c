@@ -222,6 +222,29 @@ int partial_sum_##TYPE (int nx, int nin, int nout, int ny, 		\
   return 0;								\
 }
 
+// NAN-aware partial sum of an array
+#define PARTIAL_NAN_SUM(TYPE)						\
+int partial_nan_sum_##TYPE (int nx, int nin, int nout, int ny, 		\
+                 TYPE *in, TYPE *out, int *count, int *outmap) {	\
+  for (int x = 0; x < nx; x++) {					\
+    TYPE *in_ = in + x*nin*ny;						\
+    TYPE *out_ = out + x*nout*ny;					\
+    int *count_ = count + x*nout*ny;					\
+    for (int i = 0; i < nin; i++) {					\
+      TYPE *in__ = in_ + i*ny;						\
+      TYPE *out__ = out_ + outmap[i]*ny;				\
+      int *count__ = count_ + outmap[i]*ny;				\
+      for (int y = 0; y < ny; y++) {					\
+        if (!isnan(in__[y])) {             \
+          out__[y] += in__[y];			\
+          count__[y] += 1;				\
+        }                           \
+      }									\
+    }									\
+  }									\
+  return 0;								\
+}
+
 typedef float float32;
 typedef double float64;
 typedef int int32;
@@ -231,6 +254,9 @@ PARTIAL_SUM (float64);
 PARTIAL_SUM (int32);
 PARTIAL_SUM (int64);
 #undef PARTIAL_SUM
+PARTIAL_NAN_SUM (float32);
+PARTIAL_NAN_SUM (float64);
+#undef PARTIAL_NAN_SUM
 
 typedef struct {
   float32 real;
@@ -263,9 +289,36 @@ int partial_sum_##TYPE (int nx, int nin, int nout, int ny, 		\
   return 0;								\
 }
 
+#define PARTIAL_NAN_SUM_COMPLEX(TYPE)					\
+int partial_nan_sum_##TYPE (int nx, int nin, int nout, int ny, 		\
+                 TYPE *in, TYPE *out, int *count, int *outmap) {	\
+  for (int x = 0; x < nx; x++) {					\
+    TYPE *in_ = in + x*nin*ny;						\
+    TYPE *out_ = out + x*nout*ny;					\
+    int *count_ = count + x*nout*ny;					\
+    for (int i = 0; i < nin; i++) {					\
+      TYPE *in__ = in_ + i*ny;						\
+      TYPE *out__ = out_ + outmap[i]*ny;				\
+      int *count__ = count_ + outmap[i]*ny;				\
+      for (int y = 0; y < ny; y++) {					\
+        if (!(isnan(in__[y].real) || isnan(in__[y].imag))) { \
+          out__[y].real += in__[y].real;		\
+          out__[y].imag += in__[y].imag;		\
+          count__[y] += 1;						\
+        }                   \
+      }									\
+    }									\
+  }									\
+  return 0;								\
+}
+
 PARTIAL_SUM_COMPLEX (complex64);
 PARTIAL_SUM_COMPLEX (complex128);
 #undef PARTIAL_SUM_COMPLEX
+
+PARTIAL_NAN_SUM_COMPLEX (complex64);
+PARTIAL_NAN_SUM_COMPLEX (complex128);
+#undef PARTIAL_NAN_SUM_COMPLEX
 
 
 /***** Python wrappers *****/
@@ -371,6 +424,31 @@ WRAP_PARTIAL_SUM(complex128);
 
 #undef WRAP_PARTIAL_SUM
 
+#define WRAP_PARTIAL_NAN_SUM(TYPE)						\
+static PyObject *toolscore_partial_nan_sum_##TYPE (PyObject *self, PyObject *args){\
+  int nx, nin, nout, ny, *count, *outmap;				\
+  TYPE *in, *out;							\
+  PyArrayObject *count_array, *outmap_array, *in_array, *out_array;	\
+  if (!PyArg_ParseTuple(args, "iiiiO!O!O!O!",				\
+    &nx, &nin, &nout, &ny, &PyArray_Type, &in_array, 			\
+    &PyArray_Type, &out_array, &PyArray_Type, &count_array,		\
+    &PyArray_Type, &outmap_array)) return NULL;				\
+  /* Assume all arrays are contiguous and of the right type */		\
+  count = (int*)count_array->data;					\
+  outmap = (int*)outmap_array->data;					\
+  in = (TYPE*)in_array->data;						\
+  out = (TYPE*)out_array->data;						\
+  partial_nan_sum_##TYPE (nx, nin, nout, ny, in, out, count, outmap);	\
+  Py_RETURN_NONE;							\
+}
+
+WRAP_PARTIAL_NAN_SUM(float32);
+WRAP_PARTIAL_NAN_SUM(float64);
+WRAP_PARTIAL_NAN_SUM(complex64);
+WRAP_PARTIAL_NAN_SUM(complex128);
+
+#undef WRAP_PARTIAL_NAN_SUM
+
 static PyMethodDef ToolsMethods[] = {
   {"map_to", toolscore_map_to, METH_VARARGS, ""},
   {"common_map", toolscore_common_map, METH_VARARGS, ""},
@@ -380,6 +458,10 @@ static PyMethodDef ToolsMethods[] = {
   {"partial_sum_int64", toolscore_partial_sum_int64, METH_VARARGS, ""},
   {"partial_sum_complex64", toolscore_partial_sum_complex64, METH_VARARGS, ""},
   {"partial_sum_complex128", toolscore_partial_sum_complex128, METH_VARARGS, ""},
+  {"partial_nan_sum_float32", toolscore_partial_nan_sum_float32, METH_VARARGS, ""},
+  {"partial_nan_sum_float64", toolscore_partial_nan_sum_float64, METH_VARARGS, ""},
+  {"partial_nan_sum_complex64", toolscore_partial_nan_sum_complex64, METH_VARARGS, ""},
+  {"partial_nan_sum_complex128", toolscore_partial_nan_sum_complex128, METH_VARARGS, ""},
   {NULL, NULL, 0, NULL}
 };
 

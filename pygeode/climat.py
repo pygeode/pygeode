@@ -1,4 +1,8 @@
-__all__ = ('climatology', 'dailymean', 'monthlymean', 'yearlymean','diurnalmean', 'seasonalmean', 'climtrend', 'from_trend')
+__all__ = ('climatology', 'dailymean', 'monthlymean',
+           'yearlymean','diurnalmean', 'seasonalmean',
+           'nanclimatology', 'dailynanmean', 'monthlynanmean',
+           'yearlynanmean','diurnalnanmean', 'seasonalnanmean',
+           'climtrend', 'from_trend')
 
 from pygeode.var import Var
 
@@ -195,6 +199,31 @@ class Mean(TimeOp):
     return sum
 # }}}
 
+class NANMean(TimeOp):
+# {{{
+  name_suffix2 = '_nanmean'
+
+  def getview (self, view, pbar):
+    from pygeode.tools import partial_nan_sum
+    import numpy as np
+
+    ti = self.ti
+
+    sum = np.zeros (view.shape, self.dtype)
+    count = np.zeros (view.shape, dtype='int32')
+
+    for slices, [data], bins in loopover (self.var, view, pbar):
+      partial_nan_sum (data, slices, sum, count, ti, bins)
+
+    inodata = (count == 0)
+    if np.any(inodata):
+      count = count.astype('d')
+      count[inodata] = np.nan
+
+    sum /= count
+    return sum
+# }}}
+
 class Stdev(TimeOp):
 # {{{
   name_suffix2 = '_stdev'
@@ -314,6 +343,34 @@ class diurnalmean(Diurnal,Mean):
 class seasonalmean(Seasonal,Mean):
   """
   Averages over each season.  Currently, the seasons are hard-coded as (DJF,
+  MAM, JJA, SON).
+  """
+
+class nanclimatology(Clim,NANMean):
+  """
+  Computes a climatological nan-aware mean.  Averages over all years, returning a single
+  value for each distinct month, day, hour, etc.
+  """
+class dailynanmean(Daily,NANMean):
+  """
+  Computes a nan-aware average value for each day.
+  """
+class monthlynanmean(Monthly,NANMean):
+  """
+  Nan-aware Averages over each month.
+  """
+class yearlynanmean(Yearly,NANMean):
+  """
+  Nan-aware Averages over each year.
+  """
+class diurnalnanmean(Diurnal,NANMean):
+  """
+  Computes a nan-aware average value for each time of day (averages over all years,
+  months, days).
+  """
+class seasonalnanmean(Seasonal,NANMean):
+  """
+  Nan-aware averages over each season.  Currently, the seasons are hard-coded as (DJF,
   MAM, JJA, SON).
   """
 

@@ -489,6 +489,38 @@ def partial_sum (arr, sl, bigout, bigcount, iaxis, outmap):
   bigcount[sl] += count
 # }}}
 
+def partial_nan_sum (arr, sl, bigout, bigcount, iaxis, outmap):
+# {{{
+  import numpy as np
+
+#  out = np.zeros(arr.shape[:iaxis] + (bigout.shape[iaxis],) + arr.shape[iaxis+1:], dtype=bigout.dtype)
+  out = np.zeros(arr.shape[:iaxis] + (bigout.shape[iaxis],) + arr.shape[iaxis+1:], dtype=arr.dtype)
+  count = np.zeros(arr.shape[:iaxis] + (bigcount.shape[iaxis],) + arr.shape[iaxis+1:], dtype='int32')
+
+
+  assert arr.ndim == out.ndim
+#  assert arr.shape[:iaxis] == out.shape[:iaxis]
+#  assert arr.shape[iaxis+1:] == out.shape[iaxis+1:]
+  assert len(outmap) == arr.shape[iaxis]
+#  uoutmap = np.unique(outmap)
+  #assert len(uoutmap) == out.shape[iaxis], "%d != %d"%(len(uoutmap),out.shape[iaxis])
+  assert count.shape == out.shape
+  assert outmap.min() >= 0
+  assert outmap.max() < out.shape[iaxis]
+
+#  assert arr.dtype.name == out.dtype.name  # handled in new definition of out??
+  assert count.dtype.name == outmap.dtype.name == 'int32', '? %s %s'%(count.dtype,outmap.dtype)
+  nx = int(np.product(arr.shape[:iaxis]))
+  nin = arr.shape[iaxis]
+  nout = out.shape[iaxis]
+  ny = int(np.product(arr.shape[iaxis+1:]))
+  func = getattr(libmisc,'partial_nan_sum_'+arr.dtype.name)
+  func (nx, nin, nout, ny, arr, out, count, outmap)
+
+  bigout[sl] += out
+  bigcount[sl] += count
+# }}}
+
 #TODO: remove these, once Var I/O can efficiently handle concurrent reading & caching
 # Merge some coefficient arrays together, so they can be operated on a a single entity
 from pygeode.var import Var
