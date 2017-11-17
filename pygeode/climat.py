@@ -2,6 +2,10 @@ __all__ = ('climatology', 'dailymean', 'monthlymean',
            'yearlymean','diurnalmean', 'seasonalmean',
            'nanclimatology', 'dailynanmean', 'monthlynanmean',
            'yearlynanmean','diurnalnanmean', 'seasonalnanmean',
+           'climstdev', 'dailystdev', 'monthlystdev',
+           'yearlystdev','diurnalstdev', 'seasonalstdev',
+           'climnanstdev', 'dailynanstdev', 'monthlynanstdev',
+           'yearlynanstdev','diurnalnanstdev', 'seasonalnanstdev',
            'climtrend', 'from_trend')
 
 from pygeode.var import Var
@@ -248,6 +252,35 @@ class Stdev(TimeOp):
     return np.sqrt(var)
 # }}}
 
+class NANStdev(TimeOp):
+# {{{
+  name_suffix2 = '_nanstdev'
+
+  def getview (self, view, pbar):
+    from pygeode.tools import partial_nan_sum
+    import numpy as np
+
+    ti = self.ti
+
+    xx = np.zeros (view.shape, self.dtype)
+    x = np.zeros (view.shape, self.dtype)
+    nx = np.zeros (view.shape, dtype='int32')
+    nx2 = np.zeros (view.shape, dtype='int32')
+
+    for slices, [data], bins in loopover (self.var, view, pbar):
+      partial_nan_sum (data, slices, x, nx, ti, bins)
+      partial_nan_sum (data**2, slices, xx, nx2, ti, bins)
+
+    inodata = (nx == 0)
+    if np.any(inodata):
+      nx = nx.axtype('d')
+      nx[inodata] = np.nan
+
+    x /= nx
+    var = (xx - nx*x**2) / (nx - 1)
+    return np.sqrt(var)
+# }}}
+
 class Trend(TimeOp):
 # {{{
   name_suffix2 = '_trend'
@@ -386,6 +419,40 @@ class climstdev(Clim,Stdev):
   Computes a climatological standard deviation. Computes standard deviation over all years,
   returning a single value for each distinct month, day, hour, etc.
   """
+class dailystdev(Daily,Stdev):
+  """ Computes daily standard deviation. """
+
+class monthlystdev(Monthly,Stdev):
+  """ Computes monthly standard deviation. """
+
+class seasonalstdev(Seasonal,Stdev):
+  """ Computes seasonal standard deviation. """
+
+class yearlystdev(Yearly,Stdev):
+  """ Computes yearly standard deviation. """
+
+class diurnalstdev(Diurnal,Stdev):
+  """ Computes diurnal standard deviation. """
+
+class climnanstdev(Clim,NANStdev):
+  """ Computes nan-aware climatological standard deviation. """
+
+class dailynanstdev(Daily,NANStdev):
+  """ Computes nan-aware daily standard deviation. """
+
+class monthlynanstdev(Monthly,NANStdev):
+  """ Computes nan-aware monthly standard deviation. """
+
+class seasonalnanstdev(Seasonal,NANStdev):
+  """ Computes nan-aware seasonal standard deviation. """
+
+class yearlynanstdev(Yearly,NANStdev):
+  """ Computes nan-aware yearly standard deviation. """
+
+class diurnalnanstdev(Diurnal,NANStdev):
+  """ Computes nan-aware diurnal standard deviation. """
+
+
 # Reconstruct a linear dataset given the trend coefficients
 # I.e., A*t + B
 class from_trend (Var):
