@@ -54,13 +54,6 @@ MAX_SWAP_SIZE = _config.getint('Memory', 'max_swap_size')
 
 __all__ = ['libpath', 'pluginpath', 'MAX_ARRAY_SIZE', 'MAX_SWAP_SIZE']  # more will be added below
 
-# File I/O
-try:
-  from pygeode.formats import netcdf
-except Exception:
-  print "Warning: can't import netcdf module"
-from pygeode.formats import *
-
 # Classes
 from pygeode.dataset import Dataset
 from pygeode.var import Var
@@ -125,6 +118,13 @@ __all__.extend(spectral_all)
 from pygeode.dataset import asdataset
 
 #from pygeode.composite import composite
+
+# File I/O
+try:
+  from pygeode.formats import netcdf
+except Exception:
+  print "Warning: can't import netcdf module"
+from pygeode.formats import *
 
 #### Dynamic shortcuts to plugins ####
 

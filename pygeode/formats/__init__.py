@@ -4,6 +4,13 @@ from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
 del extend_path
 
+# Include packages via the entry_points mechanism of pkg_resources.
+import pkg_resources
+for ep in pkg_resources.iter_entry_points('pygeode.formats'):
+  globals()[ep.name] = ep.load()
+  del ep
+del pkg_resources
+
 # Formats included when doing "from pygeode.formats import *"
 # Note: additional formats from the plugin directories are added dynamically
 # (see pygeode/__init__.py)
