@@ -200,7 +200,7 @@ class NCDim (DummyAxis):
 
 del DummyAxis
 
-# constructor for the dims (wrapper for Dim so it's only created once)
+# constructor for the dims (wrapper for NCDim so it's only created once)
 def makedim (f, dimid, dimdict={}):
   if (f,dimid) not in dimdict:
     dimdict[(f,dimid)] = NCDim.from_id(f,dimid)
