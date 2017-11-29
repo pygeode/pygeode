@@ -447,7 +447,8 @@ class Axis(Var):
     matched = []
 
     for k, v in kwargs.iteritems():
-      if '_' in k: # Split off prefix if present
+       # Split off prefix if present
+      if '_' in k and not self.has_alias(k):
         prefix, ax = k.split('_', 1)
       else:
         prefix, ax = '', k

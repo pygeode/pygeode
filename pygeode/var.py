@@ -286,7 +286,8 @@ class Var(object):
 
     newargs = {}
     for k, v in kwargs.iteritems():
-      if '_' in k:
+      # Detect special prefixes.
+      if '_' in k and not self.hasaxis(k):
         prefix, ax = k.split('_', 1)
       else:
         prefix, ax = '', k
