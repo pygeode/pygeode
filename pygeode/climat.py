@@ -275,7 +275,7 @@ class NANStdev(TimeOp):
 
     inodata = (nx == 0)
     if np.any(inodata):
-      nx = nx.axtype('d')
+      nx = nx.astype('d')
       nx[inodata] = np.nan
 
     x /= nx
