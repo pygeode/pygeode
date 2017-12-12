@@ -6,6 +6,8 @@ __all__ = ('climatology', 'dailymean', 'monthlymean',
            'yearlystdev','diurnalstdev', 'seasonalstdev',
            'climnanstdev', 'dailynanstdev', 'monthlynanstdev',
            'yearlynanstdev','diurnalnanstdev', 'seasonalnanstdev',
+           'climcount', 'dailycount', 'monthlycount',
+           'yearlycount','diurnalcount', 'seasonalcount',
            'climtrend', 'from_trend')
 
 from pygeode.var import Var
@@ -281,6 +283,25 @@ class NANStdev(TimeOp):
     return np.sqrt(var)
 # }}}
 
+class Count(TimeOp):
+# {{{
+  name_suffix2 = '_nancount'
+
+  def getview (self, view, pbar):
+    from pygeode.tools import partial_nan_sum
+    import numpy as np
+
+    ti = self.ti
+
+    sum = np.zeros (view.shape, self.dtype)
+    count = np.zeros (view.shape, dtype='int32')
+
+    for slices, [data], bins in loopover (self.var, view, pbar):
+      partial_nan_sum (data, slices, sum, count, ti, bins)
+
+    return count.astype(self.dtype)
+# }}}
+
 class Trend(TimeOp):
 # {{{
   name_suffix2 = '_trend'
@@ -451,6 +472,24 @@ class yearlynanstdev(Yearly,NANStdev):
 
 class diurnalnanstdev(Diurnal,NANStdev):
   """ Computes nan-aware diurnal standard deviation. """
+
+class climcount(Clim,Count):
+  """ Counts number of non-nan data points contributing to climatology. """
+
+class dailycount(Daily,Count):
+  """ Counts number of non-nan data points contributing to daily mean. """
+
+class monthlycount(Monthly,Count):
+  """ Counts number of non-nan data points contributing to monthly mean. """
+
+class seasonalcount(Seasonal,Count):
+  """ Counts number of non-nan data points contributing to seasonal mean. """
+
+class yearlycount(Yearly,Count):
+  """ Counts number of non-nan data points contributing to yearly mean. """
+
+class diurnalcount(Diurnal,Count):
+  """ Counts number of non-nan data points contributing to diurnal mean. """
 
 
 # Reconstruct a linear dataset given the trend coefficients
