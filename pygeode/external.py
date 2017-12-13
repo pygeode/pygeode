@@ -30,6 +30,13 @@ def to_xarray(dataset):
     # Generate a unique name to identify it with dask.
     name = var.name + "-" + tokenize(var)
     dsk = dict()
+    dims = [a.name for a in var.axes]
+
+    # Special case: already have the values in memory.
+    if hasattr(var,'values'):
+      out[var.name] = xr.DataArray(var.values, dims=dims, attrs=var.atts, name=var.name)
+      continue
+
     # Keep track of all the slices that were made over each dimension.
     # This information will be used to determine the "chunking" that was done
     # on the variable from inview.loop_mem().
@@ -50,15 +57,12 @@ def to_xarray(dataset):
       ind = [o.index(sl) for o, sl in zip(slice_order, integer_indices)]
       # Add this chunk to the dask array.
       key = tuple([name] + ind)
-      if hasattr(var,'values'):
-        dsk[key] = var.values
-      else:
-        dsk[key] = (var.getview, outview, False)
-    chunks = [map(len,sl) for sl in slice_order]
+      dsk[key] = (var.getview, outview, False)
     # Construct the dask array.
+    chunks = [map(len,sl) for sl in slice_order]
     arr = da.Array(dsk, name, chunks, dtype=var.dtype)
     # Wrap this into an xarray.DataArray (with metadata and named axes).
-    out[var.name] = xr.DataArray(arr, dims = [a.name for a in var.axes], attrs = var.atts, name=var.name)
+    out[var.name] = xr.DataArray(arr, dims = dims, attrs = var.atts, name=var.name)
   # Build the final xarray.Dataset.
   out = xr.Dataset(out, attrs=dataset.atts)
   # Re-decode the CF metadata on the xarray side.
