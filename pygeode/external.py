@@ -69,3 +69,66 @@ def to_xarray(dataset):
   out = xr.conventions.decode_cf(out)
   return out
 
+# Helper method - convert unicode attributes to str.
+def _fix_atts (atts):
+  atts = dict((str(k),v) for k,v in atts.items())
+  for k,v in list(atts.items()):
+    if isinstance(v,unicode):
+      atts[k] = str(v)
+  return atts
+
+from pygeode.var import Var
+class XArray_DataArray(Var):
+  """
+  A wrapper for accessing xarray.DataArray objects as pygeode.Var objects.
+  """
+  def __init__ (self, name, arr):
+    from pygeode.var import Var
+    from pygeode.axis import NamedAxis
+    self._arr = arr
+    # Extract axes and metadata.
+    # Convert unicode strings to str for compatibility with PyGeode.
+    axes = [NamedAxis(n,str(d)) for n,d in zip(arr.shape,arr.dims)]
+    atts = _fix_atts(arr.attrs)
+    Var.__init__(self, axes, name=str(name), dtype=arr.dtype, atts=atts)
+  def getview (self, view, pbar):
+    import numpy as np
+    out = np.asarray(self._arr[view.slices])
+    pbar.update(100)
+    return out
+
+del Var
+
+def from_xarray(dataset):
+  """
+  Converts an xarray Dataset into a PyGeode Dataset.
+
+  Parameters
+  ----------
+  dataset : xarray.Dataset
+    The dataset to be converted.
+
+  Returns
+  -------
+  out : pygeode.Dataset
+    An object which can be used with the pygeode package.
+  """
+  import xarray as xr
+  from pygeode.dataset import Dataset
+  from pygeode.formats.netcdf import dims2axes
+  from pygeode.formats.cfmeta import decode_cf
+  # Encode the axes/variables with CF metadata.
+  dataset, attrs = xr.conventions.cf_encoder(dataset.variables, dataset.attrs)
+  out = []
+  # Loop over each axis and variable, and wrap as a pygeode.Var object.
+  for varname, var in dataset.items():
+    out.append(XArray_DataArray(varname, var))
+  # Wrap all the Var objects into a pygeode.Dataset object.
+  out = Dataset(out, atts=_fix_atts(attrs))
+  # Re-construct the axes as pygeode.axis.NamedAxis objects.
+  out = dims2axes(out)
+  # Re-decode the CF metadata on the PyGeode end.
+  # This will get the approperiate axis types for lat, lon, time, etc.
+  out = decode_cf(out)
+  return out
+
