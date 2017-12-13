@@ -118,13 +118,16 @@ def from_xarray(dataset):
   from pygeode.formats.netcdf import dims2axes
   from pygeode.formats.cfmeta import decode_cf
   # Encode the axes/variables with CF metadata.
-  dataset, attrs = xr.conventions.cf_encoder(dataset.variables, dataset.attrs)
   out = []
   # Loop over each axis and variable, and wrap as a pygeode.Var object.
-  for varname, var in dataset.items():
+  for varname, var in dataset.variables.items():
+    # Apply a subset of conventions that are relevant to PyGeode.
+    var = xr.conventions.maybe_encode_datetime(var, name=varname)
+    var = xr.conventions.maybe_encode_timedelta(var, name=varname)
+    var = xr.conventions.maybe_encode_string_dtype(var, name=varname)
     out.append(XArray_DataArray(varname, var))
   # Wrap all the Var objects into a pygeode.Dataset object.
-  out = Dataset(out, atts=_fix_atts(attrs))
+  out = Dataset(out, atts=_fix_atts(dataset.attrs))
   # Re-construct the axes as pygeode.axis.NamedAxis objects.
   out = dims2axes(out)
   # Re-decode the CF metadata on the PyGeode end.
