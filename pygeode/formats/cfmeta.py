@@ -6,6 +6,14 @@
 #TODO: use 'bounds' attribute to determine the resolution of the time axis.
 #      (ignore cell_methods from vars.  Pygeode doesn't care how the data was derived.)
 
+# Check for axes registered via the entry_points mechanism of pkg_resources.
+custom_axes = {}
+import pkg_resources
+for ep in pkg_resources.iter_entry_points('pygeode.axis'):
+  custom_axes[ep.name] = ep.load()
+  del ep
+del pkg_resources
+
 # Wrapper for replacing a variable's axes with new ones
 # (the axes must be in 1:1 correspondence with the old ones)
 from pygeode.var import Var
@@ -243,6 +251,11 @@ def encode_cf (dataset):
       # Nothing more to do for this axis type
       continue
 
+    # Encode custom axes from add-ons
+    for n,c in custom_axes.items():
+      if isinstance(a,c):
+        atts['standard_name'] = n
+
     # Add associated arrays as new variables
     auxarrays = a.auxarrays
     for aux,values in auxarrays.iteritems():
@@ -404,6 +417,10 @@ def decode_cf (dataset, ignore=[]):
           continue
         axisdict[name] = timeutils.modify(axisdict[name], exclude='year')
       continue  # we've constructed the time axis, so move onto the next axis
+
+    # Check for a match from the custom axes (from add-ons).
+    if _st in custom_axes:
+      cls = custom_axes[_st]
 
     # Find any other information that should be put inside this axis.
     # Look for anything that's identified as a coordinate or anicllary
