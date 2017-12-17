@@ -1,7 +1,7 @@
 
 
-from http.server import HTTPServer
-from socketserver import ThreadingMixIn
+from BaseHTTPServer import HTTPServer
+from SocketServer import ThreadingMixIn
 class ThreadedHTTPServer (ThreadingMixIn, HTTPServer):
   pass
   allow_reuse_address = True  # need this?
@@ -9,7 +9,7 @@ class ThreadedHTTPServer (ThreadingMixIn, HTTPServer):
 del ThreadingMixIn
 
 
-from http.server import BaseHTTPRequestHandler
+from BaseHTTPServer import BaseHTTPRequestHandler
 class MyHandler (BaseHTTPRequestHandler):
   protocol_version = "HTTP/1.1"
   def do_GET (self):

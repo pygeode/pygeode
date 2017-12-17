@@ -134,7 +134,7 @@ class DAPHandler:
   def handle (self, h, relpath, headeronly=False):
     from datetime import datetime
     import re
-    import urllib.request, urllib.parse, urllib.error
+    import urllib
     import numpy as np
     from warnings import warn
     from io import StringIO
@@ -273,7 +273,7 @@ class DAPHandler:
     # Otherwise, have to parse through the arguments, find out what we need.
     else:
       for varname in args.split(','):
-        varname = urllib.parse.unquote(varname)  # unencode the characters
+        varname = urllib.unquote(varname)  # unencode the characters
         # Extract the slicing from the variable name
         if '[' in varname:
           ind = varname.index('[')
@@ -563,13 +563,13 @@ class tokenize:
     if self.i == len(self.tokens): raise StopIteration
     return self.tokens[self.i]
 #  psyco.bind(peek)
-  def __next__(self):
+  def next(self):
     t = self.peek()
     self.i += 1
     return t
 #  psyco.bind(next)
   def expect (self, e):
-    t = next(self)
+    t = self.next()
     if t.lower() != e.lower():
       raise Exception ("expected '%s', found '%s'"%(e,t))
 #  psyco.bind(expect)
@@ -580,17 +580,17 @@ def parse_array (s):
   daptype = s.next().lower()
   assert daptype in list(dap2np.keys()), "unknown type '%s'"%daptype
 
-  name = next(s)
+  name = s.next()
 
   dimnames = []
   shape = []
   
   while True:
-    t = next(s)
+    t = s.next()
     if t == ";": return (daptype, name, dimnames, shape)
 
     assert t == "[", "unknown syntax"
-    size = next(s)
+    size = s.next()
     try:
       shape.append(int(size))
       dimnames.append(None)
@@ -598,7 +598,7 @@ def parse_array (s):
       dimname = size
       dimnames.append(dimname)
       s.expect("=")
-      size = int(next(s))
+      size = int(s.next())
       shape.append(size)
     s.expect ("]")
 
@@ -622,7 +622,7 @@ def parse_grid (s):
     assert msize == size, "dimension size does not match"
 
   s.expect ("}")
-  name = next(s)
+  name = s.next()
   assert name == arr[1], "%s != %s"%(name,arr[1])
   s.expect (";")
   return arr
@@ -642,7 +642,7 @@ def parse_dataset (s):
     t = s.peek()
 
     if t == '}':
-      next(s)
+      s.next()
       return out
 
     #atomic/array?
@@ -662,18 +662,18 @@ def parse_attributes (s):
   atts = []
   # Loop over all variables
   while s.peek() != "}":
-    varname = next(s)
+    varname = s.next()
     varatts = []
     atts.append([varname, varatts])
     s.expect("{")
     # Loop over all attributes
     while s.peek() != "}":
       daptype = s.next().lower()
-      attname = next(s)
+      attname = s.next()
       attvalue = []
       # Load array?
       while s.peek() != ";":
-        x = next(s)
+        x = s.next()
         # cast into the proper type
         if daptype == "string":
           pass
@@ -771,7 +771,7 @@ def load_array (url):
 
 
 def readurl (url, hosts={}):
-  from http.client import HTTPConnection
+  from httplib import HTTPConnection
 
   i = url.find('http://')
   assert i == 0, "I don't know how to handle this protocol"
