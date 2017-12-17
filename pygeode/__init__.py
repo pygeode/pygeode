@@ -11,7 +11,7 @@ _config, _configfiles = None, None
 
 def readConfig():
 # {{{
-  import ConfigParser as Cfg
+  import configparser as Cfg
   import sys, os
   from os.path import expanduser, dirname, sep
   global _config, _configfiles
@@ -74,7 +74,7 @@ def concatenate(*items, **kwargs):
   from pygeode.tools import islist
   from pygeode.var import Var
   from pygeode.dataset import Dataset, concat as concat_datasets
-  from concat import concat as concat_vars
+  from .concat import concat as concat_vars
   # Items already wrapped as a list (now inside another list)?
   if len(items) == 1 and islist(items[0]):
     return concatenate(*items[0], **kwargs)
@@ -123,7 +123,7 @@ from pygeode.dataset import asdataset
 try:
   from pygeode.formats import netcdf
 except Exception:
-  print "Warning: can't import netcdf module"
+  print("Warning: can't import netcdf module")
 from pygeode.formats import *
 
 #### Dynamic shortcuts to plugins ####
@@ -131,13 +131,13 @@ from pygeode.formats import *
 from glob import glob
 from os.path import join, sep
 import sys
-import plugins
+from . import plugins
 for _plugin_path in plugins.__path__:
   _plugins = glob(join(_plugin_path,"*",""))
   for _plugin in _plugins:
     _plugin = _plugin.split(sep)[-2]
     # Trigger the __init__ for the plugin
-    exec "from pygeode.plugins import %s as _x"%_plugin
+    exec("from pygeode.plugins import %s as _x"%_plugin)
     del _x, _plugin
 
 del glob, join, sep, _plugin_path, _plugins, sys, A

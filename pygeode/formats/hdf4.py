@@ -5,8 +5,8 @@ from pygeode.libhelper import load_lib
 try:
   lib1 = load_lib('df', Global=True)  # so we have symbol 'error_top'
   lib = load_lib('mfhdf')
-except OSError, e:
-  print 'Failed to load HDF libraries; no HDF support available.'
+except OSError as e:
+  print('Failed to load HDF libraries; no HDF support available.')
 
 del load_lib
 
@@ -131,7 +131,7 @@ class HDF4_Var (Var):
     try:
       load_values (self.sd.sds_id, start, count, out)
 #    except Exception as e:
-    except Exception, e:
+    except Exception as e:
       args = list(e.args)
       args[0] = "error reading file '%s', var '%s' --- "%(self.sd.f.filename, self.sd.name) + args[0]
       e.args = tuple(args)

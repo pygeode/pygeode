@@ -1,7 +1,7 @@
 
 
-from BaseHTTPServer import HTTPServer
-from SocketServer import ThreadingMixIn
+from http.server import HTTPServer
+from socketserver import ThreadingMixIn
 class ThreadedHTTPServer (ThreadingMixIn, HTTPServer):
   pass
   allow_reuse_address = True  # need this?
@@ -9,7 +9,7 @@ class ThreadedHTTPServer (ThreadingMixIn, HTTPServer):
 del ThreadingMixIn
 
 
-from BaseHTTPServer import BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler
 class MyHandler (BaseHTTPRequestHandler):
   protocol_version = "HTTP/1.1"
   def do_GET (self):
@@ -108,7 +108,7 @@ class Dir:
 
       self.dir_header (h, relpath)
       # Sort the file names
-      names = sorted(self.nodes.iterkeys())
+      names = sorted(self.nodes.keys())
       for name in names:
         node = self.nodes[name]
         # Check for subdirectories? (append a trailing '/' to make them easier to see)

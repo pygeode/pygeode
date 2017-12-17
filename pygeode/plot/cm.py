@@ -31,7 +31,7 @@ def build_cmap(stops):
   from matplotlib.colors import LinearSegmentedColormap
   ct = dict(red=[], blue=[], green=[])
   for s in stops:
-    if s.has_key('r2'):
+    if 'r2' in s:
       ct['red'].append((s['s'], s['r'], s['r2']))
       ct['green'].append((s['s'], s['g'], s['g2']))
       ct['blue'].append((s['s'], s['b'], s['b2']))
@@ -107,7 +107,7 @@ def read_grad(path, rev=False):
 
   if rev:
     rt = lambda ctc: [(1.-c[0], c[2], c[1]) for c in ctc[::-1]]
-    for c in ct.keys():
+    for c in list(ct.keys()):
       ct[c] = rt(ct[c])
 
   return matplotlib.colors.LinearSegmentedColormap('loaded_colourmap', ct, 256)

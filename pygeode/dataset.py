@@ -41,7 +41,7 @@ class Dataset(object):
     no such member is found.'''
     if key in self.vardict: return self.vardict[key]
     if key in self.axisdict: return self.axisdict[key]
-    raise KeyError("%s not in %s.  Valid keys are %s"%(key,repr(self),self.vardict.keys()))
+    raise KeyError("%s not in %s.  Valid keys are %s"%(key,repr(self),list(self.vardict.keys())))
 # }}}
 
   # Check if we have a variable of the given name
@@ -62,8 +62,8 @@ class Dataset(object):
 
   def __dir__(self):
 # {{{
-    l = self.__dict__.keys() + dir(self.__class__)
-    return l + self.vardict.keys() + self.axisdict.keys()
+    l = list(self.__dict__.keys()) + dir(self.__class__)
+    return l + list(self.vardict.keys()) + list(self.axisdict.keys())
 # }}}
 
   # Iterate over the variables
@@ -110,7 +110,7 @@ class Dataset(object):
 
     # Rename axes that share a common name
     newaxes = {}
-    for oldname, eqlist in namedict.iteritems():
+    for oldname, eqlist in namedict.items():
       # Case 1: the name is unique
       if len(eqlist) == 1:
         newaxis = eqlist[0][0]
@@ -190,7 +190,7 @@ class Dataset(object):
       oldname = v.name
       # Get the name used as the reference for the dataset
       # (not necessarily the var's name)
-      name = [n for n,v2 in self.vardict.iteritems() if v2 is v].pop()
+      name = [n for n,v2 in self.vardict.items() if v2 is v].pop()
       axes = '(' + ','.join(a.name for a in v.axes) + ')'
       shape = ' (' + ','.join(str(len(a)) for a in v.axes) + ')'
       yield name, axes, shape
@@ -518,7 +518,7 @@ class Dataset(object):
       assert hasattr(f,'__call__'), "Var.%s is not a function"%fname
       del fname
     # Allow the function to gracefully fail on vars it can't be applied to.
-    if 'ignore_mismatch' in f.func_code.co_varnames:
+    if 'ignore_mismatch' in f.__code__.co_varnames:
       kwargs['ignore_mismatch'] = True
     varlist = [f(v, *args, **kwargs) for v in self.vars]
     varlist = [v for v in varlist if v is not None]

@@ -115,10 +115,10 @@ def common_dtype (vars):
 def common_dict (*dicts):
   if len(dicts) == 1 and islist(dicts[0]): dicts = dicts[0]
   # Merge it all into a single dictionary
-  d = dict([(k,v) for x in dicts for k,v in x.iteritems()])
+  d = dict([(k,v) for x in dicts for k,v in x.items()])
   # Check for consistency (remove keys which have multiple values, or aren't
   # defined in some dictionaries).
-  for k,v in d.items():
+  for k,v in list(d.items()):
     for x in dicts:
       if k in x:
         t = (x[k] != v)
@@ -174,7 +174,7 @@ def whichaxis(axes, id):
     for i,a in enumerate(axes):
       if isinstance(a, id): return i
 
-  raise KeyError, "axis %s not found in %s"%(repr(id),axes)
+  raise KeyError("axis %s not found in %s"%(repr(id),axes))
 # }}}
 
 def can_map(a1, a2):

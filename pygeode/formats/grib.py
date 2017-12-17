@@ -8,7 +8,7 @@ class GribFile:
     if not exists(indexname):
       indexname = basename(indexname)
     if not exists(indexname):
-      print "GribFile: generating "+indexname
+      print("GribFile: generating "+indexname)
       lib.make_index(filename, indexname)
     index = lib.read_Index(indexname)
     file = lib.open_grib(filename)
@@ -26,18 +26,18 @@ class GribVar(Var):
 
     # Get the variable code
     center, table, varid, level_type = lib.get_varcode (file.index, v)
-    print "varcode:", center, table, varid, level_type
+    print("varcode:", center, table, varid, level_type)
 
     # Get time axis
     y, m, d, H, M = lib.get_var_t(file.index, v)
-    print "time:", y, m, d, H, M
+    print("time:", y, m, d, H, M)
     #TODO: proper time axis
     time = timeaxis.StandardTime(year=y, month=m, day=d, hour=H, minute=M)
 
     # Get vertical levels
     #TODO: check for z *range*, handle that as a separate axis type??
     lev1, lev2 = lib.get_var_z(file.index, v)
-    print "levels:", lev1, lev2
+    print("levels:", lev1, lev2)
     zorder = lev2.tolist()
     lev2.sort()
 
@@ -64,8 +64,8 @@ class GribVar(Var):
     if lo1 < 0: lo1 += 360
     lo2 /= 1000.
     if lo2 < 0: lo2 += 360
-    print ni, nj
-    print la1, la2, lo1, lo2
+    print(ni, nj)
+    print(la1, la2, lo1, lo2)
     assert grid_type in (0,4), grid_type
 
     if grid_type == 0:  # regular lat/lon
@@ -211,7 +211,7 @@ point_level_types = {
   160:	("depth below sea level",	"DBSL")
 }
 
-level_types = dict((k,v) for d in (surface_level_types,layer_level_types,point_level_types) for k,v in d.items())
+level_types = dict((k,v) for d in (surface_level_types,layer_level_types,point_level_types) for k,v in list(d.items()))
 
 # stolen from http://www.nco.ncep.noaa.gov/pmb/docs/on388/table2.html
 

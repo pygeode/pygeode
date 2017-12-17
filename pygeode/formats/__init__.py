@@ -15,7 +15,7 @@ del pkg_resources
 # Note: additional formats from the plugin directories are added dynamically
 # (see pygeode/__init__.py)
 
-from multifile import openall, open_multi
+from .multifile import openall, open_multi
 
 __all__ = ['openall', 'open_multi', 'open', 'save']
 
@@ -247,7 +247,7 @@ def whitelist (dataset, varlist):
 # {{{
   from pygeode.dataset import Dataset
   assert isinstance(varlist,(list,tuple))
-  vars = [dataset[v] for v in varlist if dataset.vardict.has_key(v)]
+  vars = [dataset[v] for v in varlist if v in dataset.vardict]
   dataset = Dataset(vars, atts=dataset.atts)
   return dataset
 # }}}
@@ -259,7 +259,7 @@ def finalize_open(dataset, dimtypes = {}, namemap = {}, varlist = [], cfmeta = T
   if cfmeta is True:
     # Skip anything that we're going to override in dimtypes
     # (so we don't get any meaningless warnings or other crap from cfmeta)
-    dataset = cf.decode_cf(dataset, ignore=dimtypes.keys())
+    dataset = cf.decode_cf(dataset, ignore=list(dimtypes.keys()))
 
   # Apply custom axis types?
   if len(dimtypes) > 0:

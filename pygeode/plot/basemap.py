@@ -1,4 +1,4 @@
-from wrappers import AxesWrapper, PlotOp, Contour, Contourf, Streamplot, Quiver, make_plot_func, make_plot_member
+from .wrappers import AxesWrapper, PlotOp, Contour, Contourf, Streamplot, Quiver, make_plot_func, make_plot_member
 
 from mpl_toolkits.basemap import Basemap
 class BasemapAxes(AxesWrapper):
@@ -16,11 +16,11 @@ class BasemapAxes(AxesWrapper):
     proj = self.axes_args.get('projection', 'cyl')
     if proj in ['cyl', 'merc', 'mill', 'gall']:
       bnds = {}
-      if kwargs.has_key('xlim'):
+      if 'xlim' in kwargs:
         x0, x1 = kwargs.pop('xlim')
         bnds['llcrnrlon'] = x0
         bnds['urcrnrlon'] = x1
-      if kwargs.has_key('ylim'):
+      if 'ylim' in kwargs:
         y0, y1 = kwargs.pop('ylim')
         bnds['llcrnrlat'] = y0
         bnds['urcrnrlat'] = y1

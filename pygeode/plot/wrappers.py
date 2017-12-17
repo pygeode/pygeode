@@ -536,8 +536,8 @@ def annotate(axes, text, pos='b'):
 __all__.extend(['save', 'load', 'grid'])
 
 try:
-  from basemap import *
-  from basemap import __all__ as bm_all
+  from .basemap import *
+  from .basemap import __all__ as bm_all
   __all__.extend(bm_all)
 
   def isbasemapaxis(axes):

@@ -34,7 +34,7 @@ def save (filename, var, iaxis=None, fps=15, palette='bw', minmax=None):
     assert len(minmax) == 2, "invalid minmax argument"
     min, max = minmax
 
-  print "Saving %s:"%filename
+  print("Saving %s:"%filename)
   pbar = PBar()
 
   # Loop over each timestep, generate a temporary image file

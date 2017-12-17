@@ -83,7 +83,7 @@ class Time (TAxis):
     if isinstance(values,int): values = np.arange(values)
 
     # Extract any auxiliary fields passed to us (i.e. year, month, etc.)
-    auxarrays = dict([k,np.asarray(v)] for k,v in kwargs.iteritems() if k in self.allowed_fields)
+    auxarrays = dict([k,np.asarray(v)] for k,v in kwargs.items() if k in self.allowed_fields)
 
     # Generate absolute times from relative times?
     if auxarrays == {}:
@@ -97,7 +97,7 @@ class Time (TAxis):
     # (Keep the initial start date if one was given)
     if startdate is None:
       startdate = {}
-      for aux,arr in auxarrays.iteritems():
+      for aux,arr in auxarrays.items():
         startdate[aux] = arr[0]
 
     # Generate relative times from absolute times?
@@ -111,7 +111,7 @@ class Time (TAxis):
 
 
     # Put the auxiliary fields back into the keyword args, to pass them to the parent constructor
-    for k,v in auxarrays.iteritems(): kwargs[k] = v
+    for k,v in auxarrays.items(): kwargs[k] = v
     del auxarrays
 
     # Call more general init to finalize things, and register the auxiliary fields with Axis
@@ -129,14 +129,14 @@ class Time (TAxis):
   # {{{
     ''' formatter()
         Returns a matplotlib axis Formatter object; by default a FuncFormatter which calls formatvalue(). '''
-    from timeticker import TimeFormatter
+    from .timeticker import TimeFormatter
     return TimeFormatter(self, fmt)
   # }}}
 
   def locator(self):
   # {{{
     ''' locator() - Returns an AutoCalendarLocator object '''
-    from timeticker import AutoCalendarLocator
+    from .timeticker import AutoCalendarLocator
     return AutoCalendarLocator(self)
   # }}}
 
@@ -152,7 +152,7 @@ class Time (TAxis):
     if len(self) != len(other): return False
     assert len(self.auxarrays) > 0, "how is date formed?"
     # Different field values?
-    for k,f in self.auxarrays.iteritems():
+    for k,f in self.auxarrays.items():
       if not np.allclose(f,other.auxarrays[k]): return False
 
     return True
@@ -354,7 +354,7 @@ class CalendarTime(Time):
   # Overrides init to allow some special construction methods
   def __init__(self, values=None, datefmt=None, units=None, startdate=None, **kwargs):
 # {{{
-    import timeticker as tt
+    from . import timeticker as tt
     import numpy as np
     from warnings import warn
 
@@ -374,13 +374,13 @@ class CalendarTime(Time):
     if startdate is not None:
       default = dict(year=1, month=1, day=1, hour=0, minute=0, second=0)
       # Only use the allowed fields for this (sub)class
-      default = dict([k,v] for k,v in default.iteritems() if k in self.allowed_fields)
+      default = dict([k,v] for k,v in default.items() if k in self.allowed_fields)
       startdate = dict(default, **startdate)
       #for k in startdate.iterkeys():
         #assert k in self.allowed_fields, "%s is not an allowed field for %s"%(k,type(self))
       # If any auxiliary arrays are provided, then use only those fields
       if any (a in kwargs for a in self.allowed_fields):
-        startdate = dict([k,v] for k,v in startdate.iteritems() if k in kwargs and k in self.allowed_fields)
+        startdate = dict([k,v] for k,v in startdate.items() if k in kwargs and k in self.allowed_fields)
 
     # Construct date from encoded values?
     #TODO: more cases, like yyyymmdd.hh?
@@ -492,7 +492,7 @@ class CalendarTime(Time):
     subs = {}
 
     # Build substitution dictionary
-    if dt.has_key('year'):
+    if 'year' in dt:
       y = dt['year']
       subs['y'] = '%02d' % (y % 100)
       subs['a'] = '%d' % y
@@ -503,7 +503,7 @@ class CalendarTime(Time):
     else:
       subs['y'], subs['Y'] = '', ''
 
-    if dt.has_key('month'):
+    if 'month' in dt:
       mi = dt['month']
       subs['b'] = months[mi]
       subs['B'] = months_full[mi]
@@ -512,15 +512,15 @@ class CalendarTime(Time):
       mi = 0
       subs['b'], subs['B'], subs['m'] = '', '', ''
 
-    if dt.has_key('day'):
+    if 'day' in dt:
       d = dt['day']
       subs['d'] = '%d' % d
       subs['D'] = '%02d' % d
-      if dt.has_key('year') and 'year' in self.allowed_fields: subs['j'] = self._getdoy(dt)
+      if 'year' in dt and 'year' in self.allowed_fields: subs['j'] = self._getdoy(dt)
     else:
       subs['d'], subs['D'], subs['j'] = '', '', ''
 
-    if dt.has_key('hour'):
+    if 'hour' in dt:
       h = dt['hour']
       subs['H'] = '%02d' % h
       subs['I'] = '%02d' % ((h - 1) % 12 + 1)
@@ -529,13 +529,13 @@ class CalendarTime(Time):
     else:
       subs['H'], subs['I'], subs['p'], subs['P'] = '', '', '', ''
 
-    if dt.has_key('minute'):
+    if 'minute' in dt:
       M = dt['minute']
       subs['M'] = '%02d' % M
     else:
       subs['M'] = ''
 
-    if dt.has_key('second'):
+    if 'second' in dt:
       s = dt['second']
       subs['S'] = '%02d' % s
     else:
@@ -610,7 +610,7 @@ class CalendarTime(Time):
       raise ValueError('String "%s" not recognized as a time')
 
     d = {}
-    for k, v in res.groupdict().iteritems():
+    for k, v in res.groupdict().items():
       if k in ['hour', 'minute', 'second', 'day', 'year']:
         if v is not None: d[k] = int(v)
       elif k == 'month':
@@ -625,18 +625,18 @@ class CalendarTime(Time):
 # {{{
     import numpy as np
 
-    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') and len(d) != 1 for d in dates.itervalues())
+    if use_arrays is None: use_arrays = any(hasattr(d,'__len__') and len(d) != 1 for d in dates.values())
 
     if use_arrays:
-      assert all(hasattr(d,'__len__') for d in dates.itervalues())
-      n = set(len(d) for d in dates.itervalues())
+      assert all(hasattr(d,'__len__') for d in dates.values())
+      n = set(len(d) for d in dates.values())
       assert len(n) == 1, 'inconsistent array lengths'
       n = n.pop()
       zeros = np.zeros(n, 'int32') if use_arrays else 0
       ones = np.ones(n, 'int32') if use_arrays else 1
     else:
       assert all([(hasattr(d,'__len__') and len(d) == 1) or \
-        not hasattr(d, '__len__') for d in dates.itervalues()])
+        not hasattr(d, '__len__') for d in dates.values()])
       zeros = 0
       ones = 1
 
@@ -695,9 +695,9 @@ class CalendarTime(Time):
     date = {'year':year, 'month':month, 'day':day, 'hour':hour, 'minute':minute, 'second':second}
     if not allfields:
       # Remove fields that weren't explicitly provided?
-      date = dict([k,v] for k,v in date.iteritems() if k in startdate)
+      date = dict([k,v] for k,v in date.items() if k in startdate)
     if not had_array:
-      date = dict([k,v[0]] for k,v in date.iteritems())
+      date = dict([k,v[0]] for k,v in date.items())
     return date
   # }}}
 
@@ -730,7 +730,7 @@ class CalendarTime(Time):
     assert ret == 0
 
     # Were we passed a single date?  If so, return a scalar
-    if not hasattr(dates.values()[0], '__len__'): vals = vals[0]
+    if not hasattr(list(dates.values())[0], '__len__'): vals = vals[0]
     return vals / self.unitfactor[units]
   # }}}
 
@@ -833,10 +833,10 @@ def makeSeasonalAxis(Base):
           dictionary of dates.'''
       import numpy as np
 
-      use_arrays = any(hasattr(d,'__len__') for d in dates.itervalues())
+      use_arrays = any(hasattr(d,'__len__') for d in dates.values())
       if use_arrays:
-        assert all(hasattr(d,'__len__') for d in dates.itervalues())
-        n = set(len(d) for d in dates.itervalues())
+        assert all(hasattr(d,'__len__') for d in dates.values())
+        n = set(len(d) for d in dates.values())
         assert len(n) == 1, 'inconsistent array lengths'
         n = n.pop()
         zeros = np.zeros(n, 'int32')
@@ -859,7 +859,7 @@ def makeSeasonalAxis(Base):
 
     def __init__ (self, values=None, units=None, startdate=None, **kwargs):
     # {{{
-      import timeticker as tt
+      from . import timeticker as tt
       tg=[]
       if 'year' in self.allowed_fields:
         tg.append(tt.YearTickGen(self, [500, 300, 200, 100, 50, 30, 20, 10, 5, 3, 2, 1]))
@@ -878,7 +878,7 @@ def makeSeasonalAxis(Base):
       Time.__init__(self, values=values, startdate=startdate, units=units, **kwargs)
 
       # Check for the presence of auxarrays that aren't in allowed fields
-      for k in self.auxarrays.iterkeys():
+      for k in self.auxarrays.keys():
         assert k in self.allowed_fields, "%s is not an allowed field for %s"%(k,type(self))
     # }}}
 
@@ -917,14 +917,14 @@ def makeSeasonalAxis(Base):
       subs = {}
 
       # Build substitution dictionary
-      if dt.has_key('year'):
+      if 'year' in dt:
         y = dt['year']
         subs['y'] = '%02d' % (y % 100)
         subs['Y'] = '%d' % y
       else:
         subs['y'], subs['Y'] = '', ''
 
-      if dt.has_key('season'):
+      if 'season' in dt:
         s = dt['season']
         subs['s'] = self.seasons[s-1]
       else:
@@ -956,7 +956,7 @@ def makeSeasonalAxis(Base):
       if dates is None: dates = self.auxarrays
       if startdate is None: startdate = self.startdate
 
-      if 'season' in dates.keys(): dates = self._get_cdates(dates)
+      if 'season' in list(dates.keys()): dates = self._get_cdates(dates)
 
       return Base.date_as_val(self, dates, startdate, units)
     # }}}
@@ -1010,7 +1010,7 @@ class Yearless(CalendarTime):
   # }}}
 
   def __init__ (self, *args, **kwargs):
-    import timeticker as tt
+    from . import timeticker as tt
     CalendarTime.__init__(self, *args, **kwargs)
     tg = []
     tg.append(tt.DayTickGen(self, [10000, 5000, 3000, 2000, 1000, 500, 300, 200, 100, 50, 30, 10, 5, 3, 2, 1]))
@@ -1041,7 +1041,7 @@ def standardtimerange(start, end, step=1, units='days', ref=None, inc=False):
     Reference date for calendar. If the default None is specified, start is used.
   inc : boolean, optional (default False)
   '''
-  from timeutils import date_diff
+  from .timeutils import date_diff
   import numpy as np
   tdum = StandardTime(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
@@ -1072,7 +1072,7 @@ def standardtimen(start, n, step=1, units='days', ref=None):
   ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
   '''
-  from timeutils import date_diff
+  from .timeutils import date_diff
   import numpy as np
   tdum = StandardTime(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
@@ -1101,7 +1101,7 @@ def modeltime365range(start, end, step=1, units='days', ref=None, inc=False):
     Reference date for calendar. If the default None is specified, start is used.
   inc : boolean, optional (default False)
   '''
-  from timeutils import date_diff
+  from .timeutils import date_diff
   import numpy as np
   tdum = ModelTime365(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
@@ -1133,7 +1133,7 @@ def modeltime365n(start, n, step=1, units='days', ref=None):
   ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
   '''
-  from timeutils import date_diff
+  from .timeutils import date_diff
   import numpy as np
   tdum = ModelTime365(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
@@ -1162,7 +1162,7 @@ def modeltime360range(start, end, step=1, units='days', ref=None, inc=False):
     Reference date for calendar. If the default None is specified, start is used.
   inc : boolean, optional (default False)
   '''
-  from timeutils import date_diff
+  from .timeutils import date_diff
   import numpy as np
   tdum = ModelTime360(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)
@@ -1193,7 +1193,7 @@ def modeltime360n(start, n, step=1, units='days', ref=None):
   ref : string, optional
     Reference date for calendar. If the default None is specified, start is used.
   '''
-  from timeutils import date_diff
+  from .timeutils import date_diff
   import numpy as np
   tdum = ModelTime360(values=[0], units=units, startdate=dict(year=1, month=1))
   s = tdum.str_as_date(None, start)

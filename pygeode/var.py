@@ -388,7 +388,7 @@ class Var(object):
     squeezes = []
 
     newargs = {}
-    for k, v in kwargs.iteritems():
+    for k, v in kwargs.items():
       # Detect special prefixes.
       if '_' in k and not self.hasaxis(k):
         prefix, ax = k.split('_', 1)
@@ -436,7 +436,7 @@ class Var(object):
   # Include axes names
   def __dir__(self):
 # {{{
-    l = self.__dict__.keys() + dir(self.__class__)
+    l = list(self.__dict__.keys()) + dir(self.__class__)
     return l + [a.name for a in self.axes]
 # }}}
 
@@ -827,6 +827,7 @@ def combine_meta (invars, outvar):
 # Numeric operations
 from numpy import ndarray as nd
 from pygeode.ufunc import wrap_unary, wrap_binary
+from functools import reduce
 Var.__add__  = wrap_binary(nd.__add__,  symbol='+')
 Var.__radd__ = wrap_binary(nd.__radd__, symbol='+')
 Var.__sub__  = wrap_binary(nd.__sub__,  symbol='-')
@@ -899,7 +900,7 @@ except ImportError:
   warn ("Can't import the GSL library.  Interpolation is disabled.")
   interpolate = None
 from pygeode.varoperations import squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
-class_hooks += filter(None,[smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type])
+class_hooks += [_f for _f in [smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type] if _f]
 del smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
 
 

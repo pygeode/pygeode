@@ -23,7 +23,7 @@ class ReducedVar(Var):
     # If no indices are specified, work over the whole domain and
     # return the scalar result.
     if len(indices) == 0:
-      new.__init__(var, range(var.naxes), *args, **kwargs)
+      new.__init__(var, list(range(var.naxes)), *args, **kwargs)
       return new.get()
 
     # If all variables are in memory, then do the calculation right away

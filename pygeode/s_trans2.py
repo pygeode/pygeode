@@ -29,7 +29,7 @@ class Strans(Var):
 
     if 0 in F:
       from pygeode.progress import PBar
-      print 'Calculating mean'
+      print('Calculating mean')
       # constant s-transform value for n = 0
       self.const = x.mean(Time).get(pbar=True)
     

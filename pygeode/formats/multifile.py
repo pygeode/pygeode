@@ -220,7 +220,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
       d = regex.search(f)
       assert d is not None, "can't use the pattern on the filenames?"
       d = d.groupdict()
-      d = dict([k,int(v)] for k,v in d.iteritems() if v is not None)
+      d = dict([k,int(v)] for k,v in d.items() if v is not None)
       # Apply default values (i.e. for minutes, seconds if they're not in the file format?)
       d = dict({'hour':0, 'minute':0,'second':0}, **d)
       return d
@@ -228,7 +228,7 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
 
   # Get the starting date of each file
   dates = [file2date(f) for f in files]
-  dates = dict((k,[d[k] for d in dates]) for k in dates[0].keys())
+  dates = dict((k,[d[k] for d in dates]) for k in list(dates[0].keys()))
 
   # Open a file to get a time axis
   file = opener(files[0])
@@ -444,35 +444,35 @@ def check_multi (*args, **kwargs):
   expected_dt = min(dt[dt > 0])
   gaps = full_taxis.values[np.where(dt > expected_dt)]
   if len(gaps) > 0:
-    print "ERROR: detected gaps on or after file(s):"
+    print("ERROR: detected gaps on or after file(s):")
     for filename in find_files(gaps):
-      print filename
-    print "There may be missing files near those files."
+      print(filename)
+    print("There may be missing files near those files.")
     all_ok = False
 
   covered_times = set()
   for i,filename in enumerate(files):
-    print "Scanning "+filename
+    print("Scanning "+filename)
     try:
       current_file = opener(filename)
     except Exception as e:
-      print "  ERROR: Can't even open the file.  Reason: %s"%str(e)
+      print("  ERROR: Can't even open the file.  Reason: %s"%str(e))
       all_ok = False
       continue
     for var in current_file:
       if var.name not in full_dataset:
-        print "  ERROR: unexpected variable '%s'"%var.name
+        print("  ERROR: unexpected variable '%s'"%var.name)
         all_ok = False
         continue
     for var in full_dataset:
       if var.name not in current_file:
-        print "  ERROR: missing variable '%s'"%var.name
+        print("  ERROR: missing variable '%s'"%var.name)
         all_ok = False
         continue
       try:
         source_data = current_file[var.name].get().flatten()
       except Exception as e:
-        print "  ERROR: unable to read source variable '%s'.  Reason: %s"%(var.name, str(e))
+        print("  ERROR: unable to read source variable '%s'.  Reason: %s"%(var.name, str(e)))
         all_ok = False
         continue
       try:
@@ -480,49 +480,49 @@ def check_multi (*args, **kwargs):
         times = reltime(file_taxis, startdate=full_taxis.startdate, units=full_taxis.units)
         multifile_data = var(l_time=list(times)).get().flatten()
       except Exception as e:
-        print "  ERROR: unable to read multifile variable '%s'.  Reason: %s"%(var.name, str(e))
+        print("  ERROR: unable to read multifile variable '%s'.  Reason: %s"%(var.name, str(e)))
         all_ok = False
         continue
       if len(source_data) != len(multifile_data):
-        print "  ERROR: size mismatch for variable '%s'"%var.name
+        print("  ERROR: size mismatch for variable '%s'"%var.name)
         all_ok = False
         continue
       source_mask = ~np.isfinite(source_data)
       multifile_mask = ~np.isfinite(multifile_data)
       if not np.all(source_mask == multifile_mask):
-        print "  ERROR: different missing value masks found in multifile vs. direct access for '%s'"%var.name
+        print("  ERROR: different missing value masks found in multifile vs. direct access for '%s'"%var.name)
         all_ok = False
         continue
       source_data = np.ma.masked_array(source_data, mask=source_mask)
       multifile_data = np.ma.masked_array(multifile_data, mask=multifile_mask)
       if not np.all(source_data == multifile_data):
-        print "  ERROR: get different data from multifile vs. direct access for '%s'"%var.name
+        print("  ERROR: get different data from multifile vs. direct access for '%s'"%var.name)
         all_ok = False
         continue
 
     covered_times.update(times)
     if i < len(files)-1 and np.any(times >= faxis[i+1]):
-      print "  ERROR: found timesteps beyond the expected range of this file."
+      print("  ERROR: found timesteps beyond the expected range of this file.")
       all_ok = False
     if np.any(times < faxis[i]):
-      print "  ERROR: found timestep(s) earlier than the expected start of this file."
+      print("  ERROR: found timestep(s) earlier than the expected start of this file.")
       all_ok = False
 
   missing_times = all_expected_times - covered_times
   if len(missing_times) > 0:
-    print "ERROR: did not get full time coverage.  Missing some timesteps for file(s):"
+    print("ERROR: did not get full time coverage.  Missing some timesteps for file(s):")
     for filename in find_files(missing_times):
-      print filename
+      print(filename)
     all_ok = False
   extra_times = covered_times - all_expected_times
   if len(extra_times) > 0:
-    print "ERROR: found extra (unexpected) timesteps in the following file(s):"
+    print("ERROR: found extra (unexpected) timesteps in the following file(s):")
     for filename in find_files(extra_times):
-      print filename
+      print(filename)
     all_ok = False
 
   if all_ok:
-    print "Scan completed without any errors."
+    print("Scan completed without any errors.")
   else:
-    print "One or more errors occurred while scanning the files."
+    print("One or more errors occurred while scanning the files.")
 

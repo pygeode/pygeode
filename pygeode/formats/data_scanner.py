@@ -37,7 +37,7 @@ class _Manifest(object):
   def __init__(self, filename=None, axis_manager=None):
     from os.path import exists, getmtime
     import gzip
-    import cPickle as pickle
+    import pickle as pickle
 
     self.filename = filename
 
@@ -67,7 +67,7 @@ class _Manifest(object):
     else:
       self.axis_manager = AxisManager()
 
-    for filename, entries in self.table.iteritems():
+    for filename, entries in self.table.items():
       for varname, axes, atts in entries:
         self.axis_manager.register_axes(axes)
 
@@ -144,7 +144,7 @@ class _Manifest(object):
     from os.path import exists, getatime, getmtime, normpath
     from os import utime
     import gzip
-    import cPickle as pickle
+    import pickle as pickle
     from pygeode.progress import PBar
 
     if self.modified_table is True and self.filename is not None:
@@ -276,7 +276,7 @@ class AxisManager (object):
     # If there are aux arrays, need to pair the elements in the flatteded
     # version.
     if len(auxarrays) > 0:
-      flat = zip(axis.values, *auxarrays)
+      flat = list(zip(axis.values, *auxarrays))
     # Otherwise, just need the values themselves.
     else:
       flat = axis.values
@@ -306,11 +306,11 @@ class AxisManager (object):
       axis = sample.withnewvalues(values)
     # Do we have aux array pairs to deal with?
     elif isinstance(values[0],tuple):
-      x = zip(*values)
+      x = list(zip(*values))
       values = x[0]
       auxarrays = {}
       for aux in x[1:]:
-        name, arr = zip(*aux)
+        name, arr = list(zip(*aux))
         auxarrays[name[0]] = np.array(arr)
       axis = sample.withnewvalues(values)
       # Only update the auxarrays if we have something to put
@@ -336,7 +336,7 @@ class AxisManager (object):
   def _get_axis_intersection (self, axes):
     key = tuple(sorted(map(id,axes)))
     if key in self._intersections: return self._intersections[key]
-    values = map(self._settify_axis, axes)
+    values = list(map(self._settify_axis, axes))
     values = reduce(frozenset.intersection, values, values[0])
     intersection = self._unsettify_axis (axes[0], values)
     if len(intersection) > 0:
@@ -360,7 +360,7 @@ class _Domain (object):
   def __hash__ (self):
     return hash(self.axis_values)
   def __repr__ (self):
-    return "("+",".join(map(str,map(len,filter(None,self.axis_values))))+")"
+    return "("+",".join(map(str,list(map(len,[_f for _f in self.axis_values if _f]))))+")"
   def which_axis (self, iaxis):
     if isinstance(iaxis,int): return iaxis
     assert isinstance(iaxis,str)
@@ -436,7 +436,7 @@ def _aggregate_along_axis (domains, axis_name):
   # NOTE: assumes that all the axis segments are consistent
   # (same origin, units, etc.)
   # Also, assumes the axis values should be monotonically increasing.
-  for domain_group, axis_bin in bins.iteritems():
+  for domain_group, axis_bin in bins.items():
     if len(axis_bin) == 1:  # Only one axis piece (nothing to aggregate)
       axis_values = axis_bin.pop()
     # Otherwise, need to aggregate pieces together.
@@ -559,11 +559,11 @@ def _get_domains (manifest, axis_manager):
 
   # Start by adding all domain pieces to the list
   domains = set()
-  for entries in manifest.itervalues():
+  for entries in manifest.values():
     for var, axes, atts in entries:
       # Map each entry to a domain.
       axes = (_Varlist.singlevar(var),)+axes
-      axis_values = map(axis_manager._settify_axis, axes)
+      axis_values = list(map(axis_manager._settify_axis, axes))
       domains.add(_Domain(axis_samples=axes, axis_values=axis_values))
 
   # Reduce this to a minimal number of domains for data coverage
@@ -583,12 +583,12 @@ def _get_var_info(manifest,opener):
   from pygeode.tools import common_dict
   atts = dict()
   table = dict()
-  for filename, entries in manifest.iteritems():
+  for filename, entries in manifest.items():
     for _varname, _axes, _atts in entries:
       _attslist = atts.setdefault(_varname,[])
       if _atts not in _attslist: _attslist.append(_atts)
       table.setdefault(_varname,[]).append((filename, opener, _axes))
-  atts = dict((_varname,common_dict(_attslist)) for (_varname,_attslist) in atts.iteritems())
+  atts = dict((_varname,common_dict(_attslist)) for (_varname,_attslist) in atts.items())
   return atts, table
 
 # Find all datasets that can be constructed from a set of files.
@@ -677,6 +677,7 @@ def _domain_as_dataset (domain, atts, table, axis_manager):
 
 # Wrap a variable from a domain into a Var object
 from pygeode.var import Var
+from functools import reduce
 class _DataVar(Var):
   @classmethod
   def construct (cls, varname, axes, atts, table, axis_manager):
@@ -774,7 +775,7 @@ class DataInterface (object):
     """
     requirement=kwargs.pop('requirement',None)
     if len(kwargs) > 0:
-      raise TypeError("Unexpected keyword arguments: %s"%kwargs.keys())
+      raise TypeError("Unexpected keyword arguments: %s"%list(kwargs.keys()))
 
     for dataset in self.datasets:
       # Check if this dataset meets any extra requirements
@@ -835,7 +836,7 @@ class DataInterface (object):
       collapse_result = True
 
     if len(varnames) == 1:
-      candidates = zip(self.find(*varnames,requirement=requirement))
+      candidates = list(zip(self.find(*varnames,requirement=requirement)))
     else:
       candidates = list(self.find(*varnames,requirement=requirement))
 

@@ -3,7 +3,7 @@
 #      right now, it's a linear search through the whole thing.
 #TODO: more efficient comparison of axes
 
-from var import Var
+from .var import Var
 
 
 class ConcatVar(Var):

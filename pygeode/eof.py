@@ -88,7 +88,7 @@ def prep (var, iaxis, weight, out):
   # Keep the record axis/axes as a tuple
   # (in case we have more than one axis, i.e. time and ensemble)
   if not isinstance(timeaxes,(list,tuple)):
-    assert isinstance(timeaxes,(int,long)) or issubclass(timeaxes,Axis), 'unknown iaxis type %s'%type(timeaxes)
+    assert isinstance(timeaxes,int) or issubclass(timeaxes,Axis), 'unknown iaxis type %s'%type(timeaxes)
     timeaxes = [timeaxes]
 
   # Convert the axes to integer ids
@@ -223,7 +223,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
 
   for iter_num in range(1,max_iter+1):
 
-    print 'iter_num:', iter_num
+    print('iter_num:', iter_num)
 
     neweofs, oldeofs = oldeofs, neweofs
 
@@ -258,7 +258,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
     # Sort by eigenvalue
     S = np.argsort(w)[::-1]
     w = w[S]
-    print w
+    print(w)
 #    assert P.dtype.name == 'float64', P.dtype.name
     P = np.ascontiguousarray(P[:,S], dtype='d')
 
@@ -273,7 +273,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
 #      print [np.dot(neweofs[i,...].flatten(), neweofs[j,...].flatten()) for j in range(num)]
 
     if np.allclose(oldeofs[:num,...],neweofs[:num,...], atol=0):
-      print 'converged after %d iterations'%iter_num
+      print('converged after %d iterations'%iter_num)
       break
 
   assert iter_num != max_iter, "no convergence"
@@ -309,7 +309,7 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
   x, time, space = prep (x, iaxis, weight=weight, out=out)
   del iaxis
 
-  print "working on array shape", x.shape
+  print("working on array shape", x.shape)
 
   # Initialize workspace
   work = lib.start (num, space.size)

@@ -56,10 +56,10 @@ def correlate(X, Y, axes=None, pbar=None):
   inaxes = oaxes + [srcaxes[i] for i in riaxes]
   oview = View(oaxes) 
   iview = View(inaxes) 
-  siaxes = range(len(oaxes), len(srcaxes))
+  siaxes = list(range(len(oaxes), len(srcaxes)))
 
-  print oaxes
-  print inaxes
+  print(oaxes)
+  print(inaxes)
 
   # Construct work arrays
   x  = np.zeros(oview.shape, 'd')*np.nan
@@ -96,29 +96,29 @@ def correlate(X, Y, axes=None, pbar=None):
     # Sum of weights (kludge to get masking right)
     Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xydata*0., siaxes)], 0) 
 
-  print 'x NaNs:  %d of %d' % (np.sum(np.isnan(x)), x.size)
-  print 'y NaNs:  %d of %d' % (np.sum(np.isnan(y)), y.size)
-  print 'xx NaNs: %d of %d' % (np.sum(np.isnan(xx)), xx.size)
-  print 'xx < 0:  %d of %d' % (np.sum(xx < 0.), xx.size)
-  print 'xy NaNs: %d of %d' % (np.sum(np.isnan(xy)), xy.size)
-  print 'yy NaNs: %d of %d' % (np.sum(np.isnan(yy)), yy.size)
-  print 'yy < 0:  %d of %d' % (np.sum(yy < 0.), yy.size)
-  print 'Na NaNs: %d of %d' % (np.sum(np.isnan(Na)), Na.size)
+  print('x NaNs:  %d of %d' % (np.sum(np.isnan(x)), x.size))
+  print('y NaNs:  %d of %d' % (np.sum(np.isnan(y)), y.size))
+  print('xx NaNs: %d of %d' % (np.sum(np.isnan(xx)), xx.size))
+  print('xx < 0:  %d of %d' % (np.sum(xx < 0.), xx.size))
+  print('xy NaNs: %d of %d' % (np.sum(np.isnan(xy)), xy.size))
+  print('yy NaNs: %d of %d' % (np.sum(np.isnan(yy)), yy.size))
+  print('yy < 0:  %d of %d' % (np.sum(yy < 0.), yy.size))
+  print('Na NaNs: %d of %d' % (np.sum(np.isnan(Na)), Na.size))
 
   xx -= x**2/Na
   yy -= y**2/Na
   xy -= (x*y)/Na
 
-  print 'xx < 0:  %d of %d' % (np.sum(xx <= 0.), xx.size)
-  print 'yy < 0:  %d of %d' % (np.sum(yy <= 0.), yy.size)
+  print('xx < 0:  %d of %d' % (np.sum(xx <= 0.), xx.size))
+  print('yy < 0:  %d of %d' % (np.sum(yy <= 0.), yy.size))
   
   # Compute correlation coefficient, t-statistic, p-value
   den = np.sqrt(xx*yy)
   rho = xy / [rho > 0.]
   rho = xy.copy()
   rho[rho > 0.] = rho[rho > 0.] / np.sqrt(xx*yy)[rho > 0.]
-  print 'den NaNs:  %d of %d' % (np.sum(np.sqrt(xx*yy)[rho > 0.] <= 0.), rho[rho > 0.].size)
-  print 'rho NaNs:  %d of %d' % (np.sum(np.isnan(rho)), rho.size)
+  print('den NaNs:  %d of %d' % (np.sum(np.sqrt(xx*yy)[rho > 0.] <= 0.), rho[rho > 0.].size))
+  print('rho NaNs:  %d of %d' % (np.sum(np.isnan(rho)), rho.size))
 
   den = 1 - rho**2
   den[den < 1e-14] = 1e-14 # Saturate the denominator to avoid div by zero warnings
@@ -202,7 +202,7 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
   oaxes = [srcaxes[i] for i in oiaxes]
   inaxes = oaxes + [srcaxes[i] for i in riaxes]
   oview = View(oaxes) 
-  siaxes = range(len(oaxes), len(srcaxes))
+  siaxes = list(range(len(oaxes), len(srcaxes)))
 
   if pbar is None:
     from pygeode.progress import PBar
@@ -350,7 +350,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
   oaxes = [srcaxes[i] for i in oiaxes]
   inaxes = oaxes + [srcaxes[i] for i in riaxes]
   oview = View(oaxes) 
-  siaxes = range(len(oaxes), len(srcaxes))
+  siaxes = list(range(len(oaxes), len(srcaxes)))
 
   if pbar is None:
     from pygeode.progress import PBar
@@ -390,7 +390,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
   # loop over oview does not help)
   xx = xx.reshape(-1, Nr, Nr)
   xxinv = xxinv.reshape(-1, Nr, Nr)
-  for i in xrange(xx.shape[0]):
+  for i in range(xx.shape[0]):
     xxinv[i,:,:] = np.linalg.inv(xx[i,:,:])
   xx = xx.reshape(os2)
   xxinv = xxinv.reshape(os2)
@@ -435,9 +435,9 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
       else:
         ret.append([Var(oaxes, values=sigbeta[i], name='sig_%s' % xns[i]) for i in range(Nr)])
     elif o == 'covb':
-      from axis import NonCoordinateAxis as nca
-      cr1 = nca(values=range(Nr), regressor1=[X.name for X in Xs], name='regressor1')
-      cr2 = nca(values=range(Nr), regressor2=[X.name for X in Xs], name='regressor2')
+      from .axis import NonCoordinateAxis as nca
+      cr1 = nca(values=list(range(Nr)), regressor1=[X.name for X in Xs], name='regressor1')
+      cr2 = nca(values=list(range(Nr)), regressor2=[X.name for X in Xs], name='regressor2')
       sigmat = np.zeros(os2, 'd')
       for i in range(Nr):
         for j in range(Nr):
@@ -451,7 +451,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
       else:
         ret.append(Var(oaxes, values=se, name='sig_resid'))
     else:
-      print 'multiple_regress: unrecognized output "%s"' % o
+      print('multiple_regress: unrecognized output "%s"' % o)
 
   return ret
 # }}}

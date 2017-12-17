@@ -258,10 +258,10 @@ class View:
 
     elif hasattr(var,'getview'):
       # Can we use the progress bar?
-      if 'pbar' in var.getview.func_code.co_varnames:
+      if 'pbar' in var.getview.__code__.co_varnames:
         values = var.getview(unique_view, pbar=pbar)
       else:
-        print 'no pbar in', type(var)
+        print('no pbar in', type(var))
         values = var.getview(unique_view)
 
     elif hasattr(var,'getvalues'):
@@ -273,7 +273,7 @@ class View:
         pbar.update (100./len(loop) * i)
 
     else:
-      raise IOError, "can't determine how to extract values from "+repr(var)
+      raise IOError("can't determine how to extract values from "+repr(var))
 
     pbar.update(100)
 
@@ -448,7 +448,7 @@ class View:
  
     # Get the shape of a single chunk
     indices = []
-    for i in reversed(range(len(self.axes))):
+    for i in reversed(list(range(len(self.axes)))):
       # Number of values along this axis we can get at a time
       N = self.shape[i]  # total length of this axis
       n = min(maxsize,N)  # amount we can fix in a single chunk
@@ -496,7 +496,7 @@ class View:
           maxsize /= N
       others = [i for i in range(len(self.axes)) if i not in preserve]
     else:
-      others = range(len(self.axes))
+      others = list(range(len(self.axes)))
 
     # Build the subslices from the last axis to the first
     for i in reversed(others):

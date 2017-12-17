@@ -99,7 +99,7 @@ def put_attributes (fileid, varid, atts, version):
 #  from ctypes import c_long
   from pygeode.tools import point
   from warnings import warn
-  for name, value in atts.iteritems():
+  for name, value in atts.items():
     # String?
     if isinstance(value, str):
       vtype = 2
@@ -147,7 +147,7 @@ def load_values (fileid, varid, vartype, start, count, out=None):
   _start = A(*start)
   _count = A(*count)
   ret = f[vartype](fileid, varid, _start, _count, point(out))
-  if ret != 0: raise IOError, lib.nc_strerror(ret)
+  if ret != 0: raise IOError(lib.nc_strerror(ret))
   return out
 
 # Simple file object - just holds the file id
@@ -168,13 +168,13 @@ class NCFile:
     if self.fileid.value == -1:
       mode = c_int(0)  # 0 = read
       ret = self.lib.nc_open(self.filename, mode, byref(self.fileid))
-      if ret != 0: raise IOError, self.lib.nc_strerror(ret)
+      if ret != 0: raise IOError(self.lib.nc_strerror(ret))
   def opened(self): return self.fileid.value > -1
   def close(self):
 #    from ctypes import c_int
     if self.fileid.value != -1:
       ret = self.lib.nc_close(self.fileid)
-      if ret != 0: raise IOError, self.lib.nc_strerror(ret)
+      if ret != 0: raise IOError(self.lib.nc_strerror(ret))
     if self.ctypes.c_int is not None:
       self.fileid = self.ctypes.c_int(-1)  # use class-level ctypes reference to avoid errors during cleanup
   def __enter__(self): return self
@@ -269,7 +269,7 @@ def override_values (dataset, value_override):
   import numpy as np
   from pygeode.var import Var, copy_meta
   vardict = {}
-  for name, values in value_override.iteritems():
+  for name, values in value_override.items():
     if name not in dataset:
       warn ("var '%s' not found - values not overridden"%name, stacklevel=3)
       continue
@@ -304,7 +304,7 @@ def dims2axes (dataset):
       replacements[dim.name] = axis
   dataset = dataset.replace_axes(axisdict=replacements)
   # Remove the axes from the list of variables
-  dataset = dataset.remove(*replacements.keys())
+  dataset = dataset.remove(*list(replacements.keys()))
   return dataset
 # }}}
 
@@ -371,7 +371,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   # (We could use any values here, since they'll be overridden again later,
   #  but we might as well use something relevant).
   value_override = dict(value_override)  # don't use  the default (static) empty dict
-  for k,v in dimtypes.items():
+  for k,v in list(dimtypes.items()):
     if isinstance(v,Axis):
       value_override[k] = v.values
 
@@ -443,10 +443,10 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
   # Create the file
   if version == 3:
     ret = lib.nc_create (filename, 0, byref(fileid))
-    if ret != 0: raise IOError, lib.nc_strerror(ret)
+    if ret != 0: raise IOError(lib.nc_strerror(ret))
   elif version == 4:
     ret = lib.nc_create (filename, 0x1000, byref(fileid))  # 0x1000 = NC_NETCDF4
-    if ret != 0: raise IOError, lib.nc_strerror(ret)
+    if ret != 0: raise IOError(lib.nc_strerror(ret))
   else: raise Exception
 
   # Define the dimensions

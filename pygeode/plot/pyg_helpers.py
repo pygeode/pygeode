@@ -1,15 +1,15 @@
 # Shortcuts for plotting PyGeode vars
 # Extends wrapper.py to automatically use information from the Pygeode Vars.
 
-import wrappers as wr
-import cnt_helpers as ch
+from . import wrappers as wr
+from . import cnt_helpers as ch
 import numpy as np
 
 def _getplotatts(var):
 # {{{
   ''' Builds plotatts dictionary, using variable attributes as suitable defaults. '''
   plt = dict(plotname = var.name, plotunits = var.units, plotfmt = var.formatstr)
-  plt.update([(k, v) for k, v in var.plotatts.iteritems() if v is not None])
+  plt.update([(k, v) for k, v in var.plotatts.items() if v is not None])
   return plt
 # }}}
 
@@ -174,7 +174,7 @@ def _parse_autofmt_kwargs(Z, kwargs):
   ''' Used by showvar and showgrid to parse kwargs for auto-contouring options. '''
 
   # Process auto contouring dictionaries
-  if 'clevs' in kwargs.keys() or 'clines' in kwargs.keys():
+  if 'clevs' in list(kwargs.keys()) or 'clines' in list(kwargs.keys()):
     tdef = 'raw'
   else:
     tdef = 'clf'
@@ -193,7 +193,7 @@ def _parse_autofmt_kwargs(Z, kwargs):
       cdelt, dct = ch.guessclimits(z, style=style, ndiv=ndiv)
     else:
       dct = {}
-      if kwargs.has_key('min') and not kwargs.has_key('style'):
+      if 'min' in kwargs and 'style' not in kwargs:
         dct['style'] = 'seq'
         dct['ndiv'] = 5
     dct.update(kwargs)
@@ -216,16 +216,16 @@ def _parse_autofmt_kwargs(Z, kwargs):
     dct.update(kwargs)
     kwargs = ch.cldict(cdelt, **dct)
     if verbose:
-      print 'Contour Interval: %0.2g' % cdelt
-      print 'Minimum value: %3g, Maximum value: %3g' % (np.min(z), np.max(z))
-      print 'Minimum contour: %3g, Maximum contour: %3g' % (kwargs['clines'][0], kwargs['clines'][-1])
+      print('Contour Interval: %0.2g' % cdelt)
+      print('Minimum value: %3g, Maximum value: %3g' % (np.min(z), np.max(z)))
+      print('Minimum contour: %3g, Maximum contour: %3g' % (kwargs['clines'][0], kwargs['clines'][-1]))
 
     return kwargs
 
   elif typ in ['log', 'log1s']:
     dct = {}
     dct.update(kwargs)
-    if not dct.has_key('cmin'):
+    if 'cmin' not in dct:
       raise ValueError('Must specify cmin (lower bound) for logarithmically spaced contours')
     kwargs = ch.log1sdict(**dct)
     return kwargs
@@ -233,7 +233,7 @@ def _parse_autofmt_kwargs(Z, kwargs):
   elif typ == 'log2s':
     dct = {}
     dct.update(kwargs)
-    if not (dct.has_key('cmin')) :
+    if not ('cmin' in dct) :
       raise ValueError('Must specify cmin (inner boundary for linear spaced interval) for two-sided logarithmically spaced contours')
     kwargs = ch.log2sdict(**dct)
     return kwargs
@@ -822,7 +822,7 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
     kwlines['colors'] = kwargs.pop('colors', 'k')
     kwlines['clines'] = kwargs.pop('clines', 11)
     for k in ['linewidths', 'linestyles']:
-      if kwargs.has_key(k): kwlines[k] = kwargs.pop(k)
+      if k in kwargs: kwlines[k] = kwargs.pop(k)
 
   kwfill = {}
   if nVf > 0:
@@ -959,7 +959,7 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
 # {{{
   sizes = dict(A4 = (8.3, 11.7),
               A4l = (11.7, 8.3))
-  if sizes.has_key(psize):
+  if psize in sizes:
     pwidth, pheight = sizes[psize]
   else:
     pwidth, pheight = psize
@@ -1003,7 +1003,7 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
         pp.savefig(fig)
         ax = wr.AxesWrapper(size=psize)
         y = 1. - ymarg
-        print 'Page %d, %d figures.' % (page, nfigs)
+        print('Page %d, %d figures.' % (page, nfigs))
         page += 1
         nfigs = 0
 
@@ -1013,7 +1013,7 @@ def savepages(figs, fn, psize='A4', marg=0.5, scl=1.):
       hlast = h
       nfigs += 1
 
-  print 'Page %d, %d figures.' % (page, nfigs)
+  print('Page %d, %d figures.' % (page, nfigs))
   fig = ax.render('page%d'%page, show=False)
   pp.savefig(fig)
   pp.close()

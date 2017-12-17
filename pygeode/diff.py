@@ -1,6 +1,7 @@
 # diff.py - implementation of ForwardDifferenceVar, and the 'diff' method.
 
 from pygeode.var import Var
+from functools import reduce
 class ForwardDifferenceVar (Var):
   '''Forward difference variable.'''
 
