@@ -223,7 +223,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
 
   for iter_num in range(1,max_iter+1):
 
-    print('iter_num:', iter_num)
+    print('iter_num: %d'%iter_num)
 
     neweofs, oldeofs = oldeofs, neweofs
 
@@ -309,7 +309,7 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
   x, time, space = prep (x, iaxis, weight=weight, out=out)
   del iaxis
 
-  print("working on array shape", x.shape)
+  print("working on array shape %s"%(x.shape,))
 
   # Initialize workspace
   work = lib.start (num, space.size)

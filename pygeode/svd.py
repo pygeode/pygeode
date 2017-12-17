@@ -184,7 +184,7 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
 
   for iter_num in range(1,MAX_ITER+1):
 
-    print('iter_num:', iter_num)
+    print('iter_num: %d'%iter_num)
 
     assert Y.shape == U.shape
     assert X.shape == V.shape

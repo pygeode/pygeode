@@ -11,7 +11,11 @@ _config, _configfiles = None, None
 
 def readConfig():
 # {{{
-  import configparser as Cfg
+  try:
+    import configparser as Cfg
+  except ImportError:
+    # Python2
+    import ConfigParser as Cfg
   import sys, os
   from os.path import expanduser, dirname, sep
   global _config, _configfiles
