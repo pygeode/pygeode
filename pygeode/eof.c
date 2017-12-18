@@ -610,8 +610,48 @@ static PyMethodDef EOFMethods[] = {
   {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initeofcore(void) {
-  (void) Py_InitModule("eofcore", EOFMethods);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "eofcore",           /* m_name */
+        NULL,                /* m_doc */
+        -1,                  /* m_size */
+        EOFMethods,          /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+#endif
+
+
+static PyObject *
+moduleinit(void)
+{
+    PyObject *m;
+
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule("eofcore", EOFMethods);
+#endif
+
+    import_array();
+
+    return m;
 }
+
+#if PY_MAJOR_VERSION < 3
+    PyMODINIT_FUNC
+    initeofcore(void)
+    {
+        moduleinit();
+    }
+#else
+    PyMODINIT_FUNC
+    PyInit_eofcore(void)
+    {
+        return moduleinit();
+    }
+#endif
 

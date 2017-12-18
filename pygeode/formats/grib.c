@@ -768,8 +768,8 @@ int free_Index (Index **index) {
 }
 
 // Similar to above, but is compatible with Python CObjects
-void destroy_Index (void *index) {
-  Index *junk = (Index*)index;
+void destroy_Index (PyObject *index) {
+  Index *junk = (Index*)PyCapsule_GetPointer(index,NULL);
   free_Index(&junk);
 }
 
@@ -801,8 +801,8 @@ int close_grib (FILE **f) {
 }
 
 // Similar to above, but compatible with Python CObjects
-void destroy_grib (void *f) {
-  FILE *junk = (FILE*)f;
+void destroy_grib (PyObject *f) {
+  FILE *junk = (FILE*)PyCapsule_GetPointer(f,NULL);
   close_grib (&junk);
 }
 
@@ -999,7 +999,7 @@ static PyObject *gribcore_read_Index (PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "s", &indexfile)) return NULL;
   int ret = read_Index (indexfile, &index);
   if (ret != 0) return NULL;
-  return PyCObject_FromVoidPtr(index, destroy_Index);
+  return PyCapsule_New(index, NULL, destroy_Index);
 }
 
 static PyObject *gribcore_open_grib (PyObject *self, PyObject *args) {
@@ -1008,7 +1008,7 @@ static PyObject *gribcore_open_grib (PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "s", &filename)) return NULL;
   int ret = open_grib (filename, &f);
   if (ret != 0) return NULL;
-  return PyCObject_FromVoidPtr(f, destroy_grib);
+  return PyCapsule_New(f, NULL, destroy_grib);
 }
 
 static PyObject *gribcore_get_varcode (PyObject *self, PyObject *args) {
@@ -1016,8 +1016,8 @@ static PyObject *gribcore_get_varcode (PyObject *self, PyObject *args) {
   Index *index;
   int v;
   int center, table, varid, level_type;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   int ret = get_varcode (index, v, &center, &table, &varid, &level_type);
   if (ret != 0) return NULL;
   return Py_BuildValue("(i,i,i,i)", center, table, varid, level_type);
@@ -1027,8 +1027,8 @@ static PyObject *gribcore_get_var_nt (PyObject *self, PyObject *args) {
   PyObject *index_obj;
   Index *index;
   int v, nt;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   nt = get_var_nt (index, v);
   return Py_BuildValue("i", nt);
 }
@@ -1039,8 +1039,8 @@ static PyObject *gribcore_get_var_t (PyObject *self, PyObject *args) {
   int v;
   npy_intp nt;
   PyArrayObject *y, *m, *d, *H, *M;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   nt = get_var_nt (index, v);
   y = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
   m = (PyArrayObject*)PyArray_SimpleNew(1,&nt,NPY_INT32);
@@ -1062,8 +1062,8 @@ static PyObject *gribcore_get_var_nz (PyObject *self, PyObject *args) {
   PyObject *index_obj;
   Index *index;
   int v, nz;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   nz = get_var_nz (index, v);
   return Py_BuildValue("i", nz);
 }
@@ -1074,8 +1074,8 @@ static PyObject *gribcore_get_var_z (PyObject *self, PyObject *args) {
   int v;
   npy_intp nz;
   PyArrayObject *l1, *l2;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   nz = get_var_nz (index, v);
   l1 = (PyArrayObject*)PyArray_SimpleNew(1,&nz,NPY_INT32);
   l2 = (PyArrayObject*)PyArray_SimpleNew(1,&nz,NPY_INT32);
@@ -1091,8 +1091,8 @@ static PyObject *gribcore_get_var_neta (PyObject *self, PyObject *args) {
   PyObject *index_obj;
   Index *index;
   int v, neta;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   neta = get_var_neta (index, v);
   return Py_BuildValue("i", neta);
 }
@@ -1103,8 +1103,8 @@ static PyObject *gribcore_get_var_eta (PyObject *self, PyObject *args) {
   int v;
   npy_intp neta;
   PyArrayObject *a, *b;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   neta = get_var_neta (index, v);
   a = (PyArrayObject*)PyArray_SimpleNew(1,&neta,NPY_FLOAT32);
   b = (PyArrayObject*)PyArray_SimpleNew(1,&neta,NPY_FLOAT32);
@@ -1120,8 +1120,8 @@ static PyObject *gribcore_get_grid (PyObject *self, PyObject *args) {
   PyObject *index_obj;
   Index *index;
   int v, type, ni, nj, la1, lo1, la2, lo2;
-  if (!PyArg_ParseTuple(args, "O!i", &PyCObject_Type, &index_obj, &v)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!i", &PyCapsule_Type, &index_obj, &v)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   int ret = get_grid (index, v, &type, &ni, &nj, &la1, &lo1, &la2, &lo2);
   if (ret != 0) return NULL;
   return Py_BuildValue("(i,i,i,i,i,i,i)", type, ni, nj, la1, lo1, la2, lo2);
@@ -1130,8 +1130,8 @@ static PyObject *gribcore_get_grid (PyObject *self, PyObject *args) {
 static PyObject *gribcore_get_nvars (PyObject *self, PyObject *args) {
   PyObject *index_obj;
   Index *index;
-  if (!PyArg_ParseTuple(args, "O!", &PyCObject_Type, &index_obj)) return NULL;
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!", &PyCapsule_Type, &index_obj)) return NULL;
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
   int nvars = get_nvars(index);
   return Py_BuildValue("i", nvars);
 }
@@ -1143,9 +1143,9 @@ static PyObject *gribcore_read_data_loop (PyObject *self, PyObject *args) {
   int v, nt, nz, ny, nx;
   PyArrayObject *t, *z, *y, *x, *out;
   // Assuming the arrays are of the right type and contiguous
-  if (!PyArg_ParseTuple(args, "O!O!iiO!iO!iO!iO!O!", &PyCObject_Type, &f_obj, &PyCObject_Type, &index_obj, &v, &nt, &PyArray_Type, &t, &nz, &PyArray_Type, &z, &ny, &PyArray_Type, &y, &nx, &PyArray_Type, &x, &PyArray_Type, &out)) return NULL;
-  f = (FILE*)PyCObject_AsVoidPtr(f_obj);
-  index = (Index*)PyCObject_AsVoidPtr(index_obj);
+  if (!PyArg_ParseTuple(args, "O!O!iiO!iO!iO!iO!O!", &PyCapsule_Type, &f_obj, &PyCapsule_Type, &index_obj, &v, &nt, &PyArray_Type, &t, &nz, &PyArray_Type, &z, &ny, &PyArray_Type, &y, &nx, &PyArray_Type, &x, &PyArray_Type, &out)) return NULL;
+  f = (FILE*)PyCapsule_New(f_obj,NULL,NULL);
+  index = (Index*)PyCapsule_New(index_obj,NULL,NULL);
 
   int ret = read_data_loop (f, index, v, nt, (int*)t->data, 
     nz, (int*)z->data, ny, (int*)y->data, nx, (int*)x->data,
@@ -1172,8 +1172,47 @@ static PyMethodDef GribMethods[] = {
   {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initgribcore(void) {
-  (void) Py_InitModule("gribcore", GribMethods);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "gribcore",          /* m_name */
+        NULL,                /* m_doc */
+        -1,                  /* m_size */
+        GribMethods,         /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+#endif
+
+static PyObject *
+moduleinit(void)
+{
+    PyObject *m;
+
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule("gribcore", GribMethods);
+#endif
+
+    import_array();
+
+    return m;
 }
+
+#if PY_MAJOR_VERSION < 3
+    PyMODINIT_FUNC
+    initgribcore(void)
+    {
+        moduleinit();
+    }
+#else
+    PyMODINIT_FUNC
+    PyInit_gribcore(void)
+    {
+        return moduleinit();
+    }
+#endif
 

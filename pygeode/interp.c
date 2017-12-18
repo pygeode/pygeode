@@ -213,8 +213,47 @@ static PyMethodDef InterpMethods[] = {
   {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initinterpcore(void) {
-  (void) Py_InitModule("interpcore", InterpMethods);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "interpcore",        /* m_name */
+        NULL,                /* m_doc */
+        -1,                  /* m_size */
+        InterpMethods,       /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+#endif
+
+static PyObject *
+moduleinit(void)
+{
+    PyObject *m;
+
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule("interpcore", InterpMethods);
+#endif
+
+    import_array();
+
+    return m;
 }
+
+#if PY_MAJOR_VERSION < 3
+    PyMODINIT_FUNC
+    initinterpcorecore(void)
+    {
+        moduleinit();
+    }
+#else
+    PyMODINIT_FUNC
+    PyInit_interpcore(void)
+    {
+        return moduleinit();
+    }
+#endif
 
