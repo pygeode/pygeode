@@ -17,8 +17,6 @@ MAX_SWAP_SIZE = 1073741824
 # Things like default names for axes could be customized
 
 # Axes format strings, default names
-Pres.name = pres
-Pres.formatstr = %.2g<100
 
 Lon.name = lon
 Lon.rtol = 1e-3
