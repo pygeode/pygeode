@@ -79,7 +79,7 @@ def get_attributes (fileid, varid):
       valstr = create_string_buffer(size.value)
       ret = get_att_f[vtype.value](fileid, varid, name, valstr);
       assert ret == 0
-      value = valstr.value
+      value = str(valstr.value.decode())
     else:
       valnp = empty([size.value], numpy_type[vtype.value])
       ret = get_att_f[vtype.value](fileid, varid, name, point(valnp))
@@ -87,7 +87,7 @@ def get_attributes (fileid, varid):
       value = valnp
       if value.size == 1: value = value[0]
 
-    atts[name.value] = value
+    atts[str(name.value.decode())] = value
 
   return atts
 # }}}
@@ -103,7 +103,7 @@ def put_attributes (fileid, varid, atts, version):
     # String?
     if isinstance(value, str):
       vtype = 2
-      ret = put_att_f[vtype](fileid, varid, name, len(value), value)
+      ret = put_att_f[vtype](fileid, varid, name.encode('ascii'), len(value), value.encode('ascii'))
       assert ret == 0
     else:
       oldvalue = value
@@ -124,7 +124,7 @@ def put_attributes (fileid, varid, atts, version):
       # (in case there is an implicit cast involved, i.e. int64's need to be cast to something else for netcdf)
       dtype = numpy_type[vtype]
       value = asarray(value, dtype=dtype)
-      ret = put_att_f[vtype](fileid, varid, name, vtype, len(value), point(value))
+      ret = put_att_f[vtype](fileid, varid, name.encode('ascii'), vtype, len(value), point(value))
       assert ret == 0
 # }}}
 
@@ -158,7 +158,7 @@ class NCFile:
   import ctypes  # import here, so we don't lose the ctypes module during cleanup
   def __init__ (self, filename):
     from ctypes import c_int
-    self.filename = filename
+    self.filename = filename.encode('ascii')
     self.fileid = c_int(-1)
     self.lib = lib
   def __del__(self): 
@@ -194,7 +194,7 @@ class NCDim (DummyAxis):
     length = c_long()
     ret = lib.nc_inq_dim (f.fileid, dimid, name, byref(length))
     assert ret == 0
-    name = name.value
+    name = str(name.value.decode())
     length = length.value
     return NCDim (length, name=name)
 
@@ -233,7 +233,7 @@ class NCVar(Var):
     self._vtype  = vtype = vtype.value
     dtype = numpy_type[vtype]
     self._dimids = dimids = [dimids[j] for j in range(ndims.value)]
-    name = name.value
+    name = str(name.value.decode())
 
     # Load attributes
     atts = get_attributes (f.fileid, varid)
@@ -440,12 +440,13 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
        8:lib.nc_put_vara_ushort, 9:lib.nc_put_vara_uint,
       10:lib.nc_put_vara_longlong, 11:lib.nc_put_vara_ulonglong}
 
+
   # Create the file
   if version == 3:
-    ret = lib.nc_create (filename, 0, byref(fileid))
+    ret = lib.nc_create (filename.encode('ascii'), 0, byref(fileid))
     if ret != 0: raise IOError(lib.nc_strerror(ret))
   elif version == 4:
-    ret = lib.nc_create (filename, 0x1000, byref(fileid))  # 0x1000 = NC_NETCDF4
+    ret = lib.nc_create (filename.encode('ascii'), 0x1000, byref(fileid))  # 0x1000 = NC_NETCDF4
     if ret != 0: raise IOError(lib.nc_strerror(ret))
   else: raise Exception
 
@@ -454,9 +455,9 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
   for i,a in enumerate(axes):
     dimids[i] = c_int()
     if unlimited == a.name:
-      ret = lib.nc_def_dim (fileid, a.name, c_long(0), byref(dimids[i]))
+      ret = lib.nc_def_dim (fileid, a.name.encode('ascii'), c_long(0), byref(dimids[i]))
     else:
-      ret = lib.nc_def_dim (fileid, a.name, c_long(len(a)), byref(dimids[i]))
+      ret = lib.nc_def_dim (fileid, a.name.encode('ascii'), c_long(len(a)), byref(dimids[i]))
     assert ret == 0, lib.nc_strerror(ret)
 
   # Define the variables (including axes)
@@ -469,7 +470,7 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
     # Make it C-compatible
     d = (c_int * var.naxes)(*d)
     varids[i] = c_int()
-    ret = lib.nc_def_var (fileid, var.name, t, var.naxes, d, byref(varids[i]))
+    ret = lib.nc_def_var (fileid, var.name.encode('ascii'), t, var.naxes, d, byref(varids[i]))
     assert ret == 0, lib.nc_strerror(ret)
     # Compress the data? (only works for netcdf4 or (higher?))
     if compress:

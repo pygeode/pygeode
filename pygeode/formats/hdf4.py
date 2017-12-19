@@ -32,14 +32,14 @@ def get_attributes (obj_id, natts):
     assert ret == 0
     # Can only handle strings (type=3 or 4?) for now.
     # Note: should find HDF4 files that actually have numerical attributes before doing this
-    name = name.value
+    name = str(name.value.decode())
     count = count.value
     type = type.value
     if type in (3,4):
       value = create_string_buffer(count)
       ret = lib.SDreadattr(obj_id, i, value)
       assert ret == 0
-      value = value.value
+      value = str(value.value.decode())
     else:
       value = np.empty([count], dtype=numpy_type[type])
       ret = lib.SDreadattr(obj_id, i, point(value))
@@ -68,6 +68,7 @@ def load_values (sds_id, start, count, out):
 class HDF4_File:
   def __init__ (self, filename):
     from os.path import exists
+    filename = filename.encode('ascii')
     assert exists(filename), "file '%s' does not exist!"%filename
     self.lib = lib  # so we can reference the HDF4 library on cleanup
     self.filename = filename
@@ -95,7 +96,7 @@ class HDF4_SD:
     assert ret == 0
     self.f = f
     self.sds_id = sds_id
-    self.name = name.value
+    self.name = str(name.value.decode())
     self.rank = rank.value
     self.shape = dimsizes[:rank.value]
     self.type = data_type.value
