@@ -245,7 +245,7 @@ moduleinit(void)
 
 #if PY_MAJOR_VERSION < 3
     PyMODINIT_FUNC
-    initinterpcorecore(void)
+    initinterpcore(void)
     {
         moduleinit();
     }
