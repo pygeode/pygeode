@@ -26,7 +26,12 @@ def readConfig():
   else:
     cfgpaths = [dirname(__file__) + sep, expanduser('~') + sep, os.curdir + sep]
     
-  c = Cfg.ConfigParser()
+  try:
+    c = Cfg.ConfigParser(interpolation=None)
+  except TypeError:
+    # Python 2.7
+    c = Cfg.ConfigParser()
+
   files = c.read([p + 'pygrc' for p in cfgpaths])
   _config = c
   _configfiles = files
