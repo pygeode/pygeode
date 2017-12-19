@@ -59,9 +59,9 @@ axis_classes = (XAxis, YAxis, ZAxis)
 count = 1
 
 for naxes in (1,2):
-  print "Testing %s dimensions"%naxes
+  print("Testing %s dimensions"%naxes)
   for shape in product(*([sizes]*naxes)):
-    print "  Testing shape %s"%str(shape)
+    print("  Testing shape %s"%str(shape))
 
     np.random.seed(shape)
     values = np.random.randn(*shape)
@@ -76,9 +76,9 @@ for naxes in (1,2):
     var.name = 'myvar'
 
     slicelists = [slices[size] for size in shape]
-    print "    # tests:", len(list(product(*slicelists)))
+    print("    # tests: %d" % len(list(product(*slicelists))))
     for sl in product(*slicelists):
-      print "    Testing slices %s"%repr(sl)
+      print("    Testing slices %s"%repr(sl))
       # Trap any known failures here to further diagnose
 #      assert (count!=4860), "shape: %s, slices: %s, values: %s, axes: %s"%(shape, str(sl), values, [a.values for a in var.axes])
 
