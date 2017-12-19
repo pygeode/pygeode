@@ -150,16 +150,16 @@ class Interp (Var):
               self.d_below, self.d_above,
               interp_type, self.omit_nonmonotonic)
     except ValueError as e:
-      i = e.message.find('In array')
+      i = str(e).find('In array')
       if i == -1: raise e
 
       if len(inview.shape) > 1:
-        idx_ar = np.unravel_index(int(e.message[i+9:-1]), inview.shape[:-1])
+        idx_ar = np.unravel_index(int(str(e)[i+9:-1]), inview.shape[:-1])
         loc = ['%s: %s' % (ax.name, ax.formatvalue(ax[j])) for ax, j in zip(inview.subaxes()[:-1], idx_ar)]
         msg = '. Interpolation error at (' + '; '.join(loc) + ').'
       else:
         msg = '.'
-      raise ValueError(e.message + msg)
+      raise ValueError(str(e) + msg)
 
 
     return outdata
