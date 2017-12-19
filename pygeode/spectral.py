@@ -15,7 +15,7 @@ class Spectral(Axis):
   # {{{
     if isinstance(values, int):
       trunc = values
-      values = np.arange((trunc+1)*(trunc+2)/2)
+      values = np.arange((trunc+1)*(trunc+2)//2)
 
     if trunc is None:
       # Infer triangular truncation by length of values

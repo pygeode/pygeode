@@ -282,7 +282,7 @@ def clim_anoms(var, yrlen, itime = -1):
         returns climatology and anomalies of given variable.'''
   from pygeode.timeaxis import Time
   if itime == -1: itime = var.whichaxis(Time) 
-  tlen = (var.shape[itime] / yrlen) * yrlen
+  tlen = (var.shape[itime] // yrlen) * yrlen
   vary = composite(var, itime, list(range(0, tlen, yrlen)), yrlen)
   varc = vary.mean(itime).load()
   varz = flatten(vary - varc, itime + 1)

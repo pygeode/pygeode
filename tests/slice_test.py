@@ -35,7 +35,7 @@ def gimme_some_slices(size):
 
   # Random integer indices
   np.random.seed(size*42)
-  slices.append(np.random.randint(-size,size, size/2+1))
+  slices.append(np.random.randint(-size,size, size//2+1))
 
   return slices
 

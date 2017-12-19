@@ -325,7 +325,7 @@ def EOF_guess (x, num=1, iaxis=None, weight=True, out=None):
   for inview in View(x.axes).loop_mem():
     X = np.ascontiguousarray(inview.get(x), dtype='d')
     assert X.size >= space.size, "Spatial pattern is too large"
-    nrec = X.size / space.size
+    nrec = X.size // space.size
     lib.process (work, nrec, X)
 
     # Accumulate variance

@@ -145,15 +145,15 @@ def SVD (var1, var2, num=1, subspace=-1, iaxis=Time, weight1=True, weight2=True,
   pcshape2 =  (var2.shape[iaxis2], subspace)
 
   # number of spatial grid points
-  NX1 = var1.size / var1.shape[iaxis1]
+  NX1 = var1.size // var1.shape[iaxis1]
   assert NX1 <= MAX_ARRAY_SIZE, 'field is too large!'
-  NX2 = var2.size / var2.shape[iaxis2]
+  NX2 = var2.size // var2.shape[iaxis2]
   assert NX2 <= MAX_ARRAY_SIZE, 'field is too large!'
 
   # Total number of timesteps
   NT = var1.shape[iaxis1]
   # Number of timesteps we can do in one fetch
-  dt = MAX_ARRAY_SIZE / max(NX1,NX2)
+  dt = MAX_ARRAY_SIZE // max(NX1,NX2)
 
   pcs1 = np.empty(pcshape1,dtype='d')
   pcs2 = np.empty(pcshape2,dtype='d')

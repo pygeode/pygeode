@@ -78,8 +78,8 @@ def correlate(X, Y, axes=None, pbar=None):
     ydata = ydata.astype('d')
     xydata = xdata*ydata
 
-    xbc = [s1 / s2 for s1, s2 in zip(xydata.shape, xdata.shape)]
-    ybc = [s1 / s2 for s1, s2 in zip(xydata.shape, ydata.shape)]
+    xbc = [s1 // s2 for s1, s2 in zip(xydata.shape, xdata.shape)]
+    ybc = [s1 // s2 for s1, s2 in zip(xydata.shape, ydata.shape)]
     xdata = np.tile(xdata, xbc)
     ydata = np.tile(ydata, ybc)
     xdata[np.isnan(xydata)] = np.nan
@@ -238,7 +238,7 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
   b = (y - m*x)/float(N)
 
   if N_fac is None: N_eff = N
-  else: N_eff = N / N_fac
+  else: N_eff = N // N_fac
   sige = (yy - m * xy) / (N_eff - 2.)
   sigm = np.sqrt(sige / xx)
   t = np.abs(m) / sigm
@@ -399,7 +399,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
   vare = np.sum(xy * beta, -1)
 
   if N_fac is None: N_eff = N
-  else: N_eff = N / N_fac
+  else: N_eff = N // N_fac
 
   sigbeta = [np.sqrt((yy - vare) * xxinv[..., i, i] / N_eff) for i in range(Nr)]
 
@@ -573,9 +573,9 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   x /= Nx
   y /= Ny
 
-  if Nx_fac is not None: eNx = Nx/Nx_fac
+  if Nx_fac is not None: eNx = Nx//Nx_fac
   else: eNx = Nx
-  if Ny_fac is not None: eNy = Ny/Ny_fac
+  if Ny_fac is not None: eNy = Ny//Ny_fac
   else: eNy = Ny
   #print 'average eff. Nx = %.1f, average eff. Ny = %.1f' % (eNx.mean(), eNy.mean())
 
@@ -708,7 +708,7 @@ def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
   dd = (dd - d**2/N) / (N - 1)
   d /= Nx
 
-  if N_fac is not None: eN = N/N_fac
+  if N_fac is not None: eN = N//N_fac
   else: eN = N
   #print 'average eff. Nx = %.1f, average eff. Ny = %.1f' % (eNx.mean(), eNy.mean())
 
@@ -819,8 +819,8 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   x /= Na
 
   if N_fac is not None: 
-    eN = N/N_fac
-    eNa = Na/N_fac
+    eN = N//N_fac
+    eNa = Na//N_fac
   else: 
     eN = N
     eNa = Na

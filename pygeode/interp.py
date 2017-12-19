@@ -133,7 +133,7 @@ class Interp (Var):
           outx_data = np.repeat(outx_data, outdata.shape[i], axis=i)
 
 
-    narrays = indata.size / indata.shape[-1]
+    narrays = indata.size // indata.shape[-1]
     ninx = inx_data.shape[-1]
     noutx = outx_data.shape[-1]
     inx_data = np.ascontiguousarray(inx_data, dtype='float64')

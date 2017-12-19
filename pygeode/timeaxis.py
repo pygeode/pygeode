@@ -524,8 +524,8 @@ class CalendarTime(Time):
       h = dt['hour']
       subs['H'] = '%02d' % h
       subs['I'] = '%02d' % ((h - 1) % 12 + 1)
-      subs['p'] = ['am', 'pm'][h / 12]
-      subs['P'] = ['AM', 'PM'][h / 12]
+      subs['p'] = ['am', 'pm'][h // 12]
+      subs['P'] = ['AM', 'PM'][h // 12]
     else:
       subs['H'], subs['I'], subs['p'], subs['P'] = '', '', '', ''
 
@@ -847,7 +847,7 @@ def makeSeasonalAxis(Base):
 
       year = dates.get('year', zeros)
       season = dates.get('season', ones)
-      year += (season - 1) / self.nseasons
+      year += (season - 1) // self.nseasons
       season = (season - 1) % self.nseasons
 
       year += self.cdates['dyear'][season]

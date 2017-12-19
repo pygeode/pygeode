@@ -458,7 +458,7 @@ class View:
       # Build the subslices from the last axis to the first
       indices = [ind] + indices
       # Take into account the count along this axis when looking at the faster-varying axes
-      maxsize /= n
+      maxsize //= n
  
     # Loop over all combinations of slices to cover the whole view
     # (take the cartesian product)
@@ -493,7 +493,7 @@ class View:
           warn('Data request involves arrays larger than MAX_ARRAY_SIZE; continuing for now but memory allocation problems may result.')
           maxsize = 1
         else:
-          maxsize /= N
+          maxsize //= N
       others = [i for i in range(len(self.axes)) if i not in preserve]
     else:
       others = list(range(len(self.axes)))
@@ -507,7 +507,7 @@ class View:
       input_indices = self.integer_indices[i]
       indices[i] = [input_indices[j:min(j+n,N)] for j in range(0,N,n)]
       # Take into account the count along this axis when looking at the faster-varying axes
-      maxsize /= n
+      maxsize //= n
 
     # Loop over all combinations of slices to cover the whole view
     # (take the cartesian product)
