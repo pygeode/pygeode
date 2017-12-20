@@ -102,7 +102,8 @@ def decode_string_var (var):
   name = var.name
   if name.endswith('_name'):
     name = name[:-5]
-  data = [''.join(s) for s in var.get()]
+  data = [''.encode('ascii').join(s) for s in var.get()]
+  data = [str(s.decode()) for s in data]
   return Var(axes=var.axes[:-1], values=data, name=name)
 
 
@@ -217,7 +218,7 @@ def encode_cf (dataset):
       for auxname in list(a.auxarrays.keys()):
         if auxname in coordinates: continue  # Handled above
         var = a.auxasvar(auxname)
-        if var.dtype.name.startswith('string'):
+        if var.dtype.name.startswith('str'):
           var = encode_string_var(var)
         # Some extra CF encoding for the station name, to use it as the unique identifier.
         if auxname == 'station':
@@ -301,7 +302,7 @@ def decode_cf (dataset, ignore=[]):
 
   # Decode string variables
   for i,var in enumerate(varlist):
-    if var.name.endswith("_name") and var.dtype.name == "string8" and var.axes[-1].name.endswith("_strlen"):
+    if var.name.endswith("_name") and var.dtype.name in ("string8","bytes8") and var.axes[-1].name.endswith("_strlen"):
       varlist[i] = decode_string_var(var)
 
   # data for auxiliary arrays
