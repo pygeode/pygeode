@@ -1,5 +1,6 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
+#include <stdlib.h>
 
 int str2int8 (unsigned char *str, unsigned char *x, int n) {
   for (int i = 0; i < n; i++) {
@@ -221,7 +222,7 @@ static PyObject *opendapcore_int32toStr (PyObject *self, PyObject *args) {
   if (x == NULL) return NULL;
   n = 1;
   for (int i = 0; i < x->nd; i++) n *= x->dimensions[i];
-  char str[n*4];
+  char *str = (char*)malloc(sizeof(char)*n*4);
 
   // Call the C function
   int32toStr ((unsigned int*)x->data, str, n);
@@ -229,7 +230,9 @@ static PyObject *opendapcore_int32toStr (PyObject *self, PyObject *args) {
   // Clean up local objects
   Py_DECREF (x);
 
-  return Py_BuildValue("s#", str, n*4);
+  PyObject *ret = Py_BuildValue("s#", str, n*4);
+  free(str);
+  return ret;
 }
 
 static PyObject *opendapcore_int64toStr (PyObject *self, PyObject *args) {
@@ -241,7 +244,7 @@ static PyObject *opendapcore_int64toStr (PyObject *self, PyObject *args) {
   if (x == NULL) return NULL;
   n = 1;
   for (int i = 0; i < x->nd; i++) n *= x->dimensions[i];
-  char str[n*8];
+  char *str = (char*)malloc(sizeof(char)*n*8);
 
   // Call the C function
   int64toStr ((unsigned long long*)x->data, str, n);
@@ -249,7 +252,9 @@ static PyObject *opendapcore_int64toStr (PyObject *self, PyObject *args) {
   // Clean up local objects
   Py_DECREF (x);
 
-  return Py_BuildValue("s#", str, n*8);
+  PyObject *ret = Py_BuildValue("s#", str, n*8);
+  free(str);
+  return ret;
 }
 
 static PyObject *opendapcore_float32toStr (PyObject *self, PyObject *args) {
@@ -261,7 +266,7 @@ static PyObject *opendapcore_float32toStr (PyObject *self, PyObject *args) {
   if (x == NULL) return NULL;
   n = 1;
   for (int i = 0; i < x->nd; i++) n *= x->dimensions[i];
-  char str[n*4];
+  char *str = (char*)malloc(sizeof(char)*n*4);
 
   // Call the C function
   float32toStr ((float*)x->data, str, n);
@@ -269,7 +274,9 @@ static PyObject *opendapcore_float32toStr (PyObject *self, PyObject *args) {
   // Clean up local objects
   Py_DECREF (x);
 
-  return Py_BuildValue("s#", str, n*4);
+  PyObject *ret = Py_BuildValue("s#", str, n*4);
+  free(str);
+  return ret;
 }
 
 static PyObject *opendapcore_float64toStr (PyObject *self, PyObject *args) {
@@ -281,7 +288,7 @@ static PyObject *opendapcore_float64toStr (PyObject *self, PyObject *args) {
   if (x == NULL) return NULL;
   n = 1;
   for (int i = 0; i < x->nd; i++) n *= x->dimensions[i];
-  char str[n*8];
+  char *str = (char*)malloc(sizeof(char)*n*8);
 
   // Call the C function
   float64toStr ((double*)x->data, str, n);
@@ -289,7 +296,9 @@ static PyObject *opendapcore_float64toStr (PyObject *self, PyObject *args) {
   // Clean up local objects
   Py_DECREF (x);
 
-  return Py_BuildValue("s#", str, n*8);
+  PyObject *ret = Py_BuildValue("s#", str, n*8);
+  free(str);
+  return ret;
 }
 
 

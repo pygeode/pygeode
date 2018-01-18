@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 /*************************************
  generic helper functions for Pygeode
@@ -30,8 +31,8 @@ int msort (int na, double *a, int *a_ind, int offset) {
   msort (m2, a+m1, a_ind+m1, offset+m1);
 
   // Make a temporary array to store the sorted indices
-  double s[na];
-  int s_ind[na];
+  double *s = (double*)malloc(sizeof(double)*na);
+  int *s_ind = (int*)malloc(sizeof(int)*na);
 
   // Merge the two sorted subarrays together into a single sorted array
   int i = 0;
@@ -58,6 +59,8 @@ int msort (int na, double *a, int *a_ind, int offset) {
     a_ind[k] = s_ind[k];
   }
 
+  free(s);
+  free(s_ind);
   return 0;
 }
 
@@ -79,9 +82,10 @@ int sort (int na, double *a, int *a_ind) {
   }
   if (rsorted == 1) {
     for (int k = 0; k < na; k++) a_ind[k] = na-k-1;
-    double a_copy[na];
+    double *a_copy = (double*)malloc(sizeof(double)*na);
     for (int k = 0; k < na; k++) a_copy[k] = a[na-k-1];
     memcpy (a, a_copy, na*sizeof(double));
+    free (a_copy);
     return 0;
   }
 
@@ -99,8 +103,13 @@ int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices, double
 //  const double rtol=1e-05;
 //  double atol=1e-08;
 
-  double a[na], b[nb];
-  int a_ind[na], b_ind[nb];
+  double *a, *b;
+  int *a_ind, *b_ind;
+
+  a = (double*)malloc(na*sizeof(double));
+  b = (double*)malloc(nb*sizeof(double));
+  a_ind = (int*)malloc(na*sizeof(int));
+  b_ind = (int*)malloc(nb*sizeof(int));
 
   //printf("#A: %d, #B %d\n", na, nb);
   // Work with a copy of the arrays (so we can sort them)
@@ -115,8 +124,10 @@ int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices, double
   for (int k = 0; k < nb; k++) indices[k] = -1;
 
   // Early termination for empty a array.
-  if (na == 0) return 0;
-
+  if (na == 0) {
+    free(a); free(b); free(a_ind); free(b_ind);
+    return 0;
+  }
   int ai = 0;
   for (int bi = 0; bi < nb; bi++) {
     double B = b[bi];
@@ -134,6 +145,7 @@ int map_to (int na, double *a_orig, int nb, double *b_orig, int *indices, double
   }
 
 
+  free(a); free(b); free(a_ind); free(b_ind);
   return 0;
 }
 
