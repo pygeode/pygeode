@@ -1,4 +1,4 @@
-1.1.1 - UNRELEASED
+1.1.1 - 2018/01/19
   - Fixed some padding logic in showgrid.
   - Corrected bug that was happening when the inx coordinate variable was
     provided with more than one axis but not as many axes as the data.
