@@ -424,8 +424,8 @@ class View:
             The only guarantee is that the pieces will be contiguous.  If the input
             view is already contiguous, then the slice will be over the *whole* view.'''
     #TODO: use itertools.product when everyone has python >= 2.6
-    #    from itertools import product
-    from pygeode.tools import product
+    from itertools import product
+    #from pygeode.tools import product
     outslices = [contiguate(e) for e in self.integer_indices]
     inslices = [[simplify(ind[osl]) for osl in outsl] for ind,outsl in zip(self.integer_indices, outslices)]
     for outsl, insl in zip(product(*outslices), product(*inslices)):
@@ -441,8 +441,8 @@ class View:
     '''Loop over smaller pieces of the view that fit in memory'''
     from pygeode import MAX_ARRAY_SIZE
     #TODO: use itertools.product when everyone has python >= 2.6
-    #from itertools import product
-    from pygeode.tools import product
+    from itertools import product
+    #from pygeode.tools import product
     # Determine the largest chunk that can be loaded, given the size constraint
     maxsize = MAX_ARRAY_SIZE
  
@@ -476,8 +476,8 @@ class View:
 
     from pygeode import MAX_ARRAY_SIZE
 #TODO: use itertools.product when everyone has python >= 2.6
-#    from itertools import product
-    from pygeode.tools import product
+    from itertools import product
+    #from pygeode.tools import product
     from warnings import warn
     # Determine the largest chunk that can be loaded, given the size constraint
     maxsize = MAX_ARRAY_SIZE

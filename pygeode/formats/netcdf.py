@@ -53,12 +53,12 @@ def get_attributes (fileid, varid):
   # Global attributes?
   if (varid < 0):
     ret = lib.nc_inq_natts(fileid, byref(natts))
-    assert ret == 0
+    assert ret == 0, lib.nc_strerror(ret)
 
   # Variable attributes?
   else:
     ret = lib.nc_inq_varnatts (fileid, varid, byref(natts))
-    assert ret == 0
+    assert ret == 0, lib.nc_strerror(ret)
 
   natts = natts.value
 
@@ -71,19 +71,19 @@ def get_attributes (fileid, varid):
   # Loop over all attributes
   for n in range(natts):
     ret = lib.nc_inq_attname(fileid, varid, n, name);
-    assert ret == 0
+    assert ret == 0, lib.nc_strerror(ret)
     ret = lib.nc_inq_att (fileid, varid, name, byref(vtype), byref(size))
-    assert ret == 0
+    assert ret == 0, lib.nc_strerror(ret)
     # String?
     if vtype.value == 2:
       valstr = create_string_buffer(size.value)
       ret = get_att_f[vtype.value](fileid, varid, name, valstr);
-      assert ret == 0
+      assert ret == 0, lib.nc_strerror(ret)
       value = valstr.value
     else:
       valnp = empty([size.value], numpy_type[vtype.value])
       ret = get_att_f[vtype.value](fileid, varid, name, point(valnp))
-      assert ret == 0
+      assert ret == 0, lib.nc_strerror(ret)
       value = valnp
       if value.size == 1: value = value[0]
 
@@ -104,7 +104,7 @@ def put_attributes (fileid, varid, atts, version):
     if isinstance(value, str):
       vtype = 2
       ret = put_att_f[vtype](fileid, varid, name, len(value), value)
-      assert ret == 0
+      assert ret == 0, lib.nc_strerror(ret)
     else:
       oldvalue = value
       value = asarray(value)
@@ -125,7 +125,8 @@ def put_attributes (fileid, varid, atts, version):
       dtype = numpy_type[vtype]
       value = asarray(value, dtype=dtype)
       ret = put_att_f[vtype](fileid, varid, name, vtype, len(value), point(value))
-      assert ret == 0
+      assert ret == 0, lib.nc_strerror(ret)
+
 # }}}
 
 # Load some values from the file
@@ -193,7 +194,8 @@ class NCDim (DummyAxis):
     name = create_string_buffer(NC_MAX_NAME+1)
     length = c_long()
     ret = lib.nc_inq_dim (f.fileid, dimid, name, byref(length))
-    assert ret == 0
+    assert ret == 0, lib.nc_strerror(ret)
+
     name = name.value
     length = length.value
     return NCDim (length, name=name)
@@ -353,7 +355,8 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
     # Get number of variables
     nvars = c_int()
     ret = lib.nc_inq_nvars(fileid, byref(nvars))
-    assert ret == 0
+    assert ret == 0, lib.nc_strerror(ret)
+
     nvars = nvars.value
 
     # Construct all the variables, put in a list
@@ -449,101 +452,102 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
     if ret != 0: raise IOError, lib.nc_strerror(ret)
   else: raise Exception
 
-  # Define the dimensions
-  dimids = [None] * len(axes)
-  for i,a in enumerate(axes):
-    dimids[i] = c_int()
-    if unlimited == a.name:
-      ret = lib.nc_def_dim (fileid, a.name, c_long(0), byref(dimids[i]))
-    else:
-      ret = lib.nc_def_dim (fileid, a.name, c_long(len(a)), byref(dimids[i]))
-    assert ret == 0, lib.nc_strerror(ret)
-
-  # Define the variables (including axes)
-  chunks = [None] * len(vars)
-  varids = [None] * len(vars)
-  for i, var in enumerate(vars):
-    t = nc_type[version][var.dtype.name]
-    # Generate the array of dimension ids for this var
-    d = [dimids[list(axes).index(a)] for a in var.axes]
-    # Make it C-compatible
-    d = (c_int * var.naxes)(*d)
-    varids[i] = c_int()
-    ret = lib.nc_def_var (fileid, var.name, t, var.naxes, d, byref(varids[i]))
-    assert ret == 0, lib.nc_strerror(ret)
-    # Compress the data? (only works for netcdf4 or (higher?))
-    if compress:
-      ret = lib.nc_def_var_deflate (fileid, varids[i], 1, 1, 2)
+  try:
+    # Define the dimensions
+    dimids = [None] * len(axes)
+    for i,a in enumerate(axes):
+      dimids[i] = c_int()
+      if unlimited == a.name:
+        ret = lib.nc_def_dim (fileid, a.name, c_long(0), byref(dimids[i]))
+      else:
+        ret = lib.nc_def_dim (fileid, a.name, c_long(len(a)), byref(dimids[i]))
       assert ret == 0, lib.nc_strerror(ret)
 
-  # Write the attributes
+    # Define the variables (including axes)
+    chunks = [None] * len(vars)
+    varids = [None] * len(vars)
+    for i, var in enumerate(vars):
+      t = nc_type[version][var.dtype.name]
+      # Generate the array of dimension ids for this var
+      d = [dimids[list(axes).index(a)] for a in var.axes]
+      # Make it C-compatible
+      d = (c_int * var.naxes)(*d)
+      varids[i] = c_int()
+      ret = lib.nc_def_var (fileid, var.name, t, var.naxes, d, byref(varids[i]))
+      assert ret == 0, lib.nc_strerror(ret)
+      # Compress the data? (only works for netcdf4 or (higher?))
+      if compress:
+        ret = lib.nc_def_var_deflate (fileid, varids[i], 1, 1, 2)
+        assert ret == 0, lib.nc_strerror(ret)
 
-  # global attributes
-  put_attributes (fileid, -1, dataset.atts, version)
+    # Write the attributes
 
-  # variable attributes
-  for i, var in enumerate(vars):
-    # modify axes to be netcdf friendly (CF-compliant, etc.)
-    put_attributes (fileid, varids[i], var.atts, version)
+    # global attributes
+    put_attributes (fileid, -1, dataset.atts, version)
 
-  # Don't pre-fill the file
-  oldmode = c_int()
-  ret = lib.nc_set_fill (fileid, 256, byref(oldmode))
-  assert ret == 0, "Can't set fill mode: %s (error %d)" % (lib.nc_strerror(ret), ret) 
-  # Finished defining the variables, about to start writing the values
-  ret = lib.nc_enddef (fileid)
-  assert ret == 0, "Error leaving define mode: %s (error %d)" % (lib.nc_strerror(ret), ret)
+    # variable attributes
+    for i, var in enumerate(vars):
+      # modify axes to be netcdf friendly (CF-compliant, etc.)
+      put_attributes (fileid, varids[i], var.atts, version)
 
-  # Relative progress of each variable
-  sizes = [v.size for v in vars]
-  prog = np.cumsum([0.]+sizes) / np.sum(sizes) * 100
+    # Don't pre-fill the file
+    oldmode = c_int()
+    ret = lib.nc_set_fill (fileid, 256, byref(oldmode))
+    assert ret == 0, "Can't set fill mode: %s (error %d)" % (lib.nc_strerror(ret), ret)
+    # Finished defining the variables, about to start writing the values
+    ret = lib.nc_enddef (fileid)
+    assert ret == 0, "Error leaving define mode: %s (error %d)" % (lib.nc_strerror(ret), ret)
 
-#  print "Saving '%s':"%filename
-  pbar = PBar(message="Saving '%s':"%filename)
-#  pbar = FakePBar()
-  # Write the data
-  for i, var in enumerate(vars):
-    t = nc_type[version][var.dtype.name]
-    dtype = numpy_type[t]
+    # Relative progress of each variable
+    sizes = [v.size for v in vars]
+    prog = np.cumsum([0.]+sizes) / np.sum(sizes) * 100
 
-#    print 'writing', var.name
+  #  print "Saving '%s':"%filename
+    pbar = PBar(message="Saving '%s':"%filename)
+  #  pbar = FakePBar()
+    # Write the data
+    for i, var in enumerate(vars):
+      t = nc_type[version][var.dtype.name]
+      dtype = numpy_type[t]
 
-    # number of actual variables (non-axes) for determining our progress
-    N = len([v for v in vars if not isinstance(v,Axis)])
-    varpbar = pbar.subset(prog[i], prog[i+1])
+  #    print 'writing', var.name
 
-    views = list(View(var.axes).loop_mem())
-    for j,v in enumerate(views):
+      # number of actual variables (non-axes) for determining our progress
+      N = len([v for v in vars if not isinstance(v,Axis)])
+      varpbar = pbar.subset(prog[i], prog[i+1])
 
-      vpbar = varpbar.part(j, len(views))
-#      print '???', repr(str(v))
+      views = list(View(var.axes).loop_mem())
+      for j,v in enumerate(views):
 
-      # Should always be slices (since we're looping over whole thing contiguously?)
-      for sl in v.slices: assert isinstance(sl, slice)
-      for sl in v.slices: assert sl.step in (1,None)
+        vpbar = varpbar.part(j, len(views))
+  #      print '???', repr(str(v))
 
-      start = [sl.start for sl in v.slices]
-      count = [sl.stop - sl.start for sl in v.slices]
+        # Should always be slices (since we're looping over whole thing contiguously?)
+        for sl in v.slices: assert isinstance(sl, slice)
+        for sl in v.slices: assert sl.step in (1,None)
 
-      start = (c_long*var.naxes)(*start)
-      count = (c_long*var.naxes)(*count)
+        start = [sl.start for sl in v.slices]
+        count = [sl.stop - sl.start for sl in v.slices]
 
-      if isinstance(var, Axis):
-        assert len(start) == len(count) == 1
-        data = var.values
-        data = data[start[0]:start[0]+count[0]] # the above gives us the *whole* axis,
-                                                # but under extreme conditions we may be looping over smaller pieces
-        vpbar.update(100)
-      else: data = v.get(var, pbar=vpbar)
+        start = (c_long*var.naxes)(*start)
+        count = (c_long*var.naxes)(*count)
 
-      # Ensure the data is stored contiguously in memory
-      data = np.ascontiguousarray(data, dtype=dtype)
-      ret = chunkf[t](fileid, varids[i], start, count, point(data))
-      assert ret == 0, "Error writing var '%s' to netcdf: %s (error %d)" % (var.name, lib.nc_strerror(ret), ret)
+        if isinstance(var, Axis):
+          assert len(start) == len(count) == 1
+          data = var.values
+          data = data[start[0]:start[0]+count[0]] # the above gives us the *whole* axis,
+                                                  # but under extreme conditions we may be looping over smaller pieces
+          vpbar.update(100)
+        else: data = v.get(var, pbar=vpbar)
 
+        # Ensure the data is stored contiguously in memory
+        data = np.ascontiguousarray(data, dtype=dtype)
+        ret = chunkf[t](fileid, varids[i], start, count, point(data))
+        assert ret == 0, "Error writing var '%s' to netcdf: %s (error %d)" % (var.name, lib.nc_strerror(ret), ret)
 
-  # Finished
-  lib.nc_close(fileid)
+  finally:
+    # Finished
+    lib.nc_close(fileid)
 
 #  # Return a function stub for reloading the saved data
 #  from pygeode.var import Var

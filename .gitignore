@@ -3,6 +3,7 @@
 *.dll
 tests/*.nc
 tests/issues/*.nc
+tests/issues/*.data
 build/
 dist/
 pygeode/plugins/
