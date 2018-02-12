@@ -902,6 +902,18 @@ from pygeode.varoperations import squeeze, extend, transpose, sorted, replace_ax
 class_hooks += filter(None,[smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type])
 del smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
 
+# Climatology operators
+from pygeode import climat
+for n in climat.__all__:
+  c = getattr(climat,n)
+  def do_wrapper (c=c):
+    def f (*args, **kwargs):
+      return c(*args, **kwargs)
+    f.__name__ = n
+    return f
+  class_hooks.append(do_wrapper())
+del climat, n, c
+
 
 # Apply the global hooks
 for f in global_hooks:
