@@ -714,8 +714,10 @@ class Var(object):
        259.81373805]]
     """
     from pygeode.view import View
+    import numpy as np
     var = self.__call__(**kwargs)
-    return View(var.axes).get(var,pbar=pbar)
+    data = View(var.axes).get(var,pbar=pbar)
+    return np.array(data,copy=True)
   # }}}
 
   def getweights (self, iaxes = None):
