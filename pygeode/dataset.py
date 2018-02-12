@@ -573,6 +573,34 @@ class Dataset(object):
     Var.__call__
     '''
     return self.map ('__call__', **kwargs)
+
+  def hasaxis (self, iaxis):
+    '''
+    Checks if the specified axis exists in the dataset.
+
+    See Also
+    --------
+    Var.hasaxis
+    '''
+    from pygeode.tools import whichaxis
+    try:
+      i = whichaxis(self.axes,iaxis)
+      return True
+    except KeyError:
+      return False
+
+  def getaxis (self, iaxis):
+    '''
+    Get an axis from the dataset.
+
+    See Also
+    --------
+    Var.getaxis
+    '''
+    from pygeode.tools import whichaxis
+    i = whichaxis(self.axes,iaxis)
+    return self.axes[i]
+
 # }}}
 
 # Wrap a variable (or a list of variables) into a dataset
