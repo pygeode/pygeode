@@ -717,7 +717,9 @@ class Var(object):
     import numpy as np
     var = self.__call__(**kwargs)
     data = View(var.axes).get(var,pbar=pbar)
-    return np.array(data,copy=True)
+    if isinstance(data,np.ndarray):
+      data = np.array(data,copy=True)
+    return data
   # }}}
 
   def getweights (self, iaxes = None):
