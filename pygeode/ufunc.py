@@ -2,7 +2,7 @@
 # This is essentially a wrapper to apply numpy universal functions (ufunc)
 # to PyGeode variables.
 
-from var import Var
+from .var import Var
 class UfuncVar (Var):
 # {{{
   op = None
@@ -15,7 +15,7 @@ class UfuncVar (Var):
     from pygeode.var import Var
     import numpy as np
     for arg in args:
-      if not isinstance(arg,(int,long,float,complex,np.number,Var)):
+      if not isinstance(arg,(int,float,complex,np.number,Var)):
         return NotImplemented
     return object.__new__(self)
 # }}}
@@ -38,7 +38,7 @@ class UfuncVar (Var):
 
 #    dtype = common_dtype(args)
     # create some dummy scalar args to test the dtype
-    dummy_dtypes = ['int64' if isinstance(a,(int, long)) else 'float64' if isinstance(a,float) else 'complex128' if isinstance(a,complex) else a.dtype for a in args]
+    dummy_dtypes = ['int64' if isinstance(a,int) else 'float64' if isinstance(a,float) else 'complex128' if isinstance(a,complex) else a.dtype for a in args]
     dummy_args = [np.array(1,dtype=d) for d in dummy_dtypes]
     dtype = self.op(*dummy_args).dtype
 

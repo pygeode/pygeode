@@ -30,7 +30,7 @@ def test_io():
     assert len(axis2) == 1, "can't find axis '%s'"%axis.name
     axis2 = axis2[0]
 #    assert axis2.atts == axis.atts, "mismatched metadata.  Input: %s, Output %s"%(axis.atts,axis2.atts)
-    for attname in axis.atts.keys():
+    for attname in list(axis.atts.keys()):
       assert attname in axis2.atts, "attribute '%s' not found"%attname
       assert axis.atts[attname] == axis2.atts[attname], "attribute '%s' changed from '%s' to '%s'"%(attname, axis.atts[attname], axis2.atts[attname])
     assert type(axis2) == type(axis), "mismatched axis types.  Input: %s, Output %s"%(type(axis), type(axis2))

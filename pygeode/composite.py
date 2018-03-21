@@ -136,7 +136,7 @@ def composite (var, **kwargs):
   for i, ax in enumerate(var.axes):
     try:
       sl = ax.get_slice(kwargs.copy())
-    except Exception, e:
+    except Exception as e:
       continue
     iaxis = i
     ievents = expand(sl, len(ax))
@@ -247,16 +247,16 @@ def clim_detrend(var, yrlen, itime = -1, sig=False):
 # {{{
   ''' clim_detrend() - returns detrended time series with a daily trend.'''
   from pygeode.timeaxis import Time
-  import stats
+  from . import stats
   from numpy import arange
   if itime == -1: itime = var.whichaxis(Time) 
   tlen = var.shape[itime]
   
-  vary = composite(var, itime, range(0, tlen, yrlen), yrlen)
+  vary = composite(var, itime, list(range(0, tlen, yrlen)), yrlen)
   yrs = vary.axes[itime]
   yrs.values=arange(len(yrs)).astype(yrs.dtype)
 
-  print 'Computing regression'
+  print('Computing regression')
   from pygeode.progress import PBar
   m, b, p = stats.regress(yrs, vary, pbar=PBar())
   varz = flatten(vary - (m*yrs + b), itime + 1)
@@ -282,8 +282,8 @@ def clim_anoms(var, yrlen, itime = -1):
         returns climatology and anomalies of given variable.'''
   from pygeode.timeaxis import Time
   if itime == -1: itime = var.whichaxis(Time) 
-  tlen = (var.shape[itime] / yrlen) * yrlen
-  vary = composite(var, itime, range(0, tlen, yrlen), yrlen)
+  tlen = (var.shape[itime] // yrlen) * yrlen
+  vary = composite(var, itime, list(range(0, tlen, yrlen)), yrlen)
   varc = vary.mean(itime).load()
   varz = flatten(vary - varc, itime + 1)
   varz.axes = var.axes
@@ -318,7 +318,7 @@ def time_ave(var, type, itime = -1):
   else:
     raise NotImplemented('Unrecognized type')
 
-  vary = composite(var, itime, range(0, tlen, ilen), ilen)
+  vary = composite(var, itime, list(range(0, tlen, ilen)), ilen)
   varave = vary.mean(itime + 1)
   return varave 
 # }}}
@@ -332,9 +332,9 @@ def test():
   gt = dataset.GT
   gt = composite(gt, [0,10,20,30])
 
-  print gt
+  print(gt)
 
-  from plot import plot
+  from .plot import plot
 
   x1 = gt[1:4,25:30,:,:]
 

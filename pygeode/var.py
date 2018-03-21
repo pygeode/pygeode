@@ -388,7 +388,7 @@ class Var(object):
     squeezes = []
 
     newargs = {}
-    for k, v in kwargs.iteritems():
+    for k, v in kwargs.items():
       # Detect special prefixes.
       if '_' in k and not self.hasaxis(k):
         prefix, ax = k.split('_', 1)
@@ -436,7 +436,7 @@ class Var(object):
   # Include axes names
   def __dir__(self):
 # {{{
-    l = self.__dict__.keys() + dir(self.__class__)
+    l = list(self.__dict__.keys()) + dir(self.__class__)
     return l + [a.name for a in self.axes]
 # }}}
 
@@ -831,14 +831,19 @@ def combine_meta (invars, outvar):
 # Numeric operations
 from numpy import ndarray as nd
 from pygeode.ufunc import wrap_unary, wrap_binary
+from functools import reduce
 Var.__add__  = wrap_binary(nd.__add__,  symbol='+')
 Var.__radd__ = wrap_binary(nd.__radd__, symbol='+')
 Var.__sub__  = wrap_binary(nd.__sub__,  symbol='-')
 Var.__rsub__ = wrap_binary(nd.__rsub__, symbol='-')
 Var.__mul__  = wrap_binary(nd.__mul__,  symbol='*')
 Var.__rmul__ = wrap_binary(nd.__rmul__, symbol='*')
-Var.__div__  = wrap_binary(nd.__div__,  symbol='/')
-Var.__rdiv__ = wrap_binary(nd.__rdiv__, symbol='/')
+if hasattr(nd,'__div__'):  # Python2
+  Var.__div__  = wrap_binary(nd.__div__,  symbol='/')
+  Var.__rdiv__ = wrap_binary(nd.__rdiv__, symbol='/')
+else:  # Python3
+  Var.__truediv__  = wrap_binary(nd.__truediv__,  symbol='/')
+  Var.__rtruediv__ = wrap_binary(nd.__rtruediv__, symbol='/')
 Var.__pow__  = wrap_binary(nd.__pow__,  symbol='**')
 Var.__rpow__ = wrap_binary(nd.__rpow__, symbol='**')
 Var.__mod__  = wrap_binary(nd.__mod__,  symbol='%')
@@ -903,7 +908,7 @@ except ImportError:
   warn ("Can't import the GSL library.  Interpolation is disabled.")
   interpolate = None
 from pygeode.varoperations import squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
-class_hooks += filter(None,[smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type])
+class_hooks += [_f for _f in [smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type] if _f]
 del smooth, deriv, diff, integrate, composite, flatten, fft_smooth, lag, interpolate, squeeze, extend, transpose, sorted, replace_axes, rename, rename_axes, fill, unfill, as_type
 
 # Climatology operators

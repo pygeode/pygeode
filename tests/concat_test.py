@@ -59,7 +59,7 @@ for naxes in (1,2,3):
     for iaxis in range(naxes):
       n = shape[iaxis]
       # Length of first array
-      for n1 in sorted(set([0, 1, 2, n/3, n-1, n])):
+      for n1 in sorted(set([0, 1, 2, n//3, n-1, n])):
         if n1 < 0 or n1 > n: continue
         n2 = n - n1
         shape1 = shape[:iaxis]+(n1,)+shape[iaxis+1:]

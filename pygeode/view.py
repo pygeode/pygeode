@@ -258,10 +258,10 @@ class View:
 
     elif hasattr(var,'getview'):
       # Can we use the progress bar?
-      if 'pbar' in var.getview.func_code.co_varnames:
+      if 'pbar' in var.getview.__code__.co_varnames:
         values = var.getview(unique_view, pbar=pbar)
       else:
-        print 'no pbar in', type(var)
+        print('no pbar in', type(var))
         values = var.getview(unique_view)
 
     elif hasattr(var,'getvalues'):
@@ -273,7 +273,7 @@ class View:
         pbar.update (100./len(loop) * i)
 
     else:
-      raise IOError, "can't determine how to extract values from "+repr(var)
+      raise IOError("can't determine how to extract values from "+repr(var))
 
     pbar.update(100)
 
@@ -448,7 +448,7 @@ class View:
  
     # Get the shape of a single chunk
     indices = []
-    for i in reversed(range(len(self.axes))):
+    for i in reversed(list(range(len(self.axes)))):
       # Number of values along this axis we can get at a time
       N = self.shape[i]  # total length of this axis
       n = min(maxsize,N)  # amount we can fix in a single chunk
@@ -458,7 +458,7 @@ class View:
       # Build the subslices from the last axis to the first
       indices = [ind] + indices
       # Take into account the count along this axis when looking at the faster-varying axes
-      maxsize /= n
+      maxsize //= n
  
     # Loop over all combinations of slices to cover the whole view
     # (take the cartesian product)
@@ -493,10 +493,10 @@ class View:
           warn('Data request involves arrays larger than MAX_ARRAY_SIZE; continuing for now but memory allocation problems may result.')
           maxsize = 1
         else:
-          maxsize /= N
+          maxsize //= N
       others = [i for i in range(len(self.axes)) if i not in preserve]
     else:
-      others = range(len(self.axes))
+      others = list(range(len(self.axes)))
 
     # Build the subslices from the last axis to the first
     for i in reversed(others):
@@ -507,7 +507,7 @@ class View:
       input_indices = self.integer_indices[i]
       indices[i] = [input_indices[j:min(j+n,N)] for j in range(0,N,n)]
       # Take into account the count along this axis when looking at the faster-varying axes
-      maxsize /= n
+      maxsize //= n
 
     # Loop over all combinations of slices to cover the whole view
     # (take the cartesian product)

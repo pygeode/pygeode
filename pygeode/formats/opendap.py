@@ -14,7 +14,7 @@ dap2np = {'byte':'uint8', 'uint16':'uint16', 'int16':'int16',
           'uint32':'uint32', 'int32':'int32', 'float32':'float32', 'float64':'float64',
           'string':'string8'}
 
-supported_type = dict((k,dap2np[v.lower()]) for k,v in np2dap.iteritems())
+supported_type = dict((k,dap2np[v.lower()]) for k,v in np2dap.items())
 
 # Supporting library
 from pygeode.formats import opendapcore as lib
@@ -34,7 +34,7 @@ def get_data_trap_io (view, var):
     indata = view.get(var)
 #  except Exception as e:
 #  except Exception:
-  except Exception, e:
+  except Exception as e:
 #    warn ("Received an exception on %s -- filling with NaN and continuing anyway"%str(var))
     warn ("Received the following Exception:\n%s\n -- filling with NaN and continuing anyway"%e.args[0])
     indata = np.empty (view.shape, var.dtype)
@@ -137,7 +137,7 @@ class DAPHandler:
     import urllib
     import numpy as np
     from warnings import warn
-    from cStringIO import StringIO
+    from io import StringIO
 
     datestr = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
 
@@ -267,7 +267,7 @@ class DAPHandler:
 
     # If no arguments given, then return *everything*
     if len(args) == 0:
-      for varname in dataset.axisdict.keys() + dataset.vardict.keys():
+      for varname in list(dataset.axisdict.keys()) + list(dataset.vardict.keys()):
         add_var (fields, dataset, varname, slices=[], recurse=True)
 
     # Otherwise, have to parse through the arguments, find out what we need.
@@ -283,7 +283,7 @@ class DAPHandler:
         slices = [sl[1:-1] for sl in slices]  # strip out [ and ]
         for i,sl in enumerate(slices):
           try:
-            sl = map(int, sl.split(':'))
+            sl = list(map(int, sl.split(':')))
           except ValueError:
             return self.err("bad slicing syntax", h)
           if len(sl) == 1:  slices[i] = slice(sl[0], sl[0]+1)
@@ -304,7 +304,7 @@ class DAPHandler:
           # Full var requested?
           else:
             add_var (fields, dataset, varname, slices, recurse=True)
-        except Exception, e:
+        except Exception as e:
           return self.err("Error: "+e.args[0], h)
 
 #    return self.err("okay...\n%s"%fields, h)
@@ -316,7 +316,7 @@ class DAPHandler:
       for var in dataset.axes + dataset.vars + [dataset]:
         varname = 'NC_GLOBAL' if var is dataset else var.name
         buf.write("    %s {\n"%varname)
-        for name,value in var.atts.iteritems():
+        for name,value in var.atts.items():
 #          buf.write("        ?? %s = %s\n"%(k,v))
           ##
           # determine the type of the attribute
@@ -448,7 +448,7 @@ class DAP_Dir (Dir):
       self.dir_header (h, relpath)
       h.wfile.write ("<table border=0 cellpadding=5>\n")
       # Sort the file names
-      names = sorted(self.nodes.iterkeys())
+      names = sorted(self.nodes.keys())
       for name in names:
         node = self.nodes[name]
         # directory?
@@ -467,7 +467,7 @@ class DAP_Dir (Dir):
     else:
       assert len(relpath) > 0 and relpath[0] == "/"
       # Map to the first matching one?
-      for name,node in self.nodes.iteritems():
+      for name,node in self.nodes.items():
         if relpath.startswith("/"+name+".dds"): return node.handle (h, relpath, headeronly=headeronly)
         if relpath.startswith("/"+name+".das"): return node.handle (h, relpath, headeronly=headeronly)
         if relpath.startswith("/"+name+".dods"): return node.handle (h, relpath, headeronly=headeronly)
@@ -506,7 +506,7 @@ def serve (path, dataset, port=8080):
     root = DAP_Dir()
     server = MyServer_threaded2(port, root)
     threading.Thread(target=server.serve_forever).start()
-    print "Started an OPeNDAP server listening on port %s"%port
+    print("Started an OPeNDAP server listening on port %s"%port)
     SERVERS.serverdict[port] = server
   else:
     server = SERVERS.serverdict[port]
@@ -528,7 +528,7 @@ def kill (port=8080):
   assert port in SERVERS.serverdict, "no server running on port %s?"%port
   server = SERVERS.serverdict[port]
   server.server_close()
-  print "Killed OPeNDAP server on port", port
+  print("Killed OPeNDAP server on port", port)
   del SERVERS.serverdict[port]
 
 
@@ -578,7 +578,7 @@ def parse_array (s):
   # Return a list of tuples, of the form (daptype, name, dimnames, shape)
 
   daptype = s.next().lower()
-  assert daptype in dap2np.keys(), "unknown type '%s'"%daptype
+  assert daptype in list(dap2np.keys()), "unknown type '%s'"%daptype
 
   name = s.next()
 
@@ -698,13 +698,13 @@ def parse_attributes (s):
 
 def print_dataset(d):
   for (daptype,name,dimnames,shape) in d:
-    print daptype, name,
+    print(daptype, name, end=' ')
     for dimname,size in zip(dimnames,shape):
       if dimname is not None:
-        print "[%s = %i]"%(dimname,size),
+        print("[%s = %i]"%(dimname,size), end=' ')
       else:
-        print "[%i]"%size,
-    print
+        print("[%i]"%size, end=' ')
+    print()
 
 from pygeode.var import Var
 class OpenDAP_Var(Var):
@@ -730,8 +730,8 @@ def load_array (url):
   try:
     i = data.index(lookfor)
   except ValueError:
-    print "unrecognized return values.  raw dump:"
-    print data
+    print("unrecognized return values.  raw dump:")
+    print(data)
     raise
   xdr = data[i+len(lookfor):]
   axis_dataset = parse_dataset(tokenize(data[:i]))

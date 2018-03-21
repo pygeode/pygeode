@@ -389,7 +389,7 @@ def _jointime (years, days):
   # dates to request from the input var
   fields = {}
   fields['year'] = years.reshape(-1,1).repeat(ndays,axis=1).flatten()
-  for fname, farray in days.iteritems():
+  for fname, farray in days.items():
     fields[fname] = farray.reshape(1,-1).repeat(nyears,axis=0).flatten()
 
   # Construct a time axis with this field information

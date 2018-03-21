@@ -108,7 +108,7 @@ class Dir:
 
       self.dir_header (h, relpath)
       # Sort the file names
-      names = sorted(self.nodes.iterkeys())
+      names = sorted(self.nodes.keys())
       for name in names:
         node = self.nodes[name]
         # Check for subdirectories? (append a trailing '/' to make them easier to see)

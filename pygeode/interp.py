@@ -57,7 +57,7 @@ class Interp (Var):
     # We need the interpolation axis to be the fastest-varying axis
     # (For the C code to work properly)
     iaxis = invar.whichaxis(inaxis)
-    order = range(0,iaxis) + range(iaxis+1,invar.naxes) + [iaxis]
+    order = list(range(0,iaxis)) + list(range(iaxis+1,invar.naxes)) + [iaxis]
     invar = invar.transpose (*order)
     del iaxis, order
 
@@ -70,9 +70,9 @@ class Interp (Var):
     for a in inx.axes:
       if not invar.hasaxis(a):
         if invar.hasaxis(a.__class__):
-          raise ValueError, "mismatching '%s' axis between invar and inx"%a.name
+          raise ValueError("mismatching '%s' axis between invar and inx"%a.name)
         else:
-          raise TypeError, "invar does not have '%s' axis specified by inx"%a.name
+          raise TypeError("invar does not have '%s' axis specified by inx"%a.name)
 #    assert all(invar.hasaxis(a) or a is outaxis for a in outx.axes)
     for a in outx.axes:
       if a is outaxis: continue
@@ -133,7 +133,7 @@ class Interp (Var):
           outx_data = np.repeat(outx_data, outdata.shape[i], axis=i)
 
 
-    narrays = indata.size / indata.shape[-1]
+    narrays = indata.size // indata.shape[-1]
     ninx = inx_data.shape[-1]
     noutx = outx_data.shape[-1]
     inx_data = np.ascontiguousarray(inx_data, dtype='float64')
@@ -150,16 +150,16 @@ class Interp (Var):
               self.d_below, self.d_above,
               interp_type, self.omit_nonmonotonic)
     except ValueError as e:
-      i = e.message.find('In array')
+      i = str(e).find('In array')
       if i == -1: raise e
 
       if len(inview.shape) > 1:
-        idx_ar = np.unravel_index(int(e.message[i+9:-1]), inview.shape[:-1])
+        idx_ar = np.unravel_index(int(str(e)[i+9:-1]), inview.shape[:-1])
         loc = ['%s: %s' % (ax.name, ax.formatvalue(ax[j])) for ax, j in zip(inview.subaxes()[:-1], idx_ar)]
         msg = '. Interpolation error at (' + '; '.join(loc) + ').'
       else:
         msg = '.'
-      raise ValueError(e.message + msg)
+      raise ValueError(str(e) + msg)
 
 
     return outdata
@@ -260,7 +260,7 @@ def interpolate(var, inaxis, outaxis, inx=None, outx=None, interp_type='cspline'
   out = Interp(var, inaxis, outaxis, inx, outx, interp_type, d_below, d_above, omit_nonmonotonic)
   # Do we need to un-tranpose the axes back to the original order?
   if transpose is False:
-    out_order = map(type,var.axes)
+    out_order = list(map(type,var.axes))
     out_order[var.whichaxis(inaxis)] = type(outaxis)
     out = out.transpose(*out_order)
   return out

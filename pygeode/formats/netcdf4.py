@@ -58,7 +58,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   with nc.Dataset(filename,"r") as f:
 
     # Construct all the variables, put in a list
-    vars = map(make_var, f.variables.values())
+    vars = list(map(make_var, list(f.variables.values())))
 
     # Construct a dataset from these Vars
     dataset = asdataset(vars)
@@ -69,7 +69,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   # (We could use any values here, since they'll be overridden again later,
   #  but we might as well use something relevant).
   value_override = dict(value_override)  # don't use  the default (static) empty dict
-  for k,v in dimtypes.items():
+  for k,v in list(dimtypes.items()):
     if isinstance(v,Axis):
       value_override[k] = v.values
 

@@ -23,13 +23,13 @@ class Strans(Var):
     F1 = int(round(minfreq*T*dt))
     F2 = int(round(maxfreq*T*dt))
     assert nsamples > 1
-    stride = (F2-F1) / (nsamples-1)
+    stride = (F2-F1) // (nsamples-1)
     if stride == 0: stride = 1
     F = np.arange(F2, F1-1, -stride)[::-1]
 
     if 0 in F:
       from pygeode.progress import PBar
-      print 'Calculating mean'
+      print('Calculating mean')
       # constant s-transform value for n = 0
       self.const = x.mean(Time).get(pbar=True)
     
@@ -84,7 +84,7 @@ class Strans(Var):
           continue
         # create Fourier Transform of Gaussian Window
         M = np.arange(T)
-        M[T/2:] -= T  # T/2 or T/2 + 1??
+        M[T//2:] -= T  # T/2 or T/2 + 1??
         W = np.exp(-2 * (pi*M/F[i])**2 )
 
         # compute S-transform

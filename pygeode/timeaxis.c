@@ -838,8 +838,47 @@ static PyMethodDef TimeaxisMethods[] = {
   {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC inittimeaxiscore(void) {
-  (void) Py_InitModule("timeaxiscore", TimeaxisMethods);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "timeaxiscore",      /* m_name */
+        NULL,                /* m_doc */
+        -1,                  /* m_size */
+        TimeaxisMethods,     /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+#endif
+
+static PyObject *
+moduleinit(void)
+{
+    PyObject *m;
+
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule("timeaxiscore", TimeaxisMethods);
+#endif
+
+    import_array();
+
+    return m;
 }
+
+#if PY_MAJOR_VERSION < 3
+    PyMODINIT_FUNC
+    inittimeaxiscore(void)
+    {
+        moduleinit();
+    }
+#else
+    PyMODINIT_FUNC
+    PyInit_timeaxiscore(void)
+    {
+        return moduleinit();
+    }
+#endif
 

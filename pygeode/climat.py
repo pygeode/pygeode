@@ -20,7 +20,7 @@ from pygeode.var import Var
 def loopover(varlist, view, pbar):
   from pygeode.timeaxis import Time
   import numpy as np
-  from itertools import izip
+  
 
   if not hasattr(varlist,'__len__'): varlist = [varlist]
   nvars = len(varlist)
@@ -47,7 +47,7 @@ def loopover(varlist, view, pbar):
   assert inview.index(Time) == climview.index(Time)
 
   # Break the view up into memory-friendly chunks
-  loop = zip(inview.loop_mem(), climview.loop_mem())
+  loop = list(zip(inview.loop_mem(), climview.loop_mem()))
   # Relative sizes of each var - so we can more accurately divide progress
   sizes = [var.size for var in varlist]
   prog = np.cumsum([0.]+sizes) / np.sum(sizes) * 100

@@ -71,7 +71,7 @@ def varTest(testname='', var=None, name = None, serialize = False,\
       if serialize:  
          # Write variable to disk, read it back in, test for equality
          def test_serialize(self):
-            for k, f in formats.iteritems():
+            for k, f in formats.items():
                fname = '%s.%s' % (testname, k)
 
                f.save(fname, [self.var])    

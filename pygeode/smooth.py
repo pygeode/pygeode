@@ -55,7 +55,7 @@ class SmoothVar (Var):
     st, sp = np.min(ind), np.max(ind)
 
     # Extend view along smoothing axis; use data past slice if present, otherwise mirror data
-    loffs = self.klen / 2
+    loffs = self.klen // 2
     roffs = self.klen - loffs
     
     # Construct slices for mirroring pre-convolved data

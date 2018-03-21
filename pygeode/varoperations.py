@@ -17,11 +17,11 @@ class SqueezedVar(Var):
 
     # Slice the var along some axes (passed by keyword argument)?
     if len(kwargs) > 0:
-      for k,v in kwargs.iteritems():
+      for k,v in kwargs.items():
         assert var.hasaxis(k), "unknown axis '%s'"%k
         a = var.whichaxis(k)
         if a not in iaxes: iaxes.append(a)
-        assert isinstance(v,(int,long,float)), "expected a numerical value for keyword '%s' - received %s instead"%(k,type(v))
+        assert isinstance(v,(int,float)), "expected a numerical value for keyword '%s' - received %s instead"%(k,type(v))
       var = var(**kwargs)  # Do the slicing first, before doing this wrapper
 
     self.var = var
@@ -175,7 +175,7 @@ def transpose (self, *axes):
   alist = alist + [a for a in range(var.naxes) if a not in alist]
   #TODO: allow an argument of -1/None to indicate where to put the "other" axes?
   # No transpose necessary?
-  if alist == range(var.naxes): return var
+  if alist == list(range(var.naxes)): return var
   return TransposedVar (var, alist)
 
 # Sort the axis values of a variable
@@ -185,7 +185,7 @@ class SortedVar(Var):
     self.var = var
     outaxes = list(var.axes)
 
-    for iaxis, o in order.iteritems():
+    for iaxis, o in order.items():
       reverse = {1:False, 0:None, -1:True}[o]
       outaxes[iaxis] = var.axes[iaxis].sorted(reverse=reverse)
 
@@ -259,7 +259,7 @@ def sorted (self, *iaxes, **kwargs):
     iaxis = self.whichaxis(iaxis)  # Get axis index
     order[iaxis] = 0 # Default order assumed for positional arguments
   # Do the same thing for keyword arguments, but use the order given
-  for iaxis,o in kwargs.iteritems():
+  for iaxis,o in kwargs.items():
     iaxis = self.whichaxis(iaxis)  # Get axis index
     assert o in (1,0,-1), "invalid order: %s"%o
     order[iaxis] = o
@@ -282,7 +282,7 @@ class Replace_axes (Var):
     else:
       assert len(newaxes) == var.naxes, "wrong number of axes provided"
 
-    for a,newa in axisdict.iteritems():
+    for a,newa in axisdict.items():
       if not var.hasaxis(a) and ignore_mismatch: continue
       i = var.whichaxis(a)
       olda = var.axes[i]
@@ -470,10 +470,10 @@ def rename_axes (self, ignore_mismatch=False, axisdict={}, **namemap):
   """
   var = self
   namemap = dict(axisdict, **namemap)
-  for n1 in namemap.iterkeys():
+  for n1 in namemap.keys():
     if ignore_mismatch: continue
     assert var.hasaxis(n1), "'%s' not an axis of %s"%(n1,var)
-  axisdict = dict([n1,var.getaxis(n1).rename(n2)] for n1,n2 in namemap.iteritems() if var.hasaxis(n1))
+  axisdict = dict([n1,var.getaxis(n1).rename(n2)] for n1,n2 in namemap.items() if var.hasaxis(n1))
   return var.replace_axes(keep_old_name=False, **axisdict)
 
 

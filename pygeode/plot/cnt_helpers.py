@@ -5,7 +5,7 @@ from numpy import ma
 import matplotlib.cbook as cbook
 from matplotlib.colors import Normalize
 from pylab import cm as pcm
-import cm
+from . import cm
 
 class LogNorm2Sided(Normalize):
  # {{{

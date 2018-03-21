@@ -103,7 +103,7 @@ class Axis(Var):
     # If a single integer given, expand to an integer range
     #TODO: get rid of this?  if you want to use integer indices, then make an appropriate 'Index' axis subclass?
     if isinstance(values,int):
-      values = range(values)
+      values = list(range(values))
 
     values = np.asarray(values)
 
@@ -130,7 +130,7 @@ class Axis(Var):
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
     auxarrays = {}; auxatts = {}
-    for key, val in kwargs.iteritems():
+    for key, val in kwargs.items():
       if isinstance(val,Var): val = val.get()
       if isinstance(val,(list,tuple,np.ndarray)):
         val = np.asarray(val)
@@ -245,7 +245,7 @@ class Axis(Var):
 
     # Check auxiliary attributes
     if set(self.auxatts.keys()) != set(other.auxatts.keys()): return False
-    for fname in self.auxatts.iterkeys():
+    for fname in self.auxatts.keys():
       if self.auxatts[fname] != other.auxatts[fname]: return False
 
     # Check any associated arrays
@@ -254,7 +254,7 @@ class Axis(Var):
       return False
 
     # Check values of associated arrays
-    for fname in self.auxarrays.iterkeys():
+    for fname in self.auxarrays.keys():
       if not allclose(self.auxarrays[fname], other.auxarrays[fname]):
 #        print 'false by mismatched auxarray "%s":'%fname
         return False
@@ -419,11 +419,11 @@ class Axis(Var):
     aux = {}
 
     # Keep auxiliary attributes
-    for key,val in self.auxatts.iteritems():
+    for key,val in self.auxatts.items():
       aux[key] = val
 
     # Slice auxiliary arrays
-    for key,val in self.auxarrays.iteritems():
+    for key,val in self.auxarrays.items():
       aux[key] = np.array(val[slices], ndmin=1)
 
     axis = type(self)(values, name=self.name, atts=self.atts, **aux)
@@ -449,7 +449,7 @@ class Axis(Var):
     keep = np.ones(n,bool)
     matched = []
 
-    for k, v in kwargs.iteritems():
+    for k, v in kwargs.items():
        # Split off prefix if present
       if '_' in k and not self.has_alias(k):
         prefix, ax = k.split('_', 1)
@@ -617,8 +617,8 @@ class Axis(Var):
       An instance of the same axis class with the new name.
     """
     aux = {}
-    for k,v in self.auxatts.iteritems(): aux[k] = v
-    for k,v in self.auxarrays.iteritems(): aux[k] = v
+    for k,v in self.auxatts.items(): aux[k] = v
+    for k,v in self.auxarrays.items(): aux[k] = v
 
     return type(self)(values=self.values, name=name, atts=self.atts, **aux)
 # }}}
@@ -670,7 +670,7 @@ class Axis(Var):
     # Check that all pieces have the same auxiliary attributes, and propogate them to the output.
     auxkeys = set(axes[0].auxatts.keys())
     for a in axes[1:]:
-      auxkeys = auxkeys.intersection(a.auxatts.keys())
+      auxkeys = auxkeys.intersection(list(a.auxatts.keys()))
     for k in auxkeys:
       vals = [a.auxatts[k] for a in axes]
       v1 = vals[0]
@@ -683,7 +683,7 @@ class Axis(Var):
     # Find and concatenate auxilliary arrays common to all axes being concatenated
     auxkeys = set(axes[0].auxarrays.keys())
     for a in axes[1:]:      # set.intersection takes multiple arguments only in python 2.6 and later..
-      auxkeys = auxkeys.intersection(a.auxarrays.keys())
+      auxkeys = auxkeys.intersection(list(a.auxarrays.keys()))
 
     for k in auxkeys:
       aux[k] = concatenate([a.auxarrays[k] for a in axes])
@@ -1118,7 +1118,7 @@ class Freq(Axis):
 class Index(Axis):
 # {{{
   def __init__ (self, n, *args, **kwargs):
-    values = n if hasattr(n,'__len__') else range(n)
+    values = n if hasattr(n,'__len__') else list(range(n))
     Axis.__init__(self, values, *args, **kwargs)
 # }}}
 
@@ -1132,7 +1132,7 @@ class NonCoordinateAxis(Axis):
   def __init__ (self, *args, **kwargs):
 # {{{
     import numpy as np
-    lengths = [len(kw) for kw in kwargs.values() if isinstance(kw,(list,tuple,np.ndarray))]
+    lengths = [len(kw) for kw in list(kwargs.values()) if isinstance(kw,(list,tuple,np.ndarray))]
     if len(lengths) == 0:
       raise ValueError("Unable to determine a length for the non-coordinate axis.")
     N = lengths[0]
@@ -1150,7 +1150,7 @@ class NonCoordinateAxis(Axis):
     # For simplicity, expect them to be the same type of axis.
     if type(self) != type(other): return False
     if set(self.auxarrays.keys()) != set(other.auxarrays.keys()): return False
-    for k in self.auxarrays.keys():
+    for k in list(self.auxarrays.keys()):
       if list(self.auxarrays[k]) != list(other.auxarrays[k]): return False
     return True
 # }}}
@@ -1171,14 +1171,14 @@ class NonCoordinateAxis(Axis):
   def formatvalue(self, value, fmt=None, units=False, unitstr=None):
 # {{{
     # Check if the value is in range.
-    if value not in range(len(self)):
+    if value not in list(range(len(self))):
       return "?%s?"%value
     # Check if we have a special aux array with the same name as the axis.
     # In this case, use those values as the string.
     if self._name in self.auxarrays:
       return str(self.auxarrays[self._name][value])
     # Otherwise, return all the key/value pairs for all aux arrays.
-    out = [name+"="+str(array[value]) for name,array in self.auxarrays.iteritems()]
+    out = [name+"="+str(array[value]) for name,array in self.auxarrays.items()]
     out = ",".join(out)
     return "("+out+")"
 # }}}
@@ -1194,8 +1194,8 @@ class NonCoordinateAxis(Axis):
     # Get keys to use for comparing aux arrays
     keys = list(set(self.auxarrays.keys()) & set(other.auxarrays.keys()))
     if len(keys) == 0: return None
-    values = zip(*[self.auxarrays[k] for k in keys])
-    other_values = zip(*[other.auxarrays[k] for k in keys])
+    values = list(zip(*[self.auxarrays[k] for k in keys]))
+    other_values = list(zip(*[other.auxarrays[k] for k in keys]))
     #TODO: Speed this up? (move this to tools.c?)
     values_set = set(values)
     indices = []

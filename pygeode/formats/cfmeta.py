@@ -102,7 +102,8 @@ def decode_string_var (var):
   name = var.name
   if name.endswith('_name'):
     name = name[:-5]
-  data = [''.join(s) for s in var.get()]
+  data = [''.encode('ascii').join(s) for s in var.get()]
+  data = [str(s.decode()) for s in data]
   return Var(axes=var.axes[:-1], values=data, name=name)
 
 
@@ -144,7 +145,7 @@ def encode_cf (dataset):
   for v in varlist: assert v.name not in axisdict, "'%s' refers to both a variable and an axis"%v.name
 
   # Metadata based on axis classes
-  for name,a in axisdict.items():
+  for name,a in list(axisdict.items()):
     atts = a.atts.copy()
     plotatts = a.plotatts.copy() # passed on to Axis constructor
     
@@ -214,10 +215,10 @@ def encode_cf (dataset):
 
       # Encode other auxarrays as generic "ancillary" arrays.
       ancillary_variables = []
-      for auxname in a.auxarrays.keys():
+      for auxname in list(a.auxarrays.keys()):
         if auxname in coordinates: continue  # Handled above
         var = a.auxasvar(auxname)
-        if var.dtype.name.startswith('string'):
+        if var.dtype.name.startswith('str'):
           var = encode_string_var(var)
         # Some extra CF encoding for the station name, to use it as the unique identifier.
         if auxname == 'station':
@@ -252,18 +253,18 @@ def encode_cf (dataset):
       continue
 
     # Encode custom axes from add-ons
-    for n,c in custom_axes.items():
+    for n,c in list(custom_axes.items()):
       if isinstance(a,c):
         atts['standard_name'] = n
 
     # Add associated arrays as new variables
     auxarrays = a.auxarrays
-    for aux,values in auxarrays.iteritems():
+    for aux,values in auxarrays.items():
       auxname = name+'_'+aux
       assert not any(v.name == auxname for v in varlist), "already have a variable named %s"%auxname
       varlist.append( Var([a], values=values, name=auxname) )
     if len(auxarrays) > 0:
-      atts['ancillary_variables'] = ' '.join(name+'_'+aux for aux in auxarrays.iterkeys())
+      atts['ancillary_variables'] = ' '.join(name+'_'+aux for aux in auxarrays.keys())
 
     # Create new, generic axes with the desired attributes
     # (Replaces the existing entry in the dictionary)
@@ -276,7 +277,7 @@ def encode_cf (dataset):
       #TODO: use Var.replace_axes instead?
       varlist[i] = var_newaxes(oldvar, [axisdict.get(a.name,a) for a in oldvar.axes], atts=oldvar.atts, plotatts=oldvar.plotatts)
     except KeyError:
-      print '??', a.name, axisdict
+      print('??', a.name, axisdict)
       raise
 
   dataset = Dataset(varlist, atts=global_atts)
@@ -301,12 +302,12 @@ def decode_cf (dataset, ignore=[]):
 
   # Decode string variables
   for i,var in enumerate(varlist):
-    if var.name.endswith("_name") and var.dtype.name == "string8" and var.axes[-1].name.endswith("_strlen"):
+    if var.name.endswith("_name") and var.dtype.name in ("string8","bytes8") and var.axes[-1].name.endswith("_strlen"):
       varlist[i] = decode_string_var(var)
 
   # data for auxiliary arrays
   auxdict = {}
-  for name in axisdict.iterkeys(): auxdict[name] = {}
+  for name in axisdict.keys(): auxdict[name] = {}
 
   # fill values / scale / offset (if applicable)
   fillvalues = {}
@@ -318,7 +319,7 @@ def decode_cf (dataset, ignore=[]):
     scales[name] = None
     offsets[name] = None
 
-  for name,a in axisdict.items():
+  for name,a in list(axisdict.items()):
 
     # Skip over this axis?
     if name in ignore: continue
@@ -403,7 +404,7 @@ def decode_cf (dataset, ignore=[]):
       if len(date) > 0 and date[0] != ' ': second, date = re.match("(\d+)(.*)", date).groups()
       # convert from strings to integers
       #TODO: milliseconds? time zone?
-      year, month, day, hour, minute, second = map(int, [year, month, day, hour, minute, float(second)])
+      year, month, day, hour, minute, second = list(map(int, [year, month, day, hour, minute, float(second)]))
       # Create the time axis
       startdate={'year':year, 'month':month, 'day':day, 'hour':hour, 'minute':minute, 'second':second}
       axisdict[name] = cls(a.values, startdate=startdate, units=res, name=name, atts=atts)
@@ -465,7 +466,7 @@ def decode_cf (dataset, ignore=[]):
     atts = oldvar.atts.copy()
     plotatts = oldvar.atts.copy()
     fillvalue = [atts.pop(f,None) for f in ('FillValue', '_FillValue', 'missing_value')]
-    fillvalue = filter(None, fillvalue)
+    fillvalue = [_f for _f in fillvalue if _f]
     fillvalue = fillvalue[0] if len(fillvalue) > 0 else None
     scale = atts.pop('scale_factor', None)
     offset = atts.pop('add_offset', None)
