@@ -1,3 +1,10 @@
+1.1.1 - 2018/01/19
+  - Fixed some padding logic in showgrid.
+  - Corrected bug that was happening when the inx coordinate variable was
+    provided with more than one axis but not as many axes as the data.
+  - Disable prefix checks when there's an exact match to an axis name.
+    Fixes bug triggered by axis names that contain underscores.
+
 1.1.0 - 2017/06/17
   - Allow some settings to be read from a configuration file (pygrc).
   - Added an option to disable lazy array evaluation, for cases where this
