@@ -1,3 +1,20 @@
+1.2.0 - 2018/03/21
+  - Added nan-aware versions of climatological mean operations.
+  - Added standard deviation and nan-aware standard deviation classes for all
+    time subdivisions of climatological operations.
+  - Added count operations in climat module that return number of non-NaN
+    elements.
+  - Climatology operators can now be invoked as methods of Var objects.
+  - Add a "netcdf4" format for interfacing with the netCDF4 python module.
+  - Add support for entry points for pygeode.plugins and pygeode.formats.
+  - Add entry points for custom axes.
+  - Added pcolor operation to AxesWrapper.
+  - Better support for dimensionless Var objects (issue #108).
+  - Fix stack overflow when dealing with large 1D arrays (issue #107).
+  - New module pygeode.ext_xarray for converting to/from xarray objects.
+  - New hasaxis() and getaxis() methods for Dataset objects.
+  - Var.get() now returns a writeable copy the array.
+
 1.1.1 - 2018/01/19
   - Fixed some padding logic in showgrid.
   - Corrected bug that was happening when the inx coordinate variable was
