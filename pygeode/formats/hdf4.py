@@ -48,6 +48,24 @@ def get_attributes (obj_id, natts):
     atts[name] = value
   return atts
 
+# Get information about a dimension.
+def get_dim_info (dim_id):
+  from ctypes import create_string_buffer, c_long, byref
+  import numpy as np
+  from pygeode.tools import point
+  name = create_string_buffer(256)
+  size = c_long()
+  type = c_long()
+  natts = c_long()
+  ret = lib.SDdiminfo(dim_id, name, byref(size), byref(type), byref(natts))
+  assert ret == 0
+  name = name.value
+  size = size.value
+  type = type.value
+  natts = natts.value
+
+  return name, size, type, natts
+
 # Read some data
 #(adapted from pygeode netcdf module)
 def load_values (sds_id, start, count, out):
@@ -142,6 +160,7 @@ class HDF4_Var (Var):
 def open (filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [], cfmeta = True):
   from numpy import empty
   from ctypes import c_long, byref
+  from pygeode.axis import DummyAxis
   from pygeode.dataset import asdataset
   from pygeode.formats import finalize_open
 
@@ -194,6 +213,13 @@ def open (filename, value_override = {}, dimtypes = {}, namemap = {},  varlist =
   # Reference axes by dimension ids
   axis_lookup = {}
   for i,a in enumerate(axes): axis_lookup[dimids[i]] = a
+
+  # Add dummy axes for dimensions without coordinate info.
+  for s in SD_arr:
+    for d in s.dimids:
+      if d not in axis_lookup:
+        dimname, dimsize, dimtype, dim_natts = get_dim_info(d)
+        axis_lookup[d] = DummyAxis(dimsize,dimname)
 
   # Create var objects
   vars = [None]*len(SD_arr)
