@@ -59,7 +59,7 @@ def get_dim_info (dim_id):
   natts = c_long()
   ret = lib.SDdiminfo(dim_id, name, byref(size), byref(type), byref(natts))
   assert ret == 0
-  name = name.value
+  name = str(name.value.decode())
   size = size.value
   type = type.value
   natts = natts.value
