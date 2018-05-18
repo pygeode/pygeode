@@ -1,3 +1,11 @@
+1.2.1 - 2018/05/18
+  - Fix bug in plot_v1, where the 'projection' entry was removed from the
+    projection dictionary supplied by the user.  This was causing problems
+    when creating sequential plots, where only the first one had the right
+    projection.
+  - Fix bug in hdf4 interface.  Files that had dimensions with no associated
+    coordinate variable were crashing with a KeyError.
+
 1.2.0 - 2018/03/21
   - Added nan-aware versions of climatological mean operations.
   - Added standard deviation and nan-aware standard deviation classes for all
