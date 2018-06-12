@@ -398,6 +398,7 @@ def decode_cf (dataset, ignore=[]):
       if len(date) > 0: year, date = re.match("(\d+)-?(.*)", date).groups()
       if len(date) > 0: month, date = re.match("(\d+)-?(.*)", date).groups()
       if len(date) > 0: day, date = re.match("(\d+)\s*(.*)", date).groups()
+      if date.startswith('T'): date = date[1:]
       if len(date) > 0: hour, date = re.match("(\d+):?(.*)", date).groups()
       if len(date) > 0: minute, date = re.match("(\d+):?(.*)", date).groups()
       if len(date) > 0 and date[0] != ' ': second, date = re.match("(\d+)(.*)", date).groups()
