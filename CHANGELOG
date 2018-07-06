@@ -1,3 +1,7 @@
+1.2.2 - 2018/07/06
+  - Handle netCDF time units that are separated by a "T" instead of a space.
+    E.g., "hours since 2010-02-01T03:00:00".
+
 1.2.1 - 2018/05/18
   - Fix bug in plot_v1, where the 'projection' entry was removed from the
     projection dictionary supplied by the user.  This was causing problems
