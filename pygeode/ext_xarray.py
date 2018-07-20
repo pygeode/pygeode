@@ -122,8 +122,12 @@ def from_xarray(dataset):
   # Loop over each axis and variable, and wrap as a pygeode.Var object.
   for varname, var in dataset.variables.items():
     # Apply a subset of conventions that are relevant to PyGeode.
-    var = xr.conventions.maybe_encode_datetime(var)
-    var = xr.conventions.maybe_encode_timedelta(var)
+    try:
+      var = xr.conventions.maybe_encode_datetime(var)
+      var = xr.conventions.maybe_encode_timedelta(var)
+    except AttributeError:
+      var = xr.coding.times.CFDatetimeCoder().encode(var)
+      var = xr.coding.times.CFTimedeltaCoder().encode(var)
     try:
       var = xr.conventions.maybe_encode_string_dtype(var)
     except AttributeError:
