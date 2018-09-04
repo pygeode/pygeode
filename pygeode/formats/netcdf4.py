@@ -98,7 +98,9 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
   import numpy as np
   from pygeode.progress import PBar, FakePBar
   from pygeode.formats import finalize_save
+  from pygeode.dataset import asdataset
 
+  in_dataset = asdataset(in_dataset)  # Make sure we have a Dataset (not a Var)
   dataset = finalize_save(in_dataset, cfmeta, pack)
 
   # Version?

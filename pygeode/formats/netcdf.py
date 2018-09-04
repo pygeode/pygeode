@@ -406,6 +406,7 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
 
   assert isinstance(filename,str)
 
+  in_dataset = asdataset(in_dataset)
   dataset = finalize_save(in_dataset, cfmeta, pack)
 
   # Version?
