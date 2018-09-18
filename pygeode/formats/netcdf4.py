@@ -70,9 +70,11 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   # Read the file
   with nc.Dataset(filename,"r") as f:
     if f.groups:
-      dataset = list(map(make_dataset, list(f.groups.values())))
-      dataset = list(map(dims2axes, dataset))
-      return list(map(finalize_open, dataset))
+      dataset =  {key: make_dataset(value) for key, value in f.groups.items()}
+      dataset =  {key: dims2axes(value) for key, value in dataset.items()}
+
+      return {key: finalize_open(value) for key, value in dataset.items()}
+
     else: 
       dataset = make_dataset(f)
       # Add the object stuff from dimtypes to value_override, so we don't trigger a
