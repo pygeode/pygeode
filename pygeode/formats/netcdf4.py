@@ -20,6 +20,19 @@ def make_var (ncvar):
   return Var(axes=axes, name=str(ncvar.name), values=ncvar, atts=make_atts(ncvar))
 # }}}
 
+# A netcdf variable
+def make_dataset (ncfile):
+# {{{
+  from pygeode.dataset import asdataset
+  # Construct all the variables, put in a list
+  vars = list(map(make_var, list(ncfile.variables.values())))
+  
+  # Construct a dataset from these Vars
+  dataset = asdataset(vars)
+  dataset.atts = make_atts(ncfile)
+  return dataset
+
+# }}}
 
 def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [], cfmeta = True):
 # {{{
@@ -56,35 +69,31 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
   # Read the file
   with nc.Dataset(filename,"r") as f:
-
-    # Construct all the variables, put in a list
-    vars = list(map(make_var, list(f.variables.values())))
-
-    # Construct a dataset from these Vars
-    dataset = asdataset(vars)
-    dataset.atts = make_atts(f)
-
-  # Add the object stuff from dimtypes to value_override, so we don't trigger a
-  # load operation on those dims.
-  # (We could use any values here, since they'll be overridden again later,
-  #  but we might as well use something relevant).
-  value_override = dict(value_override)  # don't use  the default (static) empty dict
-  for k,v in list(dimtypes.items()):
-    if isinstance(v,Axis):
-      value_override[k] = v.values
-
-  #### Filters to apply to the data ####
-
-  # Override values from the source?
-  if len(value_override) > 0:
-    dataset = override_values(dataset, value_override)
-
-  # Set up the proper axes (get coordinate values / metadata from a 1D variable
-  # with the same name as the dimension)
-  dataset = dims2axes(dataset)
-
-  return finalize_open(dataset, dimtypes, namemap, varlist, cfmeta)
-
+    if f.groups:
+      dataset = list(map(make_dataset, list(f.groups.values())))
+      dataset = list(map(dims2axes, dataset))
+      return list(map(finalize_open, dataset))
+    else: 
+      dataset = make_dataset(f)
+      # Add the object stuff from dimtypes to value_override, so we don't trigger a
+      # load operation on those dims.
+      # (We could use any values here, since they'll be overridden again later,
+      #  but we might as well use something relevant).
+      value_override = dict(value_override)  # don't use  the default (static) empty dict
+      for k,v in list(dimtypes.items()):
+        if isinstance(v,Axis):
+          value_override[k] = v.values
+    
+      #### Filters to apply to the data ####
+    
+      # Override values from the source?
+      if len(value_override) > 0:
+        dataset = override_values(dataset, value_override)
+    
+      # Set up the proper axes (get coordinate values / metadata from a 1D variable
+      # with the same name as the dimension)
+      dataset = dims2axes(dataset)
+      return finalize_open(dataset, dimtypes, namemap, varlist, cfmeta)
 # }}}
 
 #TODO: factor out cf-meta encoding and other processing steps
