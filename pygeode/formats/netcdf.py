@@ -112,9 +112,10 @@ def put_attributes (fileid, varid, atts, version):
       if isinstance(oldvalue,int) and oldvalue >= -2147483648 and oldvalue <= 2147483647:
         value = asarray(value, dtype='int32')
       # Drop unsupported data types
+      if value.dtype.name.startswith('string'):
+        warn ("no support for writing attributes containing an array of strings", stacklevel=3)
+        return
       if value.dtype.name not in nc_type[version]:
-        if value.dtype.name.startswith('string'):
-          warn ("no support for writing attributes containing an array of strings", stacklevel=3)
         warn ("skipping attribute %s = %s  (unsupported type %s)"%(name,value,value.dtype.name), stacklevel=3)
         return
       # Scalar?
