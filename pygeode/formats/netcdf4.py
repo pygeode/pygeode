@@ -1,11 +1,14 @@
 # Pygeode interface for the netCDF4 Python module.
 
+# Re-use some methods from the pygeode.formats.netcdf module.
+from pygeode.formats.netcdf import override_values, dims2axes
+
 # constructor for the dims (wrapper for NCDim so it's only created once)
 def make_dim (name, size, dimdict={}):
   from pygeode.formats.netcdf import NCDim
-  if name not in dimdict:
-    dimdict[name] = NCDim(size, name=str(name))
-  return dimdict[name]
+  if (name,size) not in dimdict:
+    dimdict[(name,size)] = NCDim(size, name=str(name))
+  return dimdict[(name,size)]
 
 # Extract attributes
 def make_atts (v):
@@ -51,7 +54,6 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   import netCDF4 as nc
   from pygeode.dataset import asdataset
   from pygeode.formats import finalize_open
-  from pygeode.formats.netcdf import override_values, dims2axes
   from pygeode.axis import Axis
 
   # Read the file
@@ -98,7 +100,9 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
   import numpy as np
   from pygeode.progress import PBar, FakePBar
   from pygeode.formats import finalize_save
+  from pygeode.dataset import asdataset
 
+  in_dataset = asdataset(in_dataset)  # Make sure we have a Dataset (not a Var)
   dataset = finalize_save(in_dataset, cfmeta, pack)
 
   # Version?
@@ -115,9 +119,7 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
 
   # Include axes in the list of vars (for writing to netcdf).
   # Exclude axes which don't have any intrinsic values.
-  # Look at original dataset to check original type of axes (because
-  # finalize_save may force everything to be NamedAxis).
-  vars = vars + [a for a in axes if not isinstance(in_dataset[a.name],DummyAxis)]
+  vars = vars + [a for a in axes if not isinstance(a,DummyAxis)]
 
   # Variables (and axes) must all have unique names
   assert len(set([v.name for v in vars])) == len(vars), "vars must have unique names: %s"% [v.name for v in vars]
