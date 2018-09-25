@@ -29,7 +29,7 @@ else:
 # PyGeode installation script
 
 setup (	name="pygeode",
-	version="1.2.0",
+	version="1.2.2",
         description = "Gridded data manipulator for Python",
 	long_description = """\
 PyGeode is a software library intended to simplify the management, analysis,
@@ -51,7 +51,7 @@ the underlying computations and to create plots.
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="pygeode-users@googlegroups.com",
         url="http://pygeode.github.io",
-	install_requires=['numpy','scipy','matplotlib', progressbar],
+	install_requires=['numpy>=1.8','scipy','matplotlib',progressbar],
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll','pygrc'], 'pygeode.formats': ['*.dll']},
