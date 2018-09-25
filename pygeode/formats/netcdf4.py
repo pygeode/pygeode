@@ -110,7 +110,7 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 # {{{
   ''' open (filename, [value_override = {}, dimtypes = {}, namemap = {}, varlist = [] ])
 
-  Returns a Dataset of PyGeode variables contained in the specified files. The axes of the 
+  Returns a Dataset or dictionary of Datasets of PyGeode variables contained in the specified files. The axes of the 
   variables are created from the dimensions of the NetCDF file. NetCDF variables in the file that do
   not correspond to dimensions are imported as PyGeode variables.
 
@@ -130,8 +130,9 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
             (values); also works for axes/dimensions
   varlist - a list containing the variables that should be loaded into the data set (if the list is
             empty, all NetCDF variables will be loaded)
-  Note: The identifiers used in varlist and dimtypes are the original names used in the NetCDF file, 
-        not the names given in namemap.'''
+  Note: -The identifiers used in varlist and dimtypes are the original names used in the NetCDF file, 
+        not the names given in namemap.
+        -The optional arguments are not currently supported for netcdf4 files containing groups.'''
 
   import netCDF4 as nc
   from pygeode.dataset import asdataset
