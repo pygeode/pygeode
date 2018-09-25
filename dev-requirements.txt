@@ -1,2 +1,2 @@
 nose
-numpy
+numpy<1.9

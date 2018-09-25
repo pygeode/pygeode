@@ -294,7 +294,7 @@ def plotvar (var, **kwargs):
       from numpy import arange
       
       # pop some arguments related to projection grid labelling 
-      projargs = kwargs.pop('projection', {})
+      projargs = dict(kwargs.pop('projection', {}))
       # meridians setup (latitude / y)
       meridians = projargs.pop('meridians',[-180,-90,0,90,180,270,360])
       # parallels setup (longitude / x)
