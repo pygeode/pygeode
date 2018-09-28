@@ -12,8 +12,15 @@ def make_dim (name, size, dimdict={}):
 
 # Extract attributes
 def make_atts (v):
-  return dict((str(name),v.getncattr(name)) for name in v.ncattrs())
-
+  atts = dict()
+  for name in v.ncattrs():
+    att = v.getncattr(name)
+    # netcdf4-python module in Python 2 uses unicode instead of strings.
+    # Need to force this back to string type.
+    if isinstance(att,unicode):
+      att = str(att)
+    atts[str(name)] = att
+  return atts
 
 # A netcdf variable
 def make_var (ncvar):
