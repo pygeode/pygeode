@@ -26,7 +26,7 @@ def make_atts (v):
 def make_var (ncvar):
 # {{{
   from pygeode.var import Var
-  axes = [make_dim(name,size) for name,size in zip(ncvar.dimensions,ncvar.shape)]
+  axes = [make_dim(str(name),size) for name,size in zip(ncvar.dimensions,ncvar.shape)]
   return Var(axes=axes, name=str(ncvar.name), values=ncvar, atts=make_atts(ncvar))
 # }}}
 
@@ -152,10 +152,10 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
   # Read the file
   with nc.Dataset(filename,"r") as f:
     if f.groups:
-      dataset =  {key: make_dataset(value) for key, value in f.groups.items()}
-      dataset =  {key: dims2axes(value) for key, value in dataset.items()}
+      dataset =  {str(key): make_dataset(value) for key, value in f.groups.items()}
+      dataset =  {str(key): dims2axes(value) for key, value in dataset.items()}
 
-      return {key: finalize_open(value) for key, value in dataset.items()}
+      return {str(key): finalize_open(value) for key, value in dataset.items()}
 
     else: 
       dataset = make_dataset(f)
