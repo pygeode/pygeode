@@ -154,9 +154,9 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
     if f.groups:
       dataset =  {str(key): make_dataset(value) for key, value in f.groups.items()}
       dataset =  {str(key): dims2axes(value) for key, value in dataset.items()}
-
+      
       return {str(key): finalize_open(value) for key, value in dataset.items()}
-
+          
     else: 
       dataset = make_dataset(f)
       # Add the object stuff from dimtypes to value_override, so we don't trigger a
