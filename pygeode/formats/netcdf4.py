@@ -26,16 +26,101 @@ def make_atts (v):
 def make_var (ncvar):
 # {{{
   from pygeode.var import Var
-  axes = [make_dim(name,size) for name,size in zip(ncvar.dimensions,ncvar.shape)]
+  axes = [make_dim(str(name),size) for name,size in zip(ncvar.dimensions,ncvar.shape)]
   return Var(axes=axes, name=str(ncvar.name), values=ncvar, atts=make_atts(ncvar))
 # }}}
 
+# A netcdf variable
+def make_dataset (ncfile):
+# {{{
+  from pygeode.dataset import asdataset
+  # Construct all the variables, put in a list
+  vars = list(map(make_var, list(ncfile.variables.values())))
+  
+  # Construct a dataset from these Vars
+  dataset = asdataset(vars)
+  dataset.atts = make_atts(ncfile)
+  return dataset
+
+# }}}
+
+# Prepare var axes for writing 
+def tidy_axes(dataset, unlimited=None):
+# {{{
+  from pygeode.tools import combine_axes
+  from pygeode.axis import DummyAxis
+  from pygeode.dataset import asdataset
+  
+  vars = list(dataset.vars)
+  # The output axes
+  axes = combine_axes(v.axes for v in vars)
+
+  # Include axes in the list of vars (for writing to netcdf).
+  # Exclude axes which don't have any intrinsic values.
+  # Look at original dataset to check original type of axes (because
+  # finalize_save may force everything to be NamedAxis).
+  vars = vars + [a for a in axes if not isinstance(dataset[a.name],DummyAxis)]
+
+  # Variables (and axes) must all have unique names
+  assert len(set([v.name for v in vars])) == len(vars), "vars must have unique names: %s"% [v.name for v in vars]
+
+  if unlimited is not None:
+    assert unlimited in [a.name for a in axes]
+
+  return asdataset(vars)
+# }}}
+
+def write_var (ncfile, dataset, unlimited=None, compress=False):
+# {{{
+  from pygeode.view import View
+  from pygeode.axis import Axis 
+  import numpy as np
+  from pygeode.progress import PBar, FakePBar
+  from pygeode.tools import combine_axes
+  
+  vars = list(dataset.vars)
+  axes = combine_axes(v.axes for v in vars)
+
+  # Define the dimensions
+  for a in axes:
+    ncfile.createDimension(a.name, size=(None if a.name == unlimited else len(a)))
+
+  # Define the variables (including axes)
+  for var in vars:
+    dimensions = [a.name for a in var.axes]
+    v = ncfile.createVariable(var.name, datatype=var.dtype, dimensions=dimensions, zlib=compress, fill_value=var.atts.get('_FillValue',None))
+    v.setncatts(var.atts)
+
+  # global attributes
+  ncfile.setncatts(dataset.atts)
+
+  # Relative progress of each variable
+  sizes = [v.size for v in vars]
+  prog = np.cumsum([0.]+sizes) / np.sum(sizes) * 100
+
+  pbar = PBar(message="Saving '%s':"%ncfile.filepath())
+
+  # number of actual variables (non-axes) for determining our progress
+  N = len([v for v in vars if not isinstance(v,Axis)])
+
+  # Write the data
+  for i,var in enumerate(vars):
+    ncvar = ncfile.variables[var.name]
+    varpbar = pbar.subset(prog[i], prog[i+1])
+
+    views = list(View(var.axes).loop_mem())
+
+    for j,v in enumerate(views):
+      vpbar = varpbar.part(j, len(views))
+      ncvar[v.slices] = v.get(var, pbar=vpbar)
+
+# }}}
 
 def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [], cfmeta = True):
 # {{{
   ''' open (filename, [value_override = {}, dimtypes = {}, namemap = {}, varlist = [] ])
 
-  Returns a Dataset of PyGeode variables contained in the specified files. The axes of the 
+  Returns a Dataset or dictionary of Datasets of PyGeode variables contained in the specified files. The axes of the 
   variables are created from the dimensions of the NetCDF file. NetCDF variables in the file that do
   not correspond to dimensions are imported as PyGeode variables.
 
@@ -55,8 +140,9 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
             (values); also works for axes/dimensions
   varlist - a list containing the variables that should be loaded into the data set (if the list is
             empty, all NetCDF variables will be loaded)
-  Note: The identifiers used in varlist and dimtypes are the original names used in the NetCDF file, 
-        not the names given in namemap.'''
+  Note: -The identifiers used in varlist and dimtypes are the original names used in the NetCDF file, 
+        not the names given in namemap.
+        -The optional arguments are not currently supported for netcdf4 files containing groups.'''
 
   import netCDF4 as nc
   from pygeode.dataset import asdataset
@@ -65,35 +151,33 @@ def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = 
 
   # Read the file
   with nc.Dataset(filename,"r") as f:
-
-    # Construct all the variables, put in a list
-    vars = list(map(make_var, list(f.variables.values())))
-
-    # Construct a dataset from these Vars
-    dataset = asdataset(vars)
-    dataset.atts = make_atts(f)
-
-  # Add the object stuff from dimtypes to value_override, so we don't trigger a
-  # load operation on those dims.
-  # (We could use any values here, since they'll be overridden again later,
-  #  but we might as well use something relevant).
-  value_override = dict(value_override)  # don't use  the default (static) empty dict
-  for k,v in list(dimtypes.items()):
-    if isinstance(v,Axis):
-      value_override[k] = v.values
-
-  #### Filters to apply to the data ####
-
-  # Override values from the source?
-  if len(value_override) > 0:
-    dataset = override_values(dataset, value_override)
-
-  # Set up the proper axes (get coordinate values / metadata from a 1D variable
-  # with the same name as the dimension)
-  dataset = dims2axes(dataset)
-
-  return finalize_open(dataset, dimtypes, namemap, varlist, cfmeta)
-
+    if f.groups:
+      dataset =  {str(key): make_dataset(value) for key, value in f.groups.items()}
+      dataset =  {str(key): dims2axes(value) for key, value in dataset.items()}
+      
+      return {str(key): finalize_open(value) for key, value in dataset.items()}
+          
+    else: 
+      dataset = make_dataset(f)
+      # Add the object stuff from dimtypes to value_override, so we don't trigger a
+      # load operation on those dims.
+      # (We could use any values here, since they'll be overridden again later,
+      #  but we might as well use something relevant).
+      value_override = dict(value_override)  # don't use  the default (static) empty dict
+      for k,v in list(dimtypes.items()):
+        if isinstance(v,Axis):
+          value_override[k] = v.values
+    
+      #### Filters to apply to the data ####
+    
+      # Override values from the source?
+      if len(value_override) > 0:
+        dataset = override_values(dataset, value_override)
+    
+      # Set up the proper axes (get coordinate values / metadata from a 1D variable
+      # with the same name as the dimension)
+      dataset = dims2axes(dataset)
+      return finalize_open(dataset, dimtypes, namemap, varlist, cfmeta)
 # }}}
 
 #TODO: factor out cf-meta encoding and other processing steps
@@ -107,11 +191,7 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
   import numpy as np
   from pygeode.progress import PBar, FakePBar
   from pygeode.formats import finalize_save
-  from pygeode.dataset import asdataset
-
-  in_dataset = asdataset(in_dataset)  # Make sure we have a Dataset (not a Var)
-  dataset = finalize_save(in_dataset, cfmeta, pack)
-
+  
   # Version?
   if compress: version = 4
   assert version in (3,4)
@@ -120,52 +200,20 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
   else:
     format = 'NETCDF4'
 
-  vars = list(dataset.vars)
-  # The output axes
-  axes = combine_axes(v.axes for v in vars)
-
-  # Include axes in the list of vars (for writing to netcdf).
-  # Exclude axes which don't have any intrinsic values.
-  vars = vars + [a for a in axes if not isinstance(a,DummyAxis)]
-
-  # Variables (and axes) must all have unique names
-  assert len(set([v.name for v in vars])) == len(vars), "vars must have unique names: %s"% [v.name for v in vars]
-
-  if unlimited is not None:
-    assert unlimited in [a.name for a in axes]
-
+  assert format in ('NETCDF3_CLASSIC','NETCDF4')
+  
   with nc.Dataset(filename,'w',format=format) as f:
-    # Define the dimensions
-    for a in axes:
-      f.createDimension(a.name, size=(None if a.name == unlimited else len(a)))
-
-    # Define the variables (including axes)
-    for var in vars:
-      dimensions = [a.name for a in var.axes]
-      v = f.createVariable(var.name, datatype=var.dtype, dimensions=dimensions, zlib=compress, fill_value=var.atts.get('_FillValue',None))
-      v.setncatts(var.atts)
-
-    # global attributes
-    f.setncatts(dataset.atts)
-
-    # Relative progress of each variable
-    sizes = [v.size for v in vars]
-    prog = np.cumsum([0.]+sizes) / np.sum(sizes) * 100
-
-    pbar = PBar(message="Saving '%s':"%filename)
-
-    # number of actual variables (non-axes) for determining our progress
-    N = len([v for v in vars if not isinstance(v,Axis)])
-
-    # Write the data
-    for i,var in enumerate(vars):
-      ncvar = f.variables[var.name]
-      varpbar = pbar.subset(prog[i], prog[i+1])
-
-      views = list(View(var.axes).loop_mem())
-
-      for j,v in enumerate(views):
-        vpbar = varpbar.part(j, len(views))
-        ncvar[v.slices] = v.get(var, pbar=vpbar)
-
+    
+    if isinstance(in_dataset, dict):
+      dataset =  {key: finalize_save(value, cfmeta, pack) for key, value in in_dataset.items()}
+      dataset =  {key: tidy_axes(value, unlimited=unlimited) for key, value in dataset.items()}
+      for key, value in dataset.items():
+	group = f.createGroup(key)
+        write_var(group, value, unlimited=unlimited, compress=compress)
+        
+    else:
+      dataset = finalize_save(in_dataset, cfmeta, pack)
+      dataset = tidy_axes(dataset, unlimited=unlimited)
+      write_var(f, dataset, unlimited=unlimited, compress=compress)
+  
 # }}}

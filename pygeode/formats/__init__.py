@@ -90,7 +90,8 @@ def autodetectformat(filename):
 def open(filename, format = None, value_override = {}, dimtypes = {}, namemap = {}, varlist = [],
          cfmeta = True, **kwargs):
 # {{{
-  ''' Returns a :class:`Dataset` containing variables defined in a single file.
+  ''' Returns a :class:`Dataset` containing variables defined in a single file or a dict of :class:`Dataset`
+  for a netcdf4 file containing groups.
 
   Parameters
   ==========
@@ -132,7 +133,7 @@ def open(filename, format = None, value_override = {}, dimtypes = {}, namemap = 
   Returns
   =======
   dataset
-    A dataset containing the variables contained in the file. The variable data itself is not loaded
+    A dataset containing the variables contained in the file or a dict of datasets. The variable data itself is not loaded
     into memory. 
 
   Notes
@@ -141,6 +142,7 @@ def open(filename, format = None, value_override = {}, dimtypes = {}, namemap = 
   possible); otherwise it must be specified by the ``format`` argument. 
   The identifiers used in ``varlist`` and ``dimtypes`` are the original names used in
   the NetCDF file, not the names given in ``namemap``.
+  The optional arguments are not currently supported for netcdf4 files containing groups.
 
   See Also
   ========
@@ -169,8 +171,10 @@ def save(filename, dataset, format=None, cfmeta=True, **kwargs):
   filename : string
     Path of file to save to.
 
-  dataset : :class:`Var`, :class:`Dataset`, or collection of :class:`Var` objects
-    Variables to write to disk. The dataset is consolidated using :func:`dataset.asdataset`.
+  dataset : :class:`Var`, :class:`Dataset`, or collection of :class:`Var` objects or 
+    dict of :class:`Dataset` objects.
+    The dataset is consolidated using :func:`dataset.asdataset`. Dicts of `Dataset` objects
+    are written as groups to netcdf4 files.
 
   format : string, optional
     String specifying format of file to open. If none is given the format will be automatically
