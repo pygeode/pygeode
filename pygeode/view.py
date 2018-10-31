@@ -254,7 +254,7 @@ class View:
 #  above, but need to have addictional check if we have slices or indices.)
       values = var.values
       for i,sl in enumerate(unique_view.slices):
-        values = values[[slice(None)]*i + [sl]]
+        values = values[tuple([slice(None)]*i + [sl])]
 
     elif hasattr(var,'getview'):
       # Can we use the progress bar?

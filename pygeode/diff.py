@@ -63,7 +63,7 @@ class ForwardDifferenceVar (Var):
     # Define a map back to our points
     getleft = np.searchsorted(allpoints,left)
     # Make this 1D map into the right shape for the view (if multi-dimensional)
-    getleft = [slice(None)]*daxis + [getleft] + [slice(None)]*(self.naxes-daxis-1)
+    getleft = tuple([slice(None)]*daxis + [getleft] + [slice(None)]*(self.naxes-daxis-1))
 
     # Finally, map the data to our points, and return.
     # Hopefully the code above works for all cases (including non-contiguous
