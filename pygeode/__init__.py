@@ -1,3 +1,5 @@
+from pygeode._version import __version__
+
 import os
 from os.path import sep
 

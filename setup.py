@@ -26,10 +26,13 @@ if sys.version_info < (3,):
 else:
   progressbar = "progressbar33"
 
+with open('pygeode/_version.py','r') as f:
+  version = f.readline().split()[-1].strip("'")
+
 # PyGeode installation script
 
 setup (	name="pygeode",
-	version="1.2.2",
+	version = version,
         description = "Gridded data manipulator for Python",
 	long_description = """\
 PyGeode is a software library intended to simplify the management, analysis,
