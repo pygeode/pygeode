@@ -58,9 +58,6 @@ def correlate(X, Y, axes=None, pbar=None):
   iview = View(inaxes) 
   siaxes = list(range(len(oaxes), len(srcaxes)))
 
-  print(oaxes)
-  print(inaxes)
-
   # Construct work arrays
   x  = np.zeros(oview.shape, 'd')*np.nan
   y  = np.zeros(oview.shape, 'd')*np.nan
@@ -93,37 +90,34 @@ def correlate(X, Y, axes=None, pbar=None):
     yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, siaxes)], 0)
     xy[outsl] = np.nansum([xy[outsl], npnansum(xydata, siaxes)], 0)
 
-    # Sum of weights (kludge to get masking right)
-    Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xydata*0., siaxes)], 0) 
+    # Sum of weights
+    Na[outsl] = np.nansum([Na[outsl], npnansum(~np.isnan(xydata), siaxes)], 0)
 
-  print('x NaNs:  %d of %d' % (np.sum(np.isnan(x)), x.size))
-  print('y NaNs:  %d of %d' % (np.sum(np.isnan(y)), y.size))
-  print('xx NaNs: %d of %d' % (np.sum(np.isnan(xx)), xx.size))
-  print('xx < 0:  %d of %d' % (np.sum(xx < 0.), xx.size))
-  print('xy NaNs: %d of %d' % (np.sum(np.isnan(xy)), xy.size))
-  print('yy NaNs: %d of %d' % (np.sum(np.isnan(yy)), yy.size))
-  print('yy < 0:  %d of %d' % (np.sum(yy < 0.), yy.size))
-  print('Na NaNs: %d of %d' % (np.sum(np.isnan(Na)), Na.size))
+  eps = 1e-14
+  imsk = ~(Na < eps)
 
-  xx -= x**2/Na
-  yy -= y**2/Na
-  xy -= (x*y)/Na
+  xx[imsk] -= (x*x)[imsk]/Na[imsk]
+  yy[imsk] -= (y*y)[imsk]/Na[imsk]
+  xy[imsk] -= (x*y)[imsk]/Na[imsk]
 
-  print('xx < 0:  %d of %d' % (np.sum(xx <= 0.), xx.size))
-  print('yy < 0:  %d of %d' % (np.sum(yy <= 0.), yy.size))
-  
   # Compute correlation coefficient, t-statistic, p-value
-  den = np.sqrt(xx*yy)
-  rho = xy / [rho > 0.]
-  rho = xy.copy()
-  rho[rho > 0.] = rho[rho > 0.] / np.sqrt(xx*yy)[rho > 0.]
-  print('den NaNs:  %d of %d' % (np.sum(np.sqrt(xx*yy)[rho > 0.] <= 0.), rho[rho > 0.].size))
-  print('rho NaNs:  %d of %d' % (np.sum(np.isnan(rho)), rho.size))
+  den = np.zeros(oview.shape, 'd')
+  rho = np.zeros(oview.shape, 'd')
+
+  den[imsk] = np.sqrt((xx*yy)[imsk])
+  rho[den > 0.] = xy[den > 0.] / np.sqrt(xx*yy)[den > 0.]
 
   den = 1 - rho**2
-  den[den < 1e-14] = 1e-14 # Saturate the denominator to avoid div by zero warnings
-  t = np.abs(rho) * np.sqrt((Na - 2.)/den)
-  p = tdist.cdf(t, Na-2) * np.sign(rho)
+  # Saturate the denominator (when correlation is perfect) to avoid div by zero warnings
+  den[den < eps] = eps
+
+  t = np.zeros(oview.shape, 'd')
+  p = np.zeros(oview.shape, 'd')
+
+  t[imsk] = np.abs(rho)[imsk] * np.sqrt((Na[imsk] - 2.)/den[imsk])
+  p[imsk] = tdist.cdf(t[imsk], Na[imsk]-2) * np.sign(rho[imsk])
+  p[~imsk] = np.nan
+  rho[~imsk] = np.nan
 
   # Construct and return variables
   xn = X.name if X.name != '' else 'X' # Note: could write:  xn = X.name or 'X'
