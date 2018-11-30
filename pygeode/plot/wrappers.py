@@ -247,6 +247,12 @@ class Errorbar(PlotOp):
     axes.errorbar (*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class Bar(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.bar (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 class Histogram(PlotOp):
 # {{{
   def render (self, axes):
@@ -436,6 +442,7 @@ plot = make_plot_func(Plot)
 fill_between = make_plot_func(FillBetween)
 scatter = make_plot_func(Scatter)
 errorbar = make_plot_func(Errorbar)
+bar = make_plot_func(Bar)
 hist = make_plot_func(Histogram)
 axhline = make_plot_func(AxHLine)
 axvline = make_plot_func(AxVLine)
@@ -450,12 +457,13 @@ streamplot = make_plot_func(Streamplot)
 quiver = make_plot_func(Quiver)
 quiverkey = make_plot_func(QuiverKey)
 
-__all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'hist', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'pcolor', 'quiver', 'quiverkey', 'colorbar']
+__all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'errorbar', 'bar', 'hist', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'pcolor', 'quiver', 'quiverkey', 'colorbar']
 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.fill_between = make_plot_member(fill_between)
 AxesWrapper.scatter = make_plot_member(scatter)
 AxesWrapper.errorbar = make_plot_member(errorbar)
+AxesWrapper.bar = make_plot_member(bar)
 AxesWrapper.hist = make_plot_member(hist)
 AxesWrapper.axhline = make_plot_member(axhline)
 AxesWrapper.axvline = make_plot_member(axvline)
