@@ -12,9 +12,21 @@
 # Change criteria for updating the bar to: once a second
 # Also, don't show a bar for tasks of a short duration (10 seconds)
 try:
-  from progressbar import ProgressBar, Percentage, Bar, ETA
+  from progressbar import (
+          Bar, 
+          ETA,
+          ProgressBar, 
+          Percentage
+  )
+  from progressbar.bar import StdRedirectMixin, ResizableMixin, ProgressBarBase
+  import progressbar.base as base
+  import time
+  import timeit
+  from datetime import datetime
+
   _NOSHOWTIME = 10.
   class PygProgressBar(ProgressBar):
+
     if hasattr(ProgressBar, '__slots__'):
        __slots__ = ProgressBar.__slots__ + ('first_update_time', 'prev_update_time', 'message', 'printed_message')
     
@@ -24,25 +36,86 @@ try:
       self.prev_update_time = None
       self.message = None
       self.printed_message = False
+      self.need_update_bool = False
+      self.seconds_elapsed = 0.0
 
-    def _need_update(self):
-      import time
-      # Force this to be updated independant of the need_update decision
-      # (this is normally computed in update(), but is skipped if we don't need to display anything)
-      if not self.start_time: self.start_time = time.time()
-      self.seconds_elapsed = time.time() - self.start_time
-      if self.seconds_elapsed < _NOSHOWTIME: return False
-      if not ProgressBar._need_update(self): return False
-      if not self.printed_message:
-        if self.message is not None: print(self.message)
-        self.printed_message = True
-      return True
+    def _needs_update(self):
+    
+      'Returns whether the ProgressBar should redraw the line.'
+      self.seconds_elapsed = time.time() - time.mktime(self.start_time.timetuple())
 
-    def finish(self): # Overloaded to fix unneccesary newlines when not displayed
-      if self.finished: return
-      else: self.finished = True
-      self.update(self.maxval)
-      #if self.seconds_elapsed < _NOSHOWTIME: self.fd.write('\n')
+      # Do no show progressbar until after _NOSHOWTIME
+      if self.seconds_elapsed >_NOSHOWTIME:
+        if not self.printed_message:
+          if self.message is not None: print('\n'+self.message)
+          self.printed_message = True
+        if self.poll_interval:
+          delta = timeit.default_timer() - self._last_update_timer
+          poll_status = delta > self.poll_interval.total_seconds()
+        else:
+          poll_status = False
+
+        # Do not update if value increment is not large enough to
+        # add more bars to progressbar (according to current
+        # terminal width)
+        try:
+          divisor = self.max_value / self.term_width  # float division
+          if self.value // divisor == self.previous_value // divisor:
+            return poll_status or self.end_time
+        except Exception:
+          # ignore any division errors
+          pass
+
+        self.need_update_bool = self.value > self.next_update or poll_status or self.end_time
+      else:
+        self.need_update_bool = False
+      
+      return self.need_update_bool  
+
+    def start(self, init=True): 
+      '''
+      Start the progress bar but do not displaying until _needs_update() returns
+      True during update.
+      '''
+      if init:
+          self.init()
+
+      # Prevent multiple starts
+      if self.start_time is not None:  # pragma: no cover
+          return self
+
+      StdRedirectMixin.start(self, max_value=self.max_value)
+      ResizableMixin.start(self, max_value=self.max_value)
+      ProgressBarBase.start(self, max_value=self.max_value)
+      # Constructing the default widgets is only done when we know max_value
+      if self.widgets is None:
+          self.widgets = self.default_widgets()
+
+      for widget in self.widgets:
+          interval = getattr(widget, 'INTERVAL', None)
+          if interval is not None:
+              self.poll_interval = min(
+                  self.poll_interval or interval,
+                  interval,
+              )
+
+      self.num_intervals = max(100, self.term_width)
+      self.next_update = 0
+
+      if self.max_value is not base.UnknownLength and self.max_value < 0:
+          raise ValueError('Value out of range')
+
+      self.start_time = self.last_update_time = datetime.now()
+      self._last_update_timer = timeit.default_timer()
+      self.update(self.min_value, force=False)
+      return self
+
+
+    def finished(self): # Overloaded to fix unneccesary newlines when not displayed
+      if self.seconds_elapsed > _NOSHOWTIME:
+        self.finish()
+      else:
+        return
 
 except ImportError:
   from warnings import warn
@@ -51,6 +124,7 @@ except ImportError:
 
 class PBar:
   def __init__ (self, pbar=None, lower=0, upper=100, message=None):
+    import time
     self.lower = lower
     self.upper = upper
 
@@ -59,7 +133,10 @@ class PBar:
       return
 
     if PygProgressBar is not None:
-      pbar = PygProgressBar(widgets=[Percentage(), ' ', Bar(), ' ', ETA()])
+      pbar = PygProgressBar(widgets=[
+                                Percentage(), 
+                                Bar(), 
+                                ETA()], max_value=100.0)
       self.pbar = pbar.start()
       self.pbar.message = message  # staple a title message to the progress bar
                                    # (to be used in _need_update)
@@ -67,6 +144,7 @@ class PBar:
       self.pbar = None
 
   def update(self, x):
+    import time
     lower = self.lower
     upper = self.upper
     dx = upper - lower
@@ -74,8 +152,8 @@ class PBar:
     y = max(0,y)
     y = min(y,100)
     if self.pbar is not None:
-      self.pbar.update(y)
-      if y == 100 and not self.pbar.finished: self.pbar.finish()
+      if y == 100: self.pbar.finished()
+      else: self.pbar.update(y)
 
   def subset(self, L, U):
     lower = self.lower
