@@ -313,7 +313,10 @@ def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='di
 
   kwcb = kwargs.pop('colorbar', {})
   cb = dict(ticks = tks)
-  cb.update(kwcb)
+  if kwcb is False:
+    cb = False
+  else:
+    cb.update(kwcb)
 
   if not clr: 
     cmp = pcm.gray
@@ -364,7 +367,10 @@ def log1sdict(cmin, cdelt = 10., nf=6, nl=2, ndiv=5, **kwargs):
 
   kwcb = kwargs.pop('colorbar', {})
   cb = dict(ticks=tks, width=1.4, rl=0.01, rr=0.16, ticklabels = [lfmt(x) for x in tks])
-  cb.update(kwcb)
+  if kwcb is False:
+    cb = False
+  else:
+    cb.update(kwcb)
 
   kwa = dict(clevs = cf,
               clines = cl,
@@ -411,6 +417,10 @@ def log2sdict(cmin, cdelt = 10, nf=6, nl=2, ndiv=3, nozero=False, **kwargs):
   kwcb = kwargs.pop('colorbar', {})
   cb = dict(ticks=tks, width=1.4, rl=0.01, rr=0.16, ticklabels = [lfmt(x) for x in tks])
   cb.update(kwcb)
+  if kwcb is False:
+    cb = False
+  else:
+    cb.update(kwcb)
 
   kwa = dict(clevs = cf,
               clines = cl,
