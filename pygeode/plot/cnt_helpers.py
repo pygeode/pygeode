@@ -311,6 +311,8 @@ def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='di
     cf = np.linspace(cmin, cmax, nf * ndiv + 1)
     cl = np.linspace(cmin, cmax, nl * ndiv + 1)
 
+  if nl == 0: cl = None
+
   kwcb = kwargs.pop('colorbar', {})
   cb = dict(ticks = tks)
   if kwcb is False:

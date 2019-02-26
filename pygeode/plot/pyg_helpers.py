@@ -473,15 +473,62 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 # }}}
 
 # Do a 2D significance mask
-def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9', mnalpha=1., transpose=None):
+def vsigmask(pval, axes, mjsig=0.95, mnsig=None, mjsigp = None, mnsigp = None, nsigp = None, transpose=None):
 # {{{
   '''
   Add significance shading to a contour plot from a variable.
 
   Parameters
   ----------
+  pval :  :class:`Var`
+    The variable containing a p-value of the significance mask. The mask will
+    be applied where abs(pval) > mjsig (and optionally an additional mask will
+    be applied for mnsig < abs(pval) < mjsig. Signed p-values for two-sided
+    tests ensure that a gap will appear between significant regions of opposite sign.
+    Should have two non-degenerate axes that match the quantity plotted.
+
+  axes :  :class:`AxesWrapper`
+    The axis on which to add the mask.
+
+  mjsig : float, optional [0.95]
+    The p-value dividing significant from non-significant values.
+
+  mnsig : float or None, optional [None]
+    The p-value dividing minor significance from non-significant values.
+
+  mjsigp : dictionary, optional
+    A dictionary of keyword arguments that determine the properties of the
+    (major) significant filled contours. See notes.
+
+  mnsigp : dictionary, optional
+    A dictionary of keyword arguments that determine the properties of the
+    minor significant filled contours. See notes.
+
+  nsigp : dictionary, optional
+    A dictionary of keyword arguments that determine the properties of the
+    non-significant filled contour. See notes.
+
+  transpose : bool or None, optional [None]
+    If True, transpose the axes of the plot.
+
+  Notes
+  -----
+  The significance mask is plotted as three (or five) filled contours, with
+  boundaries at [-1.1, -mjsig, mjsig, 1.1] or [-1.1, -mjsig, -mnsig, mnsig,
+  mjsig, 1.1]. Their respective graphical properties can be set using the
+  dictionary kw arguments.
+
+  By default, the non-significant contours are set to be invisible and the
+  significant contours are set to a hatching pattern; this is equivalent to
+  passing in mjsigp = dict(alpha = 0., hatch = '...') and nsigp = dict(visible
+  = False). Any property of the filled contour can be set.
+
+  Returns
+  -------
+  :class:`AxesWrapper` object with plot.
   '''
-  Z = var.squeeze()
+
+  Z = pval.squeeze()
   assert Z.naxes == 2, 'Variable to contour must have two non-degenerate axes.'
   X, Y = Z.axes
 
@@ -499,21 +546,23 @@ def vsigmask(var, axes, mjsig=0.9, mjc='0.8', mjalpha=1., mnsig=None, mnc='0.9',
   y = scalevalues(Y)
   z = scalevalues(Z.transpose(Y, X))
 
+  if mjsigp is None: mjsigp = dict(alpha = 0., hatch = '...')
+  if mnsigp is None: mnsigp = dict(alpha = 0., hatch = '..')
+  if nsigp  is None: nsigp  = dict(visible = False)
+
   if mnsig is None:
     cl = [-1.1, -mjsig, mjsig, 1.1]
-    clr = ['w', mjc, 'w']
-    axes.contourf(x, y, z, cl, colors=clr)#, zorder=-1)
+    axes.contourf(x, y, z, cl, colors='w')
     cnt = axes.plots[-1]
-    axes.modifycontours(cnt, ind=[0, 2], visible=False)
-    axes.modifycontours(cnt, ind=[1], edgecolor='none', alpha=mjalpha)
+    axes.modifycontours(cnt, ind=[0, 2], **mjsigp)
+    axes.modifycontours(cnt, ind=[1],    **nsigp)
   else:
     cl = [-1.1, -mnsig,-mjsig, mjsig, mnsig, 1.1]
-    clr = ['w', mnc, mjc, mnc, 'w']
-    axes.contourf(x, y, z, cl, colors=clr)#, zorder=-1)
+    axes.contourf(x, y, z, cl, colors='w')
     cnt = axes.plots[-1]
-    axes.modifycontours(cnt, ind=[0,4], visible=False)
-    axes.modifycontours(cnt, ind=[1,3], edgecolor='none', alpha=mnalpha)
-    axes.modifycontours(cnt, ind=[2], edgecolor='none', alpha=mjalpha)
+    axes.modifycontours(cnt, ind=[0, 4], **mjsigp)
+    axes.modifycontours(cnt, ind=[1, 3], **mnsigp)
+    axes.modifycontours(cnt, ind=[2],    **nsigp)
 
   return axes
 # }}}
