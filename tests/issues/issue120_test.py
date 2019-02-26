@@ -3,6 +3,7 @@
 
 def test_suppresscolorbar():
   from pygeode.tutorial import t1
+  import pygeode as pyg
   import pylab as pyl
 
   pyl.ioff()
