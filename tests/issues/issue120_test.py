@@ -1,16 +1,20 @@
-from pygeode.tutorial import t1
-imoprt pylab as pyl
+# Issue 120 - Cannot switch off showvar's colorbar as intended
+# https://github.com/pygeode/pygeode/issues/120
 
-pyl.ioff()
+def test_suppresscolorbar():
+  from pygeode.tutorial import t1
+  import pylab as pyl
 
-# default behaviour
-ax1 = pyg.showvar(t1.Temp)
+  pyl.ioff()
 
-ax2 = pyg.showvar(t1.Temp,colorbar=False)
+  # default behaviour
+  ax1 = pyg.showvar(t1.Temp)
 
-# assuming that if there is a second axis, it will be a colorbar
-# and axes list will have non-zero length
-assert len(ax1.axes)==2
+  ax2 = pyg.showvar(t1.Temp,colorbar=False)
 
-assert len(ax2.axes)==0
+  # assuming that if there is a second axis, it will be a colorbar
+  # and axes list will have non-zero length
+  assert len(ax1.axes)==2
+
+  assert len(ax2.axes)==0
 
