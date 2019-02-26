@@ -175,7 +175,7 @@ class Axis(Var):
     nm = c.__name__
     while c is not Axis:
       if _config.has_option('Axes',  nm + '.name'):
-        ax.name = _config.get('Axes', nm + '.name')
+        ax.name = str(_config.get('Axes', nm + '.name'))
         break
       else:
         c = c.__bases__[0]
