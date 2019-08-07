@@ -224,7 +224,7 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
       dataset =  {key: finalize_save(value, cfmeta, pack) for key, value in in_dataset.items()}
       dataset =  {key: tidy_axes(value, unlimited=unlimited) for key, value in dataset.items()}
       for key, value in dataset.items():
-	group = f.createGroup(key)
+        group = f.createGroup(key)
         write_var(group, value, unlimited=unlimited, compress=compress)
         
     else:
