@@ -71,6 +71,9 @@ def to_xarray(dataset):
 
 # Helper method - convert unicode attributes to str.
 def _fix_atts (atts):
+  import sys
+  if sys.version_info[0] >= 3:
+    unicode = str
   atts = dict((str(k),v) for k,v in atts.items())
   for k,v in list(atts.items()):
     if isinstance(v,unicode):

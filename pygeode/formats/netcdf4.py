@@ -12,6 +12,9 @@ def make_dim (name, size, dimdict={}):
 
 # Extract attributes
 def make_atts (v):
+  import sys
+  if sys.version_info[0] >= 3:
+    unicode = str
   atts = dict()
   for name in v.ncattrs():
     att = v.getncattr(name)
