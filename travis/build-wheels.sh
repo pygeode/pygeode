@@ -5,8 +5,12 @@ set -e -x
 yum install -y atlas-devel lapack-devel gsl-devel netcdf
 
 # Compile wheels
-for PYBIN in /opt/python/{cp27,cp3[4-9]}*/bin; do
+for PYBIN in /opt/python/{cp27,cp3[56]}*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements.txt
+    "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
+done
+for PYBIN in /opt/python/cp3[7-9]*/bin; do
+    "${PYBIN}/pip" install -r /io/dev-requirements-3.7.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
 
