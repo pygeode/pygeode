@@ -34,6 +34,7 @@ class AxesWrapper:
 
     self.args = {}
     self.axes_args = kwargs
+    self.projection = None
     self.xaxis_args = {}
     self.yaxis_args = {}
 
@@ -129,7 +130,7 @@ class AxesWrapper:
          w = r - l
          h = t - b
 
-      self.ax = fig.add_axes([l, b, w, h])
+      self.ax = fig.add_axes([l, b, w, h], projection = self.projection)
     else:
       self.ax = None
 
@@ -554,9 +555,26 @@ try:
   # }}}
 except ImportError:
   import warnings
-  warnings.warn('Basemap functionality is unavailable.')
-
+  warnings.warn('Basemap functionality not available.')
   def isbasemapaxis(axes):
   # {{{
     return False
   # }}}
+
+try:
+  from .cartopy import *
+  from .cartopy import __all__ as crt_all
+  __all__.extend(crt_all)
+
+  def iscartopyaxis(axes):
+  # {{{
+    return isinstance(axes, CartopyAxes)
+  # }}}
+except ImportError:
+  import warnings
+  warnings.warn('Cartopy functionality not available.')
+  def iscartopyaxis(axes):
+  # {{{
+    return False
+  # }}}
+

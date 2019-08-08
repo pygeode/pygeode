@@ -143,6 +143,17 @@ def build_basemap(lons, lats, **kwargs):
   return wr.BasemapAxes(**prd)
 # }}}
 
+def build_cartopy(lons, lats, **kwargs):
+# {{{
+  if not hasattr(wr, 'CartopyAxes'):
+    return wr.AxesWrapper()
+
+  prd = dict(projection = 'PlateCarree')
+  prd.update(kwargs.pop('map', {}))
+
+  return wr.CartopyAxes(**prd)
+# }}}
+
 def decorate_basemap(axes, **kwargs):
 # {{{
   prd = dict(projection = 'cyl', resolution = 'c')
@@ -167,6 +178,21 @@ def decorate_basemap(axes, **kwargs):
     axes.drawcoastlines(**cld)
     axes.drawmeridians(**merd)
     axes.drawparallels(**pard)
+# }}}
+
+def decorate_cartopy(axes, **kwargs):
+# {{{
+  # Add coastlines, meridians, parallels
+  dec = kwargs.pop('decorate', {})
+
+  if isinstance(dec, dict):
+    cst = dict()
+    cst.update(dec.pop('coastline_args', {}))
+    if cst: axes.coastlines(**cst)
+
+    grd = dict(draw_labels = False)
+    grd.update(dec.pop('grid_args', {}))
+    if grd: axes.gridlines(**grd)
 # }}}
 
 def _parse_autofmt_kwargs(Z, kwargs):
@@ -437,9 +463,11 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   y = scalevalues(Y)
   z = scalevalues(Z.transpose(Y, X))
 
+  map = kwargs.pop('map', {})
+
   if axes is None:
-    if isinstance(X, Lon) and isinstance(Y, Lat) and kwargs.get('map', None) is not False:
-      axes = build_basemap(x, y, **kwargs)
+    if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
+      axes = build_cartopy(x, y, map = map, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
@@ -462,8 +490,10 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
     axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, **kwargs)
+    elif wr.iscartopyaxis(axes):
+      print(kwargs)
+      decorate_cartopy(axes, **kwargs)
     else:
-      axes.pad = (0.1, 0.1, 0.1, 0.1)
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
     plt = _getplotatts(var)
@@ -597,11 +627,12 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   u = scalevalues(U.transpose(Y, X))
   v = scalevalues(V.transpose(Y, X))
 
-  map = kwargs.pop('map', None)
+  map = kwargs.pop('map', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_basemap(x, y, map = map, **kwargs)
+      #axes = build_basemap(x, y, map = map, **kwargs)
+      axes = build_cartopy(x, y, map = map, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
@@ -612,6 +643,8 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
     axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, map = map, **kwargs)
+    elif wr.iscartopyaxis(axes):
+      decorate_cartopy(axes, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -658,11 +691,12 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   if varc is not None:
     c = scalevalues(C.transpose(Y, X))
 
-  map = kwargs.pop('map', None)
+  map = kwargs.pop('map', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_basemap(x, y, map = map, **kwargs)
+      #axes = build_basemap(x, y, map = map, **kwargs)
+      axes = build_cartopy(x, y, map = map, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
@@ -676,6 +710,8 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
     axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.isbasemapaxis(axes):
       decorate_basemap(axes, map = map, **kwargs)
+    elif wr.iscartopyaxis(axes):
+      decorate_cartopy(axes, map = map, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
