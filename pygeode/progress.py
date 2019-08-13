@@ -18,16 +18,18 @@ try:
   import progressbar as pb
   from datetime import datetime
 
-  _NOSHOWTIME = 1.
   class PygProgressBar(pb.ProgressBar):
     ''' Version of progressbar.ProgressBar that does not display until a minimum 
     time has elapsed. '''
     def __init__(self, **kwargs):
       self._no_show_time = _config.getfloat('ProgressBar', 'no_show_time')
+      self.message = kwargs.pop('message', '')
+      if self.message is not '': self.message = '{:<30}'.format(self.message)
       pb.ProgressBar.__init__(self, **kwargs)
 
     def default_widgets(self):
-      return [pb.Percentage(**self.widget_kwargs), 
+      return [pb.FormatCustomText(format = self.message),
+              pb.Percentage(**self.widget_kwargs), 
               pb.Bar(**self.widget_kwargs), 
               pb.AdaptiveETA(**self.widget_kwargs)]
 
@@ -41,25 +43,38 @@ try:
       else:
         return pb.ProgressBar.update(self, value, force, **kwargs)
 
+    def finish(self, end='\n'):
+      if self.start_time is None:
+        total_seconds_elapsed = 0.
+      else:
+        total_seconds_elapsed = pb.utils.timedelta_to_seconds(datetime.now() - self.start_time)
+
+      if total_seconds_elapsed < self._no_show_time: 
+        pb.ProgressBar.finish(self, end = '')
+      else:
+        pb.ProgressBar.finish(self, end = end)
+        
+
 except ImportError as e:
   from warnings import warn
-  warn ("progressbar module not found (%s). Progress bars will not be displayed." % e.message)
+  warn ("progressbar module not found (%s). Progress bars will not be displayed." % repr(e))
   PygProgressBar = None
 
 class PBar:
-  def __init__ (self, pbar=None, lower=0, upper=100, message=None):
+  def __init__ (self, pbar=None, lower=0, upper=100, message=''):
     self.lower = lower
     self.upper = upper
+    self.parent = False
 
     if pbar is not None:
       self.pbar = pbar
       return
 
     if PygProgressBar is not None:
-      pbar = PygProgressBar(max_value=100.0, poll_interval = _config.getfloat('ProgressBar', 'poll_interval'))
+      self.parent = True
+      pbar = PygProgressBar(message = message, max_value=100.0, \
+                            poll_interval = _config.getfloat('ProgressBar', 'poll_interval'))
       self.pbar = pbar.start()
-      self.pbar.message = message  # staple a title message to the progress bar
-                                   # (to be used in _need_update)
     else:
       self.pbar = None
 
@@ -73,6 +88,8 @@ class PBar:
     y = min(y,100)
     if self.pbar is not None:
       self.pbar.update(y)
+      if y >= 100 and self.parent:
+        self.pbar.finish()
 
   def subset(self, L, U):
     lower = self.lower
