@@ -64,6 +64,8 @@ try:
         return pb.ProgressBar.update(self, value, force, **kwargs)
 
     def finish(self, end='\n'):
+      if self._finished: return
+
       if self.start_time is None:
         total_seconds_elapsed = 0.
       else:
@@ -73,8 +75,8 @@ try:
 
       if total_seconds_elapsed >= self._no_show_time: 
         pb.ProgressBar.finish(self, end = end)
-      else:
-        self._finished = True
+
+      self._finished = True
 
 except ImportError as e:
   from warnings import warn
