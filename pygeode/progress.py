@@ -25,7 +25,8 @@ try:
       self._no_show_time = _config.getfloat('ProgressBar', 'no_show_time')
       self.message = kwargs.pop('message', '')
       if self.message is not '': self.message = '{:<30}'.format(self.message)
-      pb.ProgressBar.__init__(self, **kwargs)
+      self.init_kwargs = kwargs
+      pb.bar.ProgressBarMixinBase.__init__(self)
 
     def default_widgets(self):
       return [pb.FormatCustomText(format = self.message),
@@ -33,26 +34,48 @@ try:
               pb.Bar(**self.widget_kwargs), 
               pb.AdaptiveETA(**self.widget_kwargs)]
 
+    def start(self, max_value=None, init=True):
+      # Avoid initializing progress bar until _no_show_time has elapsed.
+      self.init()
+      self.max_value = max_value
+      self.start_time = datetime.now()
+      return self
+
     def update(self, value=None, force=False, **kwargs):
       if self.start_time is None:
         self.start()
 
-      total_seconds_elapsed = pb.utils.timedelta_to_seconds(datetime.now() - self.start_time)
+      if self.end_time is None:
+        et = datetime.now()
+      else:
+        et = self.end_time
+
+      total_seconds_elapsed = pb.utils.timedelta_to_seconds(et - self.start_time)
       if total_seconds_elapsed < self._no_show_time: 
         return
       else:
+        if self.last_update_time is None:
+          # Create underlying progress bar
+          st = self.start_time 
+          pb.ProgressBar.__init__(self, **self.init_kwargs)
+          pb.ProgressBar.start(self, self.max_value, init=True)
+          self.start_time = st
+
         return pb.ProgressBar.update(self, value, force, **kwargs)
 
     def finish(self, end='\n'):
       if self.start_time is None:
         total_seconds_elapsed = 0.
       else:
-        total_seconds_elapsed = pb.utils.timedelta_to_seconds(datetime.now() - self.start_time)
+        if self.end_time is None:
+          self.end_time = datetime.now()
+        total_seconds_elapsed = pb.utils.timedelta_to_seconds(self.end_time - self.start_time)
 
-      if total_seconds_elapsed < self._no_show_time: 
-        pb.ProgressBar.finish(self, end = '')
-      else:
+      self._finished = True
+
+      if total_seconds_elapsed >= self._no_show_time: 
         pb.ProgressBar.finish(self, end = end)
+
         
 
 except ImportError as e:
