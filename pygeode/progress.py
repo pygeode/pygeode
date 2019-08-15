@@ -71,12 +71,10 @@ try:
           self.end_time = datetime.now()
         total_seconds_elapsed = pb.utils.timedelta_to_seconds(self.end_time - self.start_time)
 
-      self._finished = True
-
       if total_seconds_elapsed >= self._no_show_time: 
         pb.ProgressBar.finish(self, end = end)
-
-        
+      else:
+        self._finished = True
 
 except ImportError as e:
   from warnings import warn
