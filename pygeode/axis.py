@@ -835,6 +835,64 @@ def regularlon(n, origin=0., order=1, repeat_origin=False):
   return Lon(vals)
 # }}}
 
+def rotatelon(v, origin, duplicate = False):
+# {{{
+	''' Rotates longitude axis to start at a new origin.
+
+	Parameters
+	----------
+  v : :class:`Var`
+    Variable with :class:`Lon` axis to modify
+  origin: float
+    New origin for longitude axis
+  duplicate: boolean; optional
+    If true, duplicates the origin value at the end of the axis (can be useful
+    for plotting).  Default is ``False``.
+
+  Returns
+  -------
+  vn : :class:`Var`
+    Variable with modified longitude axis
+
+  Examples
+  ========
+  >>> import pygeode as pyg; from pygeode.tutorial import t1
+  >>> print(t1.Temp)
+  lon <Lon>      :  0 E to 354 E (60 values)
+  >>> print(pyg.rotatelon(t1.Temp, -180))
+  <Var 'Temp'>:
+    Units: K  Shape:  (lat,lon)  (31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  180 E to 174 E (60 values)
+    Attributes:
+      {}
+    Type:  SortedVar (dtype="float64")
+  >>> print(pyg.rotatelon(t1.Temp, 0, duplicate=True).lon[:])
+  [  0.   6.  12.  18.  24.  30.  36.  42.  48.  54.  60.  66.  72.  78.
+    84.  90.  96. 102. 108. 114. 120. 126. 132. 138. 144. 150. 156. 162.
+   168. 174. 180. 186. 192. 198. 204. 210. 216. 222. 228. 234. 240. 246.
+   252. 258. 264. 270. 276. 282. 288. 294. 300. 306. 312. 318. 324. 330.
+   336. 342. 348. 354. 360.]
+	'''
+	from . import concatenate
+	
+	if not v.hasaxis('lon'): return v
+
+	lons = v.lon[:]
+	o = origin % 360
+	off = o - origin
+	lp = Lon(values=(lons - o) % 360 + o - off)
+	v0 = v.replace_axes(lon=lp).sorted('lon')
+
+	if duplicate:
+		l360 = Lon(values = [origin + 360])
+		v0 = concatenate([v0, v0(lon=0).replace_axes(lon = l360)])
+
+	return v0
+# }}}
+
+
 class Lat (YAxis):
 # {{{
   ''' Latitude axis. '''
@@ -1231,4 +1289,4 @@ def concat (axes):
 
 
 # List of axes provided in this module (for easy importing)
-standard_axes = [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis, Lon, NonCoordinateAxis, regularlon, Lat, gausslat, regularlat, Pres, Hybrid, Height, SpectralM, SpectralN, Freq, Index]
+standard_axes = [Axis, NamedAxis, XAxis, YAxis, ZAxis, TAxis, Lon, NonCoordinateAxis, regularlon, rotatelon, Lat, gausslat, regularlat, Pres, Hybrid, Height, SpectralM, SpectralN, Freq, Index]
