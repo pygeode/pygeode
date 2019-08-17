@@ -14,13 +14,15 @@ def make_dim (name, size, dimdict={}):
 def make_atts (v):
   import sys
   if sys.version_info[0] >= 3:
-    unicode = str
+    unicode_type = str
+  else:
+    unicode_type = unicode
   atts = dict()
   for name in v.ncattrs():
     att = v.getncattr(name)
     # netcdf4-python module in Python 2 uses unicode instead of strings.
     # Need to force this back to string type.
-    if isinstance(att,unicode):
+    if isinstance(att,unicode_type):
       att = str(att)
     atts[str(name)] = att
   return atts
