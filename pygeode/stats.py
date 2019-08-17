@@ -5,7 +5,7 @@ __all__ = ('correlate', 'regress', 'multiple_regress', 'difference', 'paired_dif
 import numpy as np
 from scipy.stats import norm, t as tdist
 
-def correlate(X, Y, axes=None, pbar=None):
+def correlate(X, Y, axes=None, output = 'r2,p', pbar=None):
 # {{{
   r'''Computes correlation between variables X and Y.
 
@@ -18,25 +18,41 @@ def correlate(X, Y, axes=None, pbar=None):
     Axes over which to compute correlation; if nothing is specified, the correlation
     is computed over all axes common to  shared by X and Y.
 
+  output : string, optional
+    A string determining which parameters are returned; see list of possible outputs
+    in the Returns section. The specifications must be separated by a comma. Defaults
+    to 'r2,p'.
+
   pbar : progress bar, optional
     A progress bar object. If nothing is provided, a progress bar will be displayed
     if the calculation takes sufficiently long.
 
   Returns
   =======
-  rho, p : :class:`Var`
-    The correlation coefficient :math:`\rho_{XY}` and p-value, respectively.
+  results : :class:`Dataset` 
+    The names of the variables match the output request string (i.e. if ``ds``
+    is the returned dataset, the correlation coefficient can be obtained
+    through ``ds.r2``).
+
+    * 'r2': The correlation coefficient :math:`\rho_{XY}`
+    * 'p':  The p-value; see notes.
 
   Notes
   =====
   The coefficient :math:`\rho_{XY}` is computed following von Storch and Zwiers
-  1999, section 8.2.2. The p-value is the probability of finding the given
-  result under the hypothesis that the true correlation coefficient between X
-  and Y is zero. It is computed from the t-statistic given in eq (8.7), in
-  section 8.2.3, and assumes normally distributed quantities.'''
+  1999, section 8.2.2. The p-value is the probability of finding a correlation
+  coeefficient of equal or greater magnitude (two-sided) to the given result
+  under the hypothesis that the true correlation coefficient between X and Y is
+  zero. It is computed from the t-statistic given in eq (8.7), in section
+  8.2.3, and assumes normally distributed quantities.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
+
+  # Split output request now
+  ovars = ['r2', 'p']
+  output = [o for o in output.split(',') if o in ovars]
+  if len(output) < 1: raise ValueError('No valid outputs are requested from correlation. Possible outputs are %s.' % str(ovars))
 
   # Put all the axes being reduced over at the end 
   # so that we can reshape 
@@ -59,12 +75,12 @@ def correlate(X, Y, axes=None, pbar=None):
   siaxes = list(range(len(oaxes), len(srcaxes)))
 
   # Construct work arrays
-  x  = np.zeros(oview.shape, 'd')*np.nan
-  y  = np.zeros(oview.shape, 'd')*np.nan
-  xx = np.zeros(oview.shape, 'd')*np.nan
-  yy = np.zeros(oview.shape, 'd')*np.nan
-  xy = np.zeros(oview.shape, 'd')*np.nan
-  Na = np.zeros(oview.shape, 'd')*np.nan
+  x  = np.full(oview.shape, np.nan, 'd')
+  y  = np.full(oview.shape, np.nan, 'd')
+  xx = np.full(oview.shape, np.nan, 'd')
+  yy = np.full(oview.shape, np.nan, 'd')
+  xy = np.full(oview.shape, np.nan, 'd')
+  Na = np.full(oview.shape, np.nan, 'd')
 
   if pbar is None:
     from pygeode.progress import PBar
@@ -84,28 +100,33 @@ def correlate(X, Y, axes=None, pbar=None):
 
     # It seems np.nansum does not broadcast its arguments automatically
     # so there must be a better way of doing this...
-    x[outsl] = np.nansum([x[outsl], npnansum(xdata, siaxes)], 0)
-    y[outsl]  = np.nansum([y[outsl], npnansum(ydata, siaxes)], 0)
+    x[outsl]  = np.nansum([x[outsl],  npnansum(xdata, siaxes)], 0)
+    y[outsl]  = np.nansum([y[outsl],  npnansum(ydata, siaxes)], 0)
     xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, siaxes)], 0)
     yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, siaxes)], 0)
     xy[outsl] = np.nansum([xy[outsl], npnansum(xydata, siaxes)], 0)
 
-    # Sum of weights
+    # Count of non-NaN data points
     Na[outsl] = np.nansum([Na[outsl], npnansum(~np.isnan(xydata), siaxes)], 0)
 
-  eps = 1e-14
-  imsk = ~(Na < eps)
+  imsk = (Na > 0)
 
   xx[imsk] -= (x*x)[imsk]/Na[imsk]
   yy[imsk] -= (y*y)[imsk]/Na[imsk]
   xy[imsk] -= (x*y)[imsk]/Na[imsk]
+
+  # Ensure variances are non-negative
+  xx[xx <= 0.] = 0.
+  yy[yy <= 0.] = 0.
 
   # Compute correlation coefficient, t-statistic, p-value
   den = np.zeros(oview.shape, 'd')
   rho = np.zeros(oview.shape, 'd')
 
   den[imsk] = np.sqrt((xx*yy)[imsk])
-  rho[den > 0.] = xy[den > 0.] / np.sqrt(xx*yy)[den > 0.]
+  dmsk = (den > 0.)
+
+  rho[dmsk] = xy[dmsk] / np.sqrt(xx*yy)[dmsk]
 
   den = 1 - rho**2
   # Saturate the denominator (when correlation is perfect) to avoid div by zero warnings
@@ -115,21 +136,40 @@ def correlate(X, Y, axes=None, pbar=None):
   p = np.zeros(oview.shape, 'd')
 
   t[imsk] = np.abs(rho)[imsk] * np.sqrt((Na[imsk] - 2.)/den[imsk])
-  p[imsk] = tdist.cdf(t[imsk], Na[imsk]-2) * np.sign(rho[imsk])
+  p[imsk] = 2. * (1. - tdist.cdf(t[imsk], Na[imsk] - 2))
+
   p[~imsk] = np.nan
   rho[~imsk] = np.nan
+
+  p[~dmsk] = np.nan
+  rho[~dmsk] = np.nan
 
   # Construct and return variables
   xn = X.name if X.name != '' else 'X' # Note: could write:  xn = X.name or 'X'
   yn = Y.name if Y.name != '' else 'Y'
 
   from pygeode.var import Var
-  Rho = Var(oaxes, values=rho, name='C(%s, %s)' % (xn, yn))
-  P = Var(oaxes, values=p, name='P(C(%s,%s) != 0)' % (xn, yn))
-  return Rho, P
+  from pygeode.dataset import asdataset
+
+  rvs = []
+
+  if 'r2' in output:
+    r2 = Var(oaxes, values=rho, name='r2')
+    r2.atts['longname'] = 'Correlation coefficient between %s and %s' % (xn, yn)
+    rvs.append(r2)
+
+  if 'p' in output:
+    p = Var(oaxes, values=p, name='p')
+    p.atts['longname'] = 'p-value for correlation coefficient between %s and %s' % (xn, yn)
+    rvs.append(p)
+
+  ds = asdataset(rvs)
+  ds.atts['description'] = 'correlation analysis %s against %s' % (yn, xn)
+
+  return ds
 # }}}
 
-def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
+def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
 # {{{
   r'''Computes least-squares linear regression of Y against X.
 
@@ -142,10 +182,6 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
     Axes over which to compute correlation; if nothing is specified, the correlation
     is computed over all axes common to X and Y.
 
-  pbar : progress bar, optional
-    A progress bar object. If nothing is provided, a progress bar will be displayed
-    if the calculation takes sufficiently long.
-
   N_fac : integer
     A factor by which to rescale the estimated number of degrees of freedom; the effective
     number will be given by the number estimated from the dataset divided by ``N_fac``.
@@ -155,19 +191,26 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
     in the Returns section. The specifications must be separated by a comma. Defaults 
     to 'm,b,p'.
 
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
   Returns
   =======
-  results : list of :class:`Var` instances.
-    The return values are specified by the ``output`` argument. A fit of the form
-    :math:`Y = m X + b + \epsilon` is assumed, and the following parameters
-    can be returned:
+  results : :class:`Dataset` 
+    The returned variables are specified by the ``output`` argument. The names of the 
+    variables match the output request string (i.e. if ``ds`` is the returned dataset, the 
+    linear coefficient of the regression can be obtained by ``ds.m``). 
+    
+    A fit of the form :math:`Y = m X + b + \epsilon` is assumed, and the
+    following parameters can be returned:
 
     * 'm': Linear coefficient of the regression
     * 'b': Constant coefficient of the regression
-    * 'r': Fraction of the variance in Y explained by X (:math:`R^2`)
-    * 'p': Probability of this fit if the true linear coefficient was zero
-    * 'sm': Variance in linear coefficient
-    * 'se': Variance of residuals
+    * 'r2': Fraction of the variance in Y explained by X (:math:`R^2`)
+    * 'p': p-value of regression; see notes.
+    * 'sm': Standard deviation of linear coefficient estimate
+    * 'se': Standard deviation of residuals
 
   Notes
   =====
@@ -178,8 +221,13 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
   :math:`\hat{\sigma}_E/\sqrt{S_{XX}}` in von Storch and Zwiers, respectively).
   The data is assumed to be normally distributed.'''
 
-  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
+
+  # Split output request now
+  ovars = ['m', 'b', 'r2', 'p', 'sm', 'se']
+  output = [o for o in output.split(',') if o in ovars]
+  if len(output) < 1: raise ValueError('No valid outputs are requested from regression. Possible outputs are %s.' % str(ovars))
 
   srcaxes = combine_axes([X, Y])
   oiaxes, riaxes = shared_axes(srcaxes, [X.axes, Y.axes])
@@ -205,65 +253,129 @@ def regress(X, Y, axes=None, pbar=None, N_fac=None, output='m,b,p'):
   assert len(riaxes) > 0, '%s and %s share no axes to be regressed over' % (X.name, Y.name)
 
   # Construct work arrays
-  x = np.zeros(oview.shape, 'd')
-  y = np.zeros(oview.shape, 'd')
-  xx = np.zeros(oview.shape, 'd')
-  xy = np.zeros(oview.shape, 'd')
-  yy = np.zeros(oview.shape, 'd')
+  x  = np.full(oview.shape, np.nan, 'd')
+  y  = np.full(oview.shape, np.nan, 'd')
+  xx = np.full(oview.shape, np.nan, 'd')
+  yy = np.full(oview.shape, np.nan, 'd')
+  xy = np.full(oview.shape, np.nan, 'd')
+  Na = np.full(oview.shape, np.nan, 'd')
 
   # Accumulate data
   for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes, pbar=pbar):
     xdata = xdata.astype('d')
     ydata = ydata.astype('d')
-    x[outsl] += npsum(xdata, siaxes)
-    y[outsl] += npsum(ydata, siaxes)
-    xx[outsl] += npsum(xdata**2, siaxes)
-    yy[outsl] += npsum(ydata**2, siaxes)
-    xy[outsl] += npsum(xdata*ydata, siaxes)
+    xydata = xdata*ydata
 
-  N = np.prod([len(srcaxes[i]) for i in riaxes])
+    xbc = [s1 // s2 for s1, s2 in zip(xydata.shape, xdata.shape)]
+    ybc = [s1 // s2 for s1, s2 in zip(xydata.shape, ydata.shape)]
+    xdata = np.tile(xdata, xbc)
+    ydata = np.tile(ydata, ybc)
+    xdata[np.isnan(xydata)] = np.nan
+    ydata[np.isnan(xydata)] = np.nan
 
-  # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx -= x**2/N
-  yy -= y**2/N
-  xy -= (x*y)/N
+    # It seems np.nansum does not broadcast its arguments automatically
+    # so there must be a better way of doing this...
+    x[outsl]  = np.nansum([x[outsl],  npnansum(xdata, siaxes)], 0)
+    y[outsl]  = np.nansum([y[outsl],  npnansum(ydata, siaxes)], 0)
+    xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, siaxes)], 0)
+    yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, siaxes)], 0)
+    xy[outsl] = np.nansum([xy[outsl], npnansum(xydata, siaxes)], 0)
 
-  m = xy/xx
-  b = (y - m*x)/float(N)
+    # Sum of weights
+    Na[outsl] = np.nansum([Na[outsl], npnansum(~np.isnan(xydata), siaxes)], 0)
 
-  if N_fac is None: N_eff = N
-  else: N_eff = N // N_fac
-  sige = (yy - m * xy) / (N_eff - 2.)
-  sigm = np.sqrt(sige / xx)
-  t = np.abs(m) / sigm
-  p = tdist.cdf(t, N-2) * np.sign(m)
+  if N_fac is None:
+    N_eff = Na - 2.
+  else:
+    N_eff = Na / N_fac - 2.
+
+  nmsk = (N_eff > 0.)
+
+  xx[nmsk] -= (x*x)[nmsk]/Na[nmsk]
+  yy[nmsk] -= (y*y)[nmsk]/Na[nmsk]
+  xy[nmsk] -= (x*y)[nmsk]/Na[nmsk]
+
+  dmsk = (xx > 0.)
+
+  m  = np.zeros(oview.shape, 'd')
+  b  = np.zeros(oview.shape, 'd')
+  r2 = np.zeros(oview.shape, 'd')
+
+  m[dmsk] = xy[dmsk]/xx[dmsk]
+  b[nmsk] = (y[nmsk] - m[nmsk]*x[nmsk]) / Na[nmsk]
+
+  r2den = xx * yy
+  d2msk = (r2den > 0.)
+
+  r2[d2msk] = xy[d2msk]**2 / r2den[d2msk]
+
+  sige = np.zeros(oview.shape, 'd')
+  sigm = np.zeros(oview.shape, 'd')
+  t = np.zeros(oview.shape, 'd')
+  p = np.zeros(oview.shape, 'd')
+
+  sige[nmsk] = (yy[nmsk] - m[nmsk] * xy[nmsk]) / N_eff[nmsk]
+  sigm[dmsk] = np.sqrt(sige[dmsk] / xx[dmsk])
+  sige[nmsk] = np.sqrt(sige[dmsk])
+  t[dmsk] = np.abs(m[dmsk]) / sigm[dmsk]
+  p[nmsk] = 2. * (1. - tdist.cdf(t[nmsk], N_eff[nmsk]))
+
+  msk = nmsk & dmsk
+   
+  m[~msk] = np.nan
+  b[~msk] = np.nan
+  sige[~msk] = np.nan
+  sigm[~msk] = np.nan
+  p[~msk] = np.nan
+
+  msk = nmsk & d2msk
+  r2[~msk] = np.nan
+
   xn = X.name if X.name != '' else 'X'
   yn = Y.name if Y.name != '' else 'Y'
 
   from pygeode.var import Var
-  output = output.split(',')
-  ret = []
+  from pygeode.dataset import asdataset
+  
+  rvs = []
 
   if 'm' in output:
-    M = Var(oaxes, values=m, name='%s vs. %s' % (yn, xn))
-    ret.append(M)
-  if 'b' in output:
-    B = Var(oaxes, values=b, name='Intercept (%s vs. %s)' % (yn, xn))
-    ret.append(B)
-  if 'r' in output:
-    ret.append(Var(oaxes, values=xy**2/(xx*yy), name='R2(%s vs. %s)' % (yn, xn)))
-  if 'p' in output:
-    P = Var(oaxes, values=p, name='P(%s vs. %s != 0)' % (yn, xn))
-    ret.append(P)
-  if 'sm' in output:
-    ret.append(Var(oaxes, values=sigm, name='Sig. Intercept (%s vs. %s != 0)' % (yn, xn)))
-  if 'se' in output:
-    ret.append(Var(oaxes, values=np.sqrt(sige), name='Sig. Resid. (%s vs. %s != 0)' % (yn, xn)))
+    M = Var(oaxes, values=m, name='m')
+    M.atts['longname'] = 'slope'
+    rvs.append(M)
 
-  return ret
+  if 'b' in output:
+    B = Var(oaxes, values=b, name='b')
+    B.atts['longname'] = 'intercept'
+    rvs.append(B)
+
+  if 'r2' in output:
+    R2 = Var(oaxes, values=r2, name='r2')
+    R2.atts['longname'] = 'fraction of variance explained'
+    rvs.append(R2)
+
+  if 'p' in output:
+    P = Var(oaxes, values=p, name='p')
+    P.atts['longname'] = 'p-value'
+    rvs.append(P)
+
+  if 'sm' in output:
+    SM = Var(oaxes, values=sigm, name='sm')
+    SM.atts['longname'] = 'standard deviation of slope parameter'
+    rvs.append(SM)
+
+  if 'se' in output:
+    SE = Var(oaxes, values=sige, name='se')
+    SE.atts['longname'] = 'standard deviation of residual'
+    rvs.append(SE)
+
+  ds = asdataset(rvs)
+  ds.atts['description'] = 'linear regression parameters for %s regressed against %s' % (yn, xn)
+
+  return ds
 # }}}
 
-def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
+def multiple_regress(Xs, Y, axes=None, N_fac=None, output='B,p', pbar=None):
 # {{{
   r'''Computes least-squares multiple regression of Y against variables Xs.
 
@@ -280,10 +392,6 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
     Axes over which to compute correlation; if nothing is specified, the correlation
     is computed over all axes common to the Xs and Y.
 
-  pbar : progress bar, optional
-    A progress bar object. If nothing is provided, a progress bar will be displayed
-    if the calculation takes sufficiently long.
-
   N_fac : integer
     A factor by which to rescale the estimated number of degrees of freedom; the effective
     number will be given by the number estimated from the dataset divided by ``N_fac``.
@@ -293,31 +401,39 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
     in the Returns section. The specifications must be separated by a comma. Defaults 
     to 'B,p'.
 
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
+
   Returns
   =======
   results : tuple of floats or :class:`Var` instances.
-    The return values are specified by the ``output`` argument. A fit of the form
-    :math:`Y = \sum_i \beta_i X_i + \epsilon` is assumed. Note that a constant term
-    is not included by default. The following parameters can be returned:
+    The return values are specified by the ``output`` argument. The names of the 
+    variables match the output request string (i.e. if ``ds`` is the returned dataset, the 
+    linear coefficient of the regression can be obtained by ``ds.m``). 
+    
+    A fit of the form :math:`Y = \sum_i \beta_i X_i + \epsilon` is assumed.
+    Note that a constant term is not included by default. The following
+    parameters can be returned:
 
     * 'B': Linear coefficients :math:`\beta_i` of each regressor
-    * 'r': Fraction of the variance in Y explained by all Xs (:math:`R^2`)
-    * 'p': Probability of this fit if the true linear coefficient was zero for each regressor
+    * 'r2': Fraction of the variance in Y explained by all Xs (:math:`R^2`)
+    * 'p': p-value of regession; see notes.
     * 'sb': Standard deviation of each linear coefficient
     * 'covb': Covariance matrix of the linear coefficients
     * 'se': Standard deviation of residuals
 
-    If the regression is computed over all axes so that the result is a scalar,
-    the above are returned as a tuple of floats in the order specified by
-    ``output``. Otherwise they are returned as :class:`Var` instances. The outputs
-    'B', 'p', and 'sb' will produce as many outputs as there are regressors. 
+    The outputs 'B', 'p', and 'sb' will produce as many outputs as there are
+    regressors. 
 
   Notes
   =====
   The statistics described are computed following von Storch and Zwiers 1999,
   section 8.4. The p-value 'p' is computed using the t-statistic appropriate
   for the multi-variate normal estimator :math:`\hat{\vec{a}}` given in section
-  8.4.2; note this may not be the best way to determine if a given parameter is
+  8.4.2; it corresponds to the probability of obtaining the regression
+  coefficient under the null hypothesis that there is no linear relationship.
+  Note this may not be the best way to determine if a given parameter is
   contributing a significant fraction to the explained variance of Y.  The
   variances 'se' and 'sb' are :math:`\hat{\sigma}_E` and the square root of the
   diagonal elements of :math:`\hat{\sigma}^2_E (\chi^T\chi)` in von Storch and
@@ -325,6 +441,11 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npsum
   from pygeode.view import View
+
+  # Split output request now
+  ovars = ['beta', 'r2', 'p', 'sb', 'covb', 'se']
+  output = [o for o in output.split(',') if o in ovars]
+  if len(output) < 1: raise ValueError('No valid outputs are requested from correlation. Possible outputs are %s.' % str(ovars))
 
   Nr = len(Xs)
 
@@ -341,8 +462,8 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
     oiaxes.extend([r for r in riaxes if r not in ri_new])
     riaxes = ri_new
     
-  oaxes = [srcaxes[i] for i in oiaxes]
-  inaxes = oaxes + [srcaxes[i] for i in riaxes]
+  oaxes = tuple([srcaxes[i] for i in oiaxes])
+  inaxes = oaxes + tuple([srcaxes[i] for i in riaxes])
   oview = View(oaxes) 
   siaxes = list(range(len(oaxes), len(srcaxes)))
 
@@ -356,7 +477,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
   os = oview.shape
   os1 = os + (Nr,)
   os2 = os + (Nr,Nr)
-  y = np.zeros(os, 'd')
+  y  = np.zeros(os, 'd')
   yy = np.zeros(os, 'd')
   xy = np.zeros(os1, 'd')
   xx = np.zeros(os2, 'd')
@@ -366,9 +487,9 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 
   # Accumulate data
   for outsl, datatuple in loopover(Xs + [Y], oview, inaxes, pbar=pbar):
-    ydata = datatuple[-1].astype('d')
-    xdata = [datatuple[i].astype('d') for i in range(Nr)]
-    y[outsl] += npsum(ydata, siaxes)
+    ydata =  datatuple[-1].astype('d')
+    xdata = [datatuple[ i].astype('d') for i in range(Nr)]
+    y[outsl]  += npsum(ydata,    siaxes)
     yy[outsl] += npsum(ydata**2, siaxes)
     for i in range(Nr):
       xy[outsl+(i,)] += npsum(xdata[i]*ydata, siaxes)
@@ -382,7 +503,7 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
 
   # Compute inverse of covariance matrix (could be done more intellegently? certainly the python
   # loop over oview does not help)
-  xx = xx.reshape(-1, Nr, Nr)
+  xx    = xx.reshape(-1, Nr, Nr)
   xxinv = xxinv.reshape(-1, Nr, Nr)
   for i in range(xx.shape[0]):
     xxinv[i,:,:] = np.linalg.inv(xx[i,:,:])
@@ -400,57 +521,64 @@ def multiple_regress(Xs, Y, axes=None, pbar=None, N_fac=None, output='B,p'):
   xns = [X.name if X.name != '' else 'X%d' % i for i, X in enumerate(Xs)]
   yn = Y.name if Y.name != '' else 'Y'
 
-  from pygeode.var import Var
-  output = output.split(',')
-  ret = []
+  from .var import Var
+  from .dataset import asdataset
+  from .axis import NonCoordinateAxis
 
-  for o in output:
-    if o == 'B':
-      if len(oaxes) == 0:
-        ret.append(beta)
-      else:
-        ret.append([Var(oaxes, values=beta[...,i], name='beta_%s' % xns[i]) for i in range(Nr)])
-    elif o == 'r':
-      vary = (yy - y**2/N)
-      R2 = 1 - (yy - vare) / vary
-      if len(oaxes) == 0:
-        ret.append(R2)
-      else:
-        ret.append(Var(oaxes, values=R2, name='R2'))
-    elif o == 'p':
-      ps = [tdist.cdf(np.abs(beta[...,i]/sigbeta[i]), N_eff-Nr) * np.sign(beta[...,i]) for i in range(Nr)]
-      if len(oaxes) == 0:
-        ret.append(ps)
-      else:
-        ret.append([Var(oaxes, values=ps[i], name='p_%s' % xns[i]) for i in range(Nr)])
-    elif o == 'sb':
-      if len(oaxes) == 0:
-        ret.append(sigbeta)
-      else:
-        ret.append([Var(oaxes, values=sigbeta[i], name='sig_%s' % xns[i]) for i in range(Nr)])
-    elif o == 'covb':
-      from .axis import NonCoordinateAxis as nca
-      cr1 = nca(values=list(range(Nr)), regressor1=[X.name for X in Xs], name='regressor1')
-      cr2 = nca(values=list(range(Nr)), regressor2=[X.name for X in Xs], name='regressor2')
-      sigmat = np.zeros(os2, 'd')
-      for i in range(Nr):
-        for j in range(Nr):
-          #sigmat[..., i, j] = np.sqrt((yy - vare) * xxinv[..., i, j] / N_eff)
-          sigmat[..., i, j] = (yy - vare) * xxinv[..., i, j] / N_eff
-      ret.append(Var(oaxes + [cr1, cr2], values=sigmat, name='smat'))
-    elif o == 'se':
-      se = np.sqrt((yy - vare) / N_eff)
-      if len(oaxes) == 0:
-        ret.append(se)
-      else:
-        ret.append(Var(oaxes, values=se, name='sig_resid'))
-    else:
-      print('multiple_regress: unrecognized output "%s"' % o)
+  ra  = NonCoordinateAxis(values=np.arange(Nr), regressor = xns, name = 'regressor')
+  ra2 = NonCoordinateAxis(values=np.arange(Nr), regressor = xns, name = 'regressor2')
+  Nd = len(oaxes)
 
-  return ret
+  rvs = []
+
+  if 'beta' in output:
+    B = Var(oaxes + (ra,), values=beta, name='beta')
+    B.atts['longname'] = 'regression coefficient'
+    rvs.append(B)
+
+  if 'r2' in output:
+    vary = (yy - y**2/N)
+    R2 = 1 - (yy - vare) / vary
+    R2 = Var(oaxes, values=R2, name='R2')
+    R2.atts['longname'] = 'fraction of variance explained'
+    rvs.append(R2)
+
+  if 'p' in output:
+    p = [2. * (1. - tdist.cdf(np.abs(beta[...,i]/sigbeta[i]), N_eff-Nr)) for i in range(Nr)]
+    p = np.transpose(np.array(p), [Nd] + list(range(Nd)))
+    p = Var(oaxes + (ra,), values=p, name='p')
+    p.atts['longname'] = 'p-values'
+    rvs.append(p)
+
+  if 'sb' in output:
+    sigbeta = np.transpose(np.array(sigbeta), [Nd] + list(range(Nd)))
+    sb = Var(oaxes + (ra,), values=sigbeta, name='sb')
+    sb.atts['longname'] = 'standard deviation of linear coefficients'
+    rvs.append(sb)
+
+  if 'covb' in output:
+    sigmat = np.zeros(os2, 'd')
+    for i in range(Nr):
+      for j in range(Nr):
+        #sigmat[..., i, j] = np.sqrt((yy - vare) * xxinv[..., i, j] / N_eff)
+        sigmat[..., i, j] = (yy - vare) * xxinv[..., i, j] / N_eff
+    covb = Var(oaxes + (ra, ra2), values=sigmat, name='covb')
+    covb.atts['longname'] = 'Covariance matrix of the linear coefficients'
+    rvs.append(covb)
+
+  if 'se' in output:
+    se = np.sqrt((yy - vare) / N_eff)
+    se = Var(oaxes, values=se, name='se')
+    se.atts['longname'] = 'standard deviation of residual'
+    rvs.append(se)
+
+  ds = asdataset(rvs)
+  ds.atts['description'] = 'multiple linear regression parameters for %s regressed against %s' % (yn, xns)
+
+  return ds
 # }}}
 
-def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
+def difference(X, Y, axes=None, alpha=0.05, Nx_fac = None, Ny_fac = None, output='d,p,ci', pbar=None):
 # {{{
   r'''Computes the mean value and statistics of X - Y.
 
@@ -459,22 +587,27 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   X, Y : :class:`Var`
     Variables to difference. Must have at least one axis in common.
 
-  axes : list, optional
-    Axes over which to compute means; if nothing is specified, the mean
+  axes : list, optional, defaults to None
+    Axes over which to compute means; if othing is specified, the mean
     is computed over all axes common to X and Y.
 
-  alpha : float
+  alpha : float, optional; defaults to 0.05
     Confidence level for which to compute confidence interval.
 
-  Nx_fac : integer
+  Nx_fac : integer, optional: defaults to None
     A factor by which to rescale the estimated number of degrees of freedom of
     X; the effective number will be given by the number estimated from the
     dataset divided by ``Nx_fac``.
 
-  Ny_fac : integer
+  Ny_fac : integer, optional: defaults to None
     A factor by which to rescale the estimated number of degrees of freedom of
     Y; the effective number will be given by the number estimated from the
     dataset divided by ``Ny_fac``.
+
+  output : string, optional
+    A string determining which parameters are returned; see list of possible outputs
+    in the Returns section. The specifications must be separated by a comma. Defaults 
+    to 'd,p,ci'.
 
   pbar : progress bar, optional
     A progress bar object. If nothing is provided, a progress bar will be displayed
@@ -482,17 +615,16 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
 
   Returns
   =======
-  results : tuple or :class:`Dataset` instance.
-    Four quantities are computed:
+  results : :class:`Dataset` 
+    The returned variables are specified by the ``output`` argument. The names
+    of the variables match the output request string (i.e. if ``ds`` is the
+    returned dataset, the average of the difference can be obtained by
+    ``ds.d``). The following four quantities can be computed:
 
-    * The difference in the means, X - Y
-    * The effective number of degrees of freedom, :math:`df`
-    * The probability of the computed difference if the population difference was zero
-    * The confidence interval of the difference at the level specified by alpha
-
-    If the average is taken over all axes of X and Y resulting in a scalar,
-    the above values are returned as a tuple in the order given. If not, the
-    results are provided as :class:`Var` objects in a dataset. 
+    * 'd': The difference in the means, X - Y
+    * 'df': The effective number of degrees of freedom, :math:`df`
+    * 'p': The p-value; see notes.
+    * 'ci': The confidence interval of the difference at the level specified by ``alpha``
 
   See Also
   ========
@@ -508,95 +640,158 @@ def difference(X, Y, axes, alpha=0.05, Nx_fac = None, Ny_fac = None, pbar=None):
   degrees of freedom are not calculated explicitly by this routine. The p-value and 
   confidence interval are computed based on the t-statistic in eq (6.19).'''
 
-  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
 
+  # Split output request now
+  ovars = ['d', 'df', 'p', 'ci']
+  output = [o for o in output.split(',') if o in ovars]
+  if len(output) < 1: raise ValueError('No valid outputs are requested from correlation. Possible outputs are %s.' % str(ovars))
+
   srcaxes = combine_axes([X, Y])
-  riaxes = [whichaxis(srcaxes, n) for n in axes]
-  raxes = [a for i, a in enumerate(srcaxes) if i in riaxes]
+  oiaxes, riaxes = shared_axes(srcaxes, [X.axes, Y.axes])
+  if axes is not None:
+    ri_new = []
+    for a in axes:
+      i = whichaxis(srcaxes, a)
+      if i not in riaxes: 
+        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, X.name, Y.name))
+      ri_new.append(i)
+    oiaxes.extend([r for r in riaxes if r not in ri_new])
+    riaxes = ri_new
+
   oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
   oview = View(oaxes) 
 
   ixaxes = [X.whichaxis(n) for n in axes if X.hasaxis(n)]
-  Nx = np.product([len(X.axes[i]) for i in ixaxes])
-
   iyaxes = [Y.whichaxis(n) for n in axes if Y.hasaxis(n)]
+
+  Nx = np.product([len(X.axes[i]) for i in ixaxes])
   Ny = np.product([len(Y.axes[i]) for i in iyaxes])
-  
+  assert Nx > 1, '%s has only one element along the reduction axes' % X.name
+  assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
+
   if pbar is None:
     from pygeode.progress import PBar
     pbar = PBar()
 
-  assert Nx > 1, '%s has only one element along the reduction axes' % X.name
-  assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
-
   # Construct work arrays
-  x = np.zeros(oview.shape, 'd')
-  y = np.zeros(oview.shape, 'd')
-  xx = np.zeros(oview.shape, 'd')
-  yy = np.zeros(oview.shape, 'd')
-
-  Nx = np.zeros(oview.shape, 'd')
-  Ny = np.zeros(oview.shape, 'd')
-
-  x[()] = np.nan
-  y[()] = np.nan
-  xx[()] = np.nan
-  yy[()] = np.nan
-  Nx[()] = np.nan
-  Ny[()] = np.nan
+  x  = np.full(oview.shape, np.nan, 'd')
+  y  = np.full(oview.shape, np.nan, 'd')
+  xx = np.full(oview.shape, np.nan, 'd')
+  yy = np.full(oview.shape, np.nan, 'd')
+  Nx = np.full(oview.shape, np.nan, 'd')
+  Ny = np.full(oview.shape, np.nan, 'd')
 
   # Accumulate data
   for outsl, (xdata,) in loopover([X], oview, pbar=pbar):
     xdata = xdata.astype('d')
-    x[outsl] = np.nansum([x[outsl], npnansum(xdata, ixaxes)], 0)
+    x[outsl]  = np.nansum([x[outsl],  npnansum(xdata, ixaxes)], 0)
     xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, ixaxes)], 0)
-    # Sum of weights (kludge to get masking right)
-    Nx[outsl] = np.nansum([Nx[outsl], npnansum(1. + xdata*0., ixaxes)], 0) 
+
+    # Count of non-NaN data points
+    Nx[outsl] = np.nansum([Nx[outsl], npnansum(~np.isnan(xdata), ixaxes)], 0) 
 
   for outsl, (ydata,) in loopover([Y], oview, pbar=pbar):
     ydata = ydata.astype('d')
-    y[outsl] = np.nansum([y[outsl], npnansum(ydata, iyaxes)], 0)
+    y[outsl]  = np.nansum([y[outsl],  npnansum(ydata, iyaxes)], 0)
     yy[outsl] = np.nansum([yy[outsl], npnansum(ydata**2, iyaxes)], 0)
-    # Sum of weights (kludge to get masking right)
-    Ny[outsl] = np.nansum([Ny[outsl], npnansum(1. + ydata*0., iyaxes)], 0) 
+
+    # Count of non-NaN data points
+    Ny[outsl] = np.nansum([Ny[outsl], npnansum(~np.isnan(ydata), iyaxes)], 0) 
 
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx = (xx - x**2/Nx) / (Nx - 1)
-  yy = (yy - y**2/Ny) / (Ny - 1)
-  x /= Nx
-  y /= Ny
+  imsk = (Nx > 1) & (Ny > 1)
+  xx[imsk] -= (x*x)[imsk] / Nx[imsk]
+  xx[imsk] /= (Nx[imsk] - 1)
+
+  x[imsk]  /= Nx[imsk]
+
+  yy[imsk] -= (y*y)[imsk] / Ny[imsk]
+  yy[imsk] /= (Ny[imsk] - 1)
+
+  y[imsk]  /= Ny[imsk]
+
+  # Ensure variances are non-negative
+  xx[xx <= 0.] = 0.
+  yy[yy <= 0.] = 0.
 
   if Nx_fac is not None: eNx = Nx//Nx_fac
   else: eNx = Nx
   if Ny_fac is not None: eNy = Ny//Ny_fac
   else: eNy = Ny
-  #print 'average eff. Nx = %.1f, average eff. Ny = %.1f' % (eNx.mean(), eNy.mean())
 
+  emsk = (eNx > 1) & (eNy > 1)
+
+  # Compute difference
   d = x - y
-  den = np.sqrt(xx/eNx + yy/eNy)
-  df = (xx/eNx + yy/eNy)**2 / ((xx/eNx)**2/(eNx - 1) + (yy/eNy)**2/(eNy - 1))
 
-  p = tdist.cdf(abs(d/den), df)*np.sign(d)
-  ci = tdist.ppf(1. - alpha/2, df) * den
+  den = np.zeros(oview.shape, 'd')
+  df  = np.zeros(oview.shape, 'd')
+  p   = np.zeros(oview.shape, 'd')
+  ci  = np.zeros(oview.shape, 'd')
 
+  # Convert to variance of the mean of each sample
+  xx[emsk] /= eNx[emsk]
+  yy[emsk] /= eNy[emsk]
+
+  den[emsk] = xx[emsk]**2/(eNx[emsk] - 1) + yy[emsk]**2/(eNy[emsk] - 1)
+  dmsk = (den > 0.)
+
+  df[dmsk] = (xx[dmsk] + yy[dmsk])**2 / den[dmsk]
+
+  den[emsk] = np.sqrt(xx[emsk] + yy[emsk])
+
+  dmsk &= (den > 0.)
+
+  p[dmsk] = np.abs(d[dmsk]/den[dmsk])
+  p[dmsk] = 2. * (1. - tdist.cdf(p[dmsk], df[dmsk]))
+
+  ci[dmsk] = tdist.ppf(1. - alpha/2, df[dmsk]) * den[dmsk]
+
+  df[~dmsk] = np.nan
+  p [~dmsk] = np.nan
+  ci[~dmsk] = np.nan
+
+  # Construct dataset to return
   xn = X.name if X.name != '' else 'X'
   yn = Y.name if Y.name != '' else 'Y'
-  if xn == yn: name = xn
-  else: name = '%s-%s'%(xn, yn)
 
-  if len(oaxes) > 0:
-    from pygeode import Var, Dataset
-    D = Var(oaxes, values=d, name=name)
-    DF = Var(oaxes, values=df, name='df_%s' % name)
-    P = Var(oaxes, values=p, name='p_%s' % name)
-    CI = Var(oaxes, values=ci, name='CI_%s' % name)
-    return Dataset([D, DF, P, CI])
-  else: # Degenerate case
-    return d, df, p, ci
+  from pygeode.var import Var
+  from pygeode.dataset import asdataset
+
+  rvs = []
+
+  if 'd' in output:
+    d = Var(oaxes, values = d, name = 'd')
+    d.atts['longname'] = 'Difference (%s - %s)' % (xn, yn)
+    rvs.append(d)
+
+  if 'df' in output:
+    df = Var(oaxes, values = df, name = 'df')
+    df.atts['longname'] = 'Degrees of freedom used for t-test'
+    rvs.append(df)
+
+  if 'p' in output:
+    p = Var(oaxes, values = p, name = 'p')
+    p.atts['longname'] = 'p-value for t-test of difference (%s - %s)' % (xn, yn)
+    rvs.append(p)
+
+  if 'ci' in output:
+    ci = Var(oaxes, values = ci, name = 'ci')
+    ci.atts['longname'] = 'Confidence Interval (alpha = %.2f) of difference (%s - %s)' % (alpha, xn, yn)
+    rvs.append(ci)
+
+  ds = asdataset(rvs)
+  ds.atts['alpha'] = alpha
+  ds.atts['Nx_fac'] = Nx_fac
+  ds.atts['Ny_fac'] = Ny_fac
+  ds.atts['description'] = 't-test of difference (%s - %s)' % (yn, xn)
+
+  return ds
 # }}}
 
-def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
+def paired_difference(X, Y, axes=None, alpha=0.05, N_fac = None, output='d,p,ci', pbar=None):
 # {{{
   r'''Computes the mean value and statistics of X - Y, assuming that individual elements
   of X and Y can be directly paired. In contrast to :func:`difference`, X and Y must have the same
@@ -605,7 +800,7 @@ def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
   Parameters
   ==========
   X, Y : :class:`Var`
-    Variables to difference. Must have at least one axis in common.
+    Variables to difference. Must share all axes over which the means are being computed.
 
   axes : list, optional
     Axes over which to compute means; if nothing is specified, the mean
@@ -614,15 +809,15 @@ def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
   alpha : float
     Confidence level for which to compute confidence interval.
 
-  Nx_fac : integer
+  N_fac : integer
     A factor by which to rescale the estimated number of degrees of freedom of
-    X; the effective number will be given by the number estimated from the
-    dataset divided by ``Nx_fac``.
+    X and Y; the effective number will be given by the number estimated from the
+    dataset divided by ``N_fac``.
 
-  Ny_fac : integer
-    A factor by which to rescale the estimated number of degrees of freedom of
-    Y; the effective number will be given by the number estimated from the
-    dataset divided by ``Ny_fac``.
+  output : string, optional
+    A string determining which parameters are returned; see list of possible outputs
+    in the Returns section. The specifications must be separated by a comma. Defaults 
+    to 'd,p,ci'.
 
   pbar : progress bar, optional
     A progress bar object. If nothing is provided, a progress bar will be displayed
@@ -630,17 +825,16 @@ def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
 
   Returns
   =======
-  results : tuple or :class:`Dataset` instance.
-    Four quantities are computed:
+  results : :class:`Dataset` 
+    The returned variables are specified by the ``output`` argument. The names
+    of the variables match the output request string (i.e. if ``ds`` is the
+    returned dataset, the average of the difference can be obtained by
+    ``ds.d``). The following four quantities can be computed:
 
-    * The difference in the means, X - Y
-    * The effective number of degrees of freedom, :math:`df`
-    * The probability of the computed difference if the population difference was zero
-    * The confidence interval of the difference at the level specified by alpha
-
-    If the average is taken over all axes of X and Y resulting in a scalar,
-    the above values are returned as a tuple in the order given. If not, the
-    results are provided as :class:`Var` objects in a dataset. 
+    * 'd': The difference in the means, X - Y
+    * 'df': The effective number of degrees of freedom, :math:`df`
+    * 'p': The p-value; see notes.
+    * 'ci': The confidence interval of the difference at the level specified by ``alpha``
 
   See Also
   ========
@@ -656,12 +850,26 @@ def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
   routine. The p-value and confidence interval are computed based on the t-statistic in eq
   (6.21).'''
 
-  from pygeode.tools import combine_axes, whichaxis, loopover, npsum, npnansum
+  from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
 
+  # Split output request now
+  ovars = ['d', 'df', 'p', 'ci']
+  output = [o for o in output.split(',') if o in ovars]
+  if len(output) < 1: raise ValueError('No valid outputs are requested from correlation. Possible outputs are %s.' % str(ovars))
+
   srcaxes = combine_axes([X, Y])
-  riaxes = [whichaxis(srcaxes, n) for n in axes]
-  raxes = [a for i, a in enumerate(srcaxes) if i in riaxes]
+  oiaxes, riaxes = shared_axes(srcaxes, [X.axes, Y.axes])
+  if axes is not None:
+    ri_new = []
+    for a in axes:
+      i = whichaxis(srcaxes, a)
+      if i not in riaxes: 
+        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, X.name, Y.name))
+      ri_new.append(i)
+    oiaxes.extend([r for r in riaxes if r not in ri_new])
+    riaxes = ri_new
+
   oaxes = [a for i, a in enumerate(srcaxes) if i not in riaxes]
   oview = View(oaxes) 
 
@@ -681,55 +889,86 @@ def paired_difference(X, Y, axes, alpha=0.05, N_fac = None, pbar=None):
   assert Ny > 1, '%s has only one element along the reduction axes' % Y.name
 
   # Construct work arrays
-  d = np.zeros(oview.shape, 'd')
-  dd = np.zeros(oview.shape, 'd')
-
-  N = np.zeros(oview.shape, 'd')
-
-  d[()] = np.nan
-  dd[()] = np.nan
-  N[()] = np.nan
+  d  = np.full(oview.shape, np.nan, 'd')
+  dd = np.full(oview.shape, np.nan, 'd')
+  N  = np.full(oview.shape, np.nan, 'd')
 
   # Accumulate data
   for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes=srcaxes, pbar=pbar):
     ddata = xdata.astype('d') - ydata.astype('d')
-    d[outsl] = np.nansum([d[outsl], npnansum(ddata, ixaxes)], 0)
+    d[outsl]  = np.nansum([d[outsl],  npnansum(ddata, ixaxes)], 0)
     dd[outsl] = np.nansum([dd[outsl], npnansum(ddata**2, ixaxes)], 0)
-    # Sum of weights (kludge to get masking right)
-    N[outsl] = np.nansum([N[outsl], npnansum(1. + ddata*0., ixaxes)], 0) 
+
+    # Count of non-NaN data points
+    N[outsl] = np.nansum([N[outsl], npnansum(~np.isnan(ddata), ixaxes)], 0) 
 
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  dd = (dd - d**2/N) / (N - 1)
-  d /= Nx
+  imsk = (N > 1)
+  dd[imsk] -= (d*d)[imsk]/N[imsk]
+  dd[imsk] /= (N[imsk] - 1)
+  d[imsk]  /= N[imsk]
+
+  # Ensure variance is non-negative
+  dd[dd <= 0.] = 0.
 
   if N_fac is not None: eN = N//N_fac
   else: eN = N
-  #print 'average eff. Nx = %.1f, average eff. Ny = %.1f' % (eNx.mean(), eNy.mean())
 
-  den = np.sqrt(dd/(eN - 1))
+  emsk = (eN > 1)
 
-  p = tdist.cdf(abs(d/den), eN - 1)*np.sign(d)
-  ci = tdist.ppf(1. - alpha/2, eN - 1) * den
+  den = np.zeros(oview.shape, 'd')
+  p   = np.zeros(oview.shape, 'd')
+  ci  = np.zeros(oview.shape, 'd')
 
+  den = np.zeros(oview.shape, 'd')
+  den[emsk] = np.sqrt(dd[emsk]/(eN[emsk] - 1))
+  dmsk = (den > 0.)
+
+  p[dmsk]  = np.abs(d[dmsk]/den[dmsk])
+  p[dmsk]  = 2. * (1. - tdist.cdf(p[dmsk], eN[dmsk] - 1))
+  ci[dmsk] = tdist.ppf(1. - alpha/2, eN[dmsk] - 1) * den[dmsk]
+
+  # Construct dataset to return
   xn = X.name if X.name != '' else 'X'
   yn = Y.name if Y.name != '' else 'Y'
-  if xn == yn: name = xn
-  else: name = '%s-%s'%(xn, yn)
 
-  if len(oaxes) > 0:
-    from pygeode import Var, Dataset
-    D = Var(oaxes, values=d, name=name)
-    DF = Var(oaxes, values=eN-1, name='df_%s' % name)
-    P = Var(oaxes, values=p, name='p_%s' % name)
-    CI = Var(oaxes, values=ci, name='CI_%s' % name)
-    return Dataset([D, DF, P, CI])
-  else: # Degenerate case
-    return d, eN-1, p, ci
+  from pygeode.var import Var
+  from pygeode.dataset import asdataset
+
+  rvs = []
+
+  if 'd' in output:
+    d = Var(oaxes, values = d, name = 'd')
+    d.atts['longname'] = 'Difference (%s - %s)' % (xn, yn)
+    rvs.append(d)
+
+  if 'df' in output:
+    df = Var(oaxes, values = eN - 1, name = 'df')
+    df.atts['longname'] = 'Degrees of freedom used for t-test'
+    rvs.append(df)
+
+  if 'p' in output:
+    p = Var(oaxes, values = p, name = 'p')
+    p.atts['longname'] = 'p-value for t-test of paired difference (%s - %s)' % (xn, yn)
+    rvs.append(p)
+
+  if 'ci' in output:
+    ci = Var(oaxes, values = ci, name = 'ci')
+    ci.atts['longname'] = 'Confidence Interval (alpha = %.2f) of paired difference (%s - %s)' % (alpha, xn, yn)
+    rvs.append(ci)
+
+  ds = asdataset(rvs)
+  ds.atts['alpha'] = alpha
+  ds.atts['N_fac'] = N_fac
+  ds.atts['description'] = 't-test of paired difference (%s - %s)' % (yn, xn)
+
+  return ds
 # }}}
 
-def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
+def isnonzero(X, axes=None, alpha=0.05, N_fac = None, output='m,p', pbar=None):
 # {{{
-  r'''Computes the mean value and statistics of X, against the hypothesis that it is 0.
+  r'''Computes the mean value of X and statistics relevant for a test against
+  the hypothesis that it is 0.
 
   Parameters
   ==========
@@ -752,14 +991,21 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
     A progress bar object. If nothing is provided, a progress bar will be displayed
     if the calculation takes sufficiently long.
 
+  output : string, optional
+    A string determining which parameters are returned; see list of possible outputs
+    in the Returns section. The specifications must be separated by a comma. Defaults 
+    to 'm,p'.
+
   Returns
   =======
-  results : tuple or :class:`Dataset` instance.
-    Three quantities are computed:
+  results : :class:`Dataset` 
+    The names of the variables match the output request string (i.e. if ``ds``
+    is the returned dataset, the mean value can be obtained through ``ds.m``).
+    The following quantities can be calculated.
 
-    * The mean value of X
-    * The probability of the computed value if the population mean was zero
-    * The confidence interval of the mean at the level specified by alpha
+    * 'm': The mean value of X
+    * 'p': The probability of the computed value if the population mean was zero
+    * 'ci': The confidence interval of the mean at the level specified by alpha
 
     If the average is taken over all axes of X resulting in a scalar,
     the above values are returned as a tuple in the order given. If not, the
@@ -805,12 +1051,17 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
     xdata = xdata.astype('d')
     x[outsl] = np.nansum([x[outsl], npnansum(xdata, riaxes)], 0)
     xx[outsl] = np.nansum([xx[outsl], npnansum(xdata**2, riaxes)], 0)
+
     # Sum of weights (kludge to get masking right)
-    Na[outsl] = np.nansum([Na[outsl], npnansum(1. + xdata*0., riaxes)], 0) 
+    Na[outsl] = np.nansum([Na[outsl], npnansum(~np.isnan(xdata), riaxes)], 0)
+
+  imsk = (Na > 0.)
 
   # remove the mean (NOTE: numerically unstable if mean >> stdev)
-  xx = (xx - x**2/Na) / (Na - 1)
-  x /= Na
+  xx[imsk] -= x[imsk]**2 / Na[imsk]
+  xx[imsk] = xx[imsk] / (Na[imsk] - 1)
+
+  x[imsk] /= Na[imsk]
 
   if N_fac is not None: 
     eN = N//N_fac
@@ -818,71 +1069,40 @@ def isnonzero(X, axes, alpha=0.05, N_fac = None, pbar=None):
   else: 
     eN = N
     eNa = Na
-  #print 'eff. N = %.1f' % eN
 
-  sdom = np.sqrt(xx/eNa)
+  sdom = np.zeros((oview.shape), 'd')
+  p    = np.zeros((oview.shape), 'd')
+  t    = np.zeros((oview.shape), 'd')
+  ci   = np.zeros((oview.shape), 'd')
 
-  p = tdist.cdf(abs(x/sdom), eNa - 1)*np.sign(x)
-  ci = tdist.ppf(1. - alpha/2, eNa - 1) * sdom
+  sdom[imsk] = np.sqrt(xx[imsk] / eNa[imsk])
+  dmsk = (sdom > 0.)
+
+  t[dmsk] = np.abs(x[dmsk]) / sdom[dmsk]
+  p[imsk]  = 2. * (1. - tdist.cdf(t[imsk], eNa[imsk] - 1))
+  ci[imsk] = tdist.ppf(1. - alpha/2, eNa[imsk] - 1) * sdom[imsk]
 
   name = X.name if X.name != '' else 'X'
 
-  if len(oaxes) > 0:
-    from pygeode import Var, Dataset
-    X = Var(oaxes, values=x, name=name)
-    P = Var(oaxes, values=p, name='p_%s' % name)
-    CI = Var(oaxes, values=ci, name='CI_%s' % name)
-    return Dataset([X, P, CI])
-  else: # Degenerate case
-    return x, p, ci
+  from pygeode.var import Var
+  from pygeode.dataset import asdataset
+
+  rvs = []
+
+  if 'm' in output:
+    m = Var(oaxes, values=x, name='m')
+    m.atts['longname'] = 'Mean value of %s' % (name, )
+    rvs.append(m)
+
+  if 'p' in output:
+    p = Var(oaxes, values=p, name='p')
+    p.atts['longname'] = 'p-value of test %s is 0' % (name,)
+    rvs.append(p)
+
+  if 'ci' in output:
+    ci = Var(oaxes, values=ci, name='ci')
+    ci.atts['longname'] = 'Confidence intervale of the mean value of %s' % (name,)
+    rvs.append(ci)
+
+  return asdataset(rvs)
 # }}}
-
-"""
-
-# Linear trend
-class Trend (ReducedVar):
-  def __new__ (cls, var):
-    from pygeode.timeaxis import Time
-    return ReducedVar.__new__(cls, var, [Time])
-  def __init__ (self, var):
-    from pygeode.timeaxis import Time
-    ReducedVar.__init__(self, var, [Time])
-  def getview (self, view, pbar):
-    import numpy as np
-    from pygeode.timeaxis import Time
-    ti = self.var.whichaxis(Time)
-    X = np.zeros(view.shape, self.dtype)
-    XX = np.zeros(view.shape, self.dtype)
-    F = np.zeros(view.shape, self.dtype)
-    XF = np.zeros(view.shape, self.dtype)
-    for outsl, [fdata,xdata] in loopover([self.var,self.var.axes[ti]], view, inaxes=self.var.axes, pbar=pbar):
-      X[outsl] += npnansum(xdata, self.indices)
-      XX[outsl] += npnansum(xdata**2, self.indices)
-      F[outsl] += npnansum(fdata, self.indices)
-      XF[outsl] += npnansum(fdata*xdata, self.indices)
-    N = self.N
-    out = ( XF/N - X*F/N**2 ) / ( XX/N - X**2/N**2 )
-    assert out.shape == view.shape, "%s != %s"%(out.shape, view.shape)
-    return out
-
-def trend (var): return Trend (var)
-
-# Construct a var from a trend
-# (almost the reverse of the above trend function, except for a possible offset if the mean is not zero)
-class From_Trend (Var):
-  def __init__ (self, var, taxis):
-    from pygeode.var import Var
-    self.trend = var
-    self.taxis = taxis
-    axes = [taxis] + list(var.axes)
-    Var.__init__(self, axes, dtype=var.dtype)
-  def getview (self, view, pbar):
-    import numpy as np
-    taxis = self.taxis
-    X = view.get(taxis)
-    X = X - np.nansum(taxis.values, 0)/len(taxis)
-    trend = view.get(self.trend, pbar=pbar)
-    return trend * X
-
-def from_trend (var, taxis): return From_Trend (var, taxis)
-"""
