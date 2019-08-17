@@ -448,7 +448,7 @@ class NANSDVar(NANVarianceVar):
     if np.isscalar(variance):
       if variance < 0.: variance = 0.
     else:
-      variance[np.where(variance<=0)] = 0
+      variance[variance<=0] = 0
     return np.sqrt(variance)
 # }}}
 
