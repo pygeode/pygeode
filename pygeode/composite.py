@@ -48,10 +48,11 @@ class CompositeVar(Var):
 
     # Construct event and offset axes
     from pygeode.timeaxis import Time, Yearless
+    from pygeode import timeutils
     ev = Event(np.arange(n)+1, indices=ievents)
     if isinstance(caxis, Time):
       units = caxis.units
-      delta = caxis.delta()
+      delta = timeutils.delta(caxis, units = units)
       off = Yearless(values=delta*np.arange(-mevoff, mevlen-mevoff), units=units, startdate={'day':0})
     else:
       off = Offset(np.arange(-mevoff, mevlen-mevoff))
@@ -113,19 +114,71 @@ class CompositeVar(Var):
       # Construct slice into output array; clip to this events' duration
       outsl[iev] = i
       outsl[iof] = iofsl[mask]
-      out[outsl] = inview.get(src, pbar=pbar.subset(progs[i], progs[i+1]))
+      out[tuple(outsl)] = inview.get(src, pbar=pbar.subset(progs[i], progs[i+1]))
 
     return out
   #}}}
 
 def composite (var, **kwargs):
 # {{{
-  ''' composite(var, <events>, evlen, [evoff])
-        Returns a composite variable based on var. <events> is interpreted
-        as a selection; it follows the same syntax as a call to axis.get_slices().
-        The axis matched is used as the composite axis and the returned indices
-        are the key dates. evlen is required; it can either be an integer or a 
-        list of integers specifying the length of each event. evoff is a single integer.'''
+  '''Creates a composite based on this variable.
+
+  Parameters
+  ----------
+  <axis selection> : string
+    A single axis selection string (similar to :func:`Var.__call__`) that
+    specifies the central 'date' of each event to composite (although
+    composites need not be constructed along time axes). See Notes.
+  evlen : int
+    Length of segement around each central 'date' to extract. 
+  evoff : int
+    Offset from the central 'dates' to include. A positive value
+    will lead to dates prior to the central 'date' being included.
+
+  Returns
+  -------
+  cvar : :class:`Var`
+    Composite variable. The axis along which composites are to be constructed
+    is replaced by an Event axis and an Offset axis.
+
+  Notes
+  -----
+  The axis matched is used as the composite axis and the returned indices
+  are the key dates. evlen is required; it can either be an integer or a 
+  list of integers specifying the length of each event. evoff is a single integer.
+  If the requested composite extends past the ends of the underlying axis, the
+  variable will contain NaNs. 
+
+  Examples
+  ========
+  >>> import pygeode as pyg
+  >>> from pygeode.tutorial import t2
+  >>> dts = ['12 May 2012', '15 Aug 2015', '1 Feb 2018', '20 Dec 2020']
+  >>> cT = t2.Temp.composite(l_time = dts, evlen = 40, offset = 10)
+  >>> print(cT)
+  <Var 'Temp'>:
+  Shape:  (event,time,pres,lat,lon)  (4,40,20,31,60)
+  Axes:
+    event <Event>  :  1  to 4  (4 values)
+    time <Yearless>:  day -10, 00:00:00 to day 4, 00:00:00 (15 values)
+    pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+    lat <Lat>      :  90 S to 90 N (31 values)
+    lon <Lon>      :  0 E to 354 E (60 values)
+  Attributes:
+    {}
+  Type:  CompositeVar (dtype="float64")
+  >>> cT(s_event=1, s_pres=50, s_lat=0, s_lon = 180)[:]
+  array([199.66766628, 199.69594407, 199.72479591, 199.75418884,
+         199.78408917, 199.81446257, 199.84527408, 199.87648814,
+         199.90806866, 199.939979  , 199.97218208, 200.00464036,
+         200.03731592, 200.07017048, 200.10316548])
+  >>> cT(s_event=4, s_pres=50, s_lat=0, s_lon = 180)[:]
+  array([201.02847025, 201.04367089, 201.05782423, 201.07091237,
+       201.08291874, 201.09382812, 201.10362669, 201.112302  ,
+       201.11984303, 201.12624021, 201.1314854 , 201.13557193,
+       201.1384946 , 201.14024969,          nan])
+
+  '''
 
   from pygeode.view import expand
   evlen = kwargs.pop('evlen')
