@@ -24,363 +24,363 @@ class SL:
 class Var(object):
 # {{{
   """
-    the base class of all data objects in pygeode.  this is not usually
+    The base class of all data objects in PyGeode.  This is not usually
     instantiated directly, but rather it is extended by a subclass to do some
-    particular operation.  the only case where you would use this directly is
+    particular operation.  The only case where you would use this directly is
     if you already have some data loaded in memory (perhaps through some other
-    interface), and you wish to wrap it as a pygeode data to do further
+    interface), and you wish to wrap it as a PyGeode data to do further
     operations on it.
 
-    see also
+    See Also
     --------
     :doc:`axis`
   """
 
-  # default attributes
+  # Default attributes
 
-  #: a description of the variable (may not be set).  usually determined at the
+  #: A description of the variable (may not be set).  Usually determined at the
   #: data source (e.g. input file), and may be used to identify the variable
   #: when saving to an output file.
   name = '' # default name (blank)
 
-  #: a string representation of the units of the variable.
+  #: A string representation of the units of the variable.
   units = '' # default units (none)
 
-  #: formatting code to use for printing values.
+  #: Formatting code to use for printing values.
   formatstr = '%g'
 
-  #: dictionary of metadata associated with the variable.
+  #: Dictionary of metadata associated with the variable.
   atts = {} # shared dictionary - replace this in init!
 
-  #: dictionary of attributes for plotting; see plotting documentation.
+  #: Dictionary of attributes for plotting; see plotting documentation.
   plotatts = {'plotscale': 'linear',  # default scale for plotting
-              'plotorder': 1}  # by default, plot with axis values increasing away from origin
+              'plotorder': 1}  # By default, plot with axis values increasing away from origin
 
-  #: the axes of the variable. a ``tuple`` of :class:`axis` instances.
-  axes = none
+  #: The axes of the variable. A ``tuple`` of :class:`Axis` instances.
+  axes = None
 
-  #: the number of axes of this variable.
+  #: The number of axes of this variable.
   naxes = 0
 
-  #: the dimensions of this variable, as a ``tuple``. similar to :attr:`numpy.ndarray.shape`.
-  shape = none
+  #: The dimensions of this variable, as a ``tuple``. Similar to :attr:`numpy.ndarray.shape`.
+  shape = None
 
-  #: the total number of data points represented by this variable.
+  #: The total number of data points represented by this variable.
   size = 0
 
-  #: the numerical type of the data as a :class:`numpy.dtype`. see also :meth:`var.__init__`.
-  dtype = none
+  #: The numerical type of the data as a :class:`numpy.dtype`. See also :meth:`Var.__init__`.
+  dtype = None
 
-  #: a helper to select subsets of this variable using slice notation. see :meth:`var._getitem_asvar`.
-  slice = none
+  #: A helper to select subsets of this variable using slice notation. See :meth:`Var._getitem_asvar`.
+  slice = None
 
-  # this method should be called by all subclasses
-  def __init__ (self, axes, dtype=none, name=none, values=none, atts=none, plotatts=none):
+  # This method should be called by all subclasses
+  def __init__ (self, axes, dtype=None, name=None, values=None, atts=None, plotatts=None):
   # {{{
     """
-    create a new var object with the given axes and values.
+    Create a new Var object with the given axes and values.
 
-    parameters
+    Parameters
     ----------
     axes : list/tuple
-        the :class:`axis` objects to associate with each of the data dimensions
-    dtype : string / python type / numpy.dtype (optional)
-        the numerical type of the data (can be automatically determined from
+        The :class:`Axis` objects to associate with each of the data dimensions
+    dtype : string / Python type / numpy.dtype (optional)
+        The numerical type of the data (can be automatically determined from
         the array)
     name : string (optional)
-        what to call the variable (i.e. for plot titles & when saving to file)
+        What to call the variable (i.e. for plot titles & when saving to file)
     values : numpy.ndarray
-        the data to be wrapped.
+        The data to be wrapped.
     atts : dict (optional)
-        any additional metadata to associate with the variable. the dictionary
+        Any additional metadata to associate with the variable. The dictionary
         keys should be strings.
     plotatts : dict (optional)
-        parameters that control plotting behaviour; default values are available.
-        the dictionary keys should be strings.
+        Parameters that control plotting behaviour; default values are available.
+        The dictionary keys should be strings.
 
-    returns
+    Returns
     -------
-    out : var
-      the array, wrapped as a var object.
+    out : Var
+      The array, wrapped as a Var object.
 
-    notes
+    Notes
     -----
-    the :class:`var` class can be instantiated directly (see `constructing-vars`),
-    in which case providing an array for the values argument is necessary. sub-classes
-    of `var` which define their values based on some operation need not provide any
-    data; however all subclasses of :class:`var` need to call this __init__ method within
+    The :class:`Var` class can be instantiated directly (see `constructing-vars`),
+    in which case providing an array for the values argument is necessary. Sub-classes
+    of `Var` which define their values based on some operation need not provide any
+    data; however all subclasses of :class:`Var` need to call this __init__ method within
     their own __init__, to properly initialize all attributes.
     """
 
 
     import numpy as np
-    from pygeode.axis import axis
+    from pygeode.axis import Axis
 
-    # convert the list of axes to a tuple
-    # since it is normally immutable - modifying the axes implies
+    # Convert the list of axes to a tuple
+    # Since it is normally immutable - modifying the axes implies
     # changing the variable itself
-    # do this before calling 'hasattr', or you're in for a world of pain
-    assert all(isinstance(a,axis) for a in axes)
+    # Do this before calling 'hasattr', or you're in for a world of pain
+    assert all(isinstance(a,Axis) for a in axes)
     self.axes = tuple(axes)
     self.naxes = len(axes)
 
-    # if we're given a var as the input data, then we need to grab the data.
-    if isinstance(values,var): values = values.get()
+    # If we're given a Var as the input data, then we need to grab the data.
+    if isinstance(values,Var): values = values.get()
 
-    # values stored in memory?
-    if values is not none:
+    # Values stored in memory?
+    if values is not None:
       self.values = np.asarray(values,dtype=dtype)
-      # make values read-only (or at least difficult to change accidentally)
-      self.values.flags.writeable = false
+      # Make values read-only (or at least difficult to change accidentally)
+      self.values.flags.writeable = False
 
-    # get the shape of the variable
-    # have to do this after setting self.values, otherwise this crashes
-    # when initializing axis objects (which call this init)
+    # Get the shape of the variable
+    # Have to do this after setting self.values, otherwise this crashes
+    # when initializing Axis objects (which call this init)
     self.shape = tuple(len(a) for a in axes)
 
-    # check the shape of the value array
-    if values is not none:
+    # Check the shape of the value array
+    if values is not None:
       assert self.values.ndim == self.naxes, "ndim=%d, naxes=%d?"%(self.values.ndim, self.naxes)
       assert self.values.shape == self.shape, "array shape does not match the given axes"
 
-    # determine the type, if we're supplied the values...
-    if dtype is none:
-      if values is not none:
+    # Determine the type, if we're supplied the values...
+    if dtype is None:
+      if values is not None:
         dtype = self.values.dtype
       else:
-        raise typeerror("can't determine dtype")
+        raise TypeError("Can't determine dtype")
 
-    # convert dtype shortcuts like 'd' to a standard name
+    # Convert dtype shortcuts like 'd' to a standard name
     dtype = np.dtype(dtype)
     self.dtype = dtype
 
     # handle meta data (create unique copy of each dictionary for each instance)
-    if name is not none: self.name = name
+    if name is not None: self.name = name
     self.atts = self.__class__.atts.copy()
-    if atts is not none:
+    if atts is not None:
       self.atts.update(atts)
     self.plotatts = self.__class__.plotatts.copy()
-    if plotatts is not none:
+    if plotatts is not None:
       self.plotatts.update(plotatts)
-    # note: the default empty dict {} used to be set as a static thing right
-    # after the 'class var' line, but this meant that all vars which weren't
+    # Note: the default empty dict {} used to be set as a static thing right
+    # after the 'class Var' line, but this meant that all vars which weren't
     # assigned explicit attributes were sharing the same dict, so any post-init
     # modifications would be applied to *all* such vars!
 #    if self.naxes == 0:
-#      print 'stop!'
-#      print 'hammer time'
-#      raise exception("you can't touch this")
+#      print 'STOP!'
+#      print 'Hammer time'
+#      raise Exception("You can't touch this")
 
-#    # shortcuts to the axes, referenced by name
+#    # Shortcuts to the axes, referenced by name
 #    axis_names = [a.name for a in axes]
 #    for a in axes:
 #      name = a.name
-#      if axis_names.count(name) == 1:  # unique occurrences only
+#      if axis_names.count(name) == 1:  # Unique occurrences only
 #        setattr(self,name,a)
 # note: this is currently done dynamically, to allow some fudging of the axes
 
-    # get the size of the var
+    # Get the size of the var
 #    self.size = np.prod(self.shape)
     self.size = reduce(lambda x,y: x*y, self.shape, 1)
 
-    # slicing notation
-    self.slice = sl(self)
+    # Slicing notation
+    self.slice = SL(self)
 
-    # if this is a var (and not a subclass), then it is safe to lock
+    # If this is a Var (and not a subclass), then it is safe to lock
     # the attributes now, and prevent furthur changes.
-    #if type(self) == var: self._finalize()
+    #if type(self) == Var: self._finalize()
 
   # }}}
 
-  # subset by integer indices - wrapped as var object
+  # Subset by integer indices - wrapped as Var object
   def _getitem_asvar (self, slices):
 # {{{
     '''
-    slice-based data subsetting.
+    Slice-based data subsetting.
 
-    parameters
+    Parameters
     ----------
     slices : list of slices
 
-    returns
+    Returns
     -------
-    subset_var : var
-      a new var, restricted to the specified domain.
+    subset_var : Var
+      A new Var, restricted to the specified domain.
 
-    notes
+    Notes
     -----
-    a helper function so that standard python slicing notation
-    can be used to subset a var without loading the underlying
-    data. a new var object is returned.
+    A helper function so that standard python slicing notation
+    can be used to subset a Var without loading the underlying
+    data. A new Var object is returned.
 
-    see also
+    See Also
     --------
-    var.slice, var.__call__, var.__getitem__
+    Var.slice, Var.__call__, Var.__getitem__
 
-    examples
+    Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print(t1.temp)
-    <var 'temp'>:
-      units: k  shape:  (lat,lon)  (31,60)
-      axes:
-        lat <lat>      :  90 s to 90 n (31 values)
-        lon <lon>      :  0 e to 354 e (60 values)
-      attributes:
+    >>> print(t1.Temp)
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (31,60)
+      Axes:
+        lat <Lat>      :  90 S to 90 N (31 values)
+        lon <Lon>      :  0 E to 354 E (60 values)
+      Attributes:
         {}
-      type:  add_var (dtype="float64")
-    >>> print(t1.temp.slice[10:-10, ::10])
-    <var 'temp'>:
-      units: k  shape:  (lat,lon)  (11,6)
-      axes:
-        lat <lat>      :  30 s to 30 n (11 values)
-        lon <lon>      :  0 e to 300 e (6 values)
-      attributes:
+      Type:  Add_Var (dtype="float64")
+    >>> print(t1.Temp.slice[10:-10, ::10])
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (11,6)
+      Axes:
+        lat <Lat>      :  30 S to 30 N (11 values)
+        lon <Lon>      :  0 E to 300 E (6 values)
+      Attributes:
         {}
-      type:  slicedvar (dtype="float64")
-    >>> print(t1.temp.slice[17, :])
-    <var 'temp'>:
-      units: k  shape:  (lat,lon)  (1,60)
-      axes:
-        lat <lat>      :  12 n
-        lon <lon>      :  0 e to 354 e (60 values)
-      attributes:
+      Type:  SlicedVar (dtype="float64")
+    >>> print(t1.Temp.slice[17, :])
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (1,60)
+      Axes:
+        lat <Lat>      :  12 N
+        lon <Lon>      :  0 E to 354 E (60 values)
+      Attributes:
         {}
-      type:  slicedvar (dtype="float64")
+      Type:  SlicedVar (dtype="float64")
     '''
-    from pygeode.varoperations import slicedvar
-    newvar = slicedvar(self, slices)
+    from pygeode.varoperations import SlicedVar
+    newvar = SlicedVar(self, slices)
 
-    # degenerate case: no slicing done?
+    # Degenerate case: no slicing done?
     if all(a1 is a2 for a1,a2 in zip(newvar.axes, self.axes)): return self
 
-#    # was the source var preloaded?
-#    # if so, preload this slice as well
-#    if hasattr(self,'values'): newvar = newvar.load(pbar=none)
+#    # Was the source var preloaded?
+#    # If so, preload this slice as well
+#    if hasattr(self,'values'): newvar = newvar.load(pbar=None)
 
     return newvar
 # }}}
 
-  # subset by integer indices
+  # Subset by integer indices
   def __getitem__ (self, slices):
 # {{{
     """
-    gets a raw numpy array containing a subset of values of the variable.
+    Gets a raw numpy array containing a subset of values of the variable.
 
-    parameters
+    Parameters
     ----------
     slices : list of slices
 
-    returns
+    Returns
     -------
     out : numpy.ndarray
-      the requested values, as a numpy array.
+      The requested values, as a numpy array.
 
-    see also
+    See Also
     --------
-    var.get, var.slice, var.__call__
+    Var.get, Var.slice, Var.__call__
 
-    examples
+    Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print(t1.temp[:].shape)
+    >>> print(t1.Temp[:].shape)
     (31, 60)
-    >>> print(t1.temp[20:-6, ::12])
+    >>> print(t1.Temp[20:-6, ::12])
     [[285.64721554 287.07380031 286.52889342 284.76553766 284.22063076]
      [281.09169696 282.80359869 282.14971042 280.03368351 279.37979523]
      [276.73945224 278.73667093 277.97380127 275.50510321 274.74223356]
      [272.82122084 275.10375648 274.23190545 271.41053624 270.5386852 ]
      [269.47711035 272.04496294 271.06413053 267.89009017 266.90925775]]
     """
-    # get the raw numpy array (with degenerate axes intact)
+    # Get the raw numpy array (with degenerate axes intact)
     array = self._getitem_asvar(slices).get()
-    # if any single integer indices were passed, then reduce out those
-    # dimensions.  this is consistent with what would happen with numpy slicing.
+    # If any single integer indices were passed, then reduce out those
+    # dimensions.  This is consistent with what would happen with numpy slicing.
     if isinstance(slices,tuple):
-      extra_slicing = tuple(0 if isinstance(sl,int) else ellipsis if sl is ellipsis else slice(none) for sl in slices)
+      extra_slicing = tuple(0 if isinstance(sl,int) else Ellipsis if sl is Ellipsis else slice(None) for sl in slices)
       array = array[extra_slicing]
     elif isinstance(slices,int):
       array = array[0]
     return array
 # }}}
 
-  # select a subset by keyword arguments (i.e., lat = (-45.0, 45.0))
-  # keys should be the name of the axis shortcut in the var (i.e., lat, lon, time).
-  def __call__ (self, ignore_mismatch = false, **kwargs):
+  # Select a subset by keyword arguments (i.e., lat = (-45.0, 45.0))
+  # Keys should be the name of the axis shortcut in the var (i.e., lat, lon, time).
+  def __call__ (self, ignore_mismatch = False, **kwargs):
   # {{{
     """
-    keyword-based data subsetting.
+    Keyword-based data subsetting.
 
-    parameters
+    Parameters
     ----------
     ignore_mismatch : boolean (optional)
-      if ``true``, any keywords that don't match an axis are ignored.
-      default is ``false``
+      If ``True``, any keywords that don't match an axis are ignored.
+      Default is ``False``
 
     **kwargs : one or more keyword parameters
-      the keys are the axis names (or axis class names), and the values are
-      either a `tuple` of the desired (lower,upper) range, or a single axis
-      value.  e.g., ``lat = (-45,45)`` or ``lat = 10.5``
+      The keys are the Axis names (or Axis class names), and the values are
+      either a `tuple` of the desired (lower,upper) range, or a single Axis
+      value.  E.g., ``lat = (-45,45)`` or ``lat = 10.5``
 
-    returns
+    Returns
     -------
-    subset_var : var
-      a new var, restricted  to the specified domain.
+    subset_var : Var
+      A new Var, restricted  to the specified domain.
 
-    notes
+    Notes
     -----
-    there are a couple of special prefixes which can be prepended to each
-    keyword to alter the subsetting behaviour. they can be used together.
+    There are a couple of special prefixes which can be prepended to each
+    keyword to alter the subsetting behaviour. They can be used together.
 
       * **i_** indicates that the values are *indices* into the axis, and not
-        the axis values themselves.  indices start at 0.
-        e.g. ``myvar(i_time = 0)`` selects the first time step of the variable,
+        the axis values themselves.  Indices start at 0.
+        E.g. ``myvar(i_time = 0)`` selects the first time step of the variable,
         and ``myvar(i_lon=(10,20))`` selects the 11th through 21st longitudes.
 
       * **l_** indicates that you are providing an explicit list of
         coordinates, instead of a range.
-        e.g. ``myvar(l_lon = (105.,106.,107.,108))``
+        E.g. ``myvar(l_lon = (105.,106.,107.,108))``
 
       * **n_** returns the complement of the set you request; that is,
         everything except the specified selection.
-        e.g. ``myvar(n_lat = (60, 90))`` returns all latitudes except those between 60 and 90n.
+        E.g. ``myvar(n_lat = (60, 90))`` returns all latitudes except those between 60 and 90N.
 
       * **m_** triggers an arithmetic mean over the specified range.
-        e.g., ``myvar(m_lon = (10, 80))`` is a shortcut for doing
+        E.g., ``myvar(m_lon = (10, 80))`` is a shortcut for doing
         ``myvar(lon = (10,80)).mean('lon')``.
 
       * **s_** triggers a call to squeeze on the specified axis, so
         that if only one value is selected the degenerate axis is removed.
-        e.g., ``myvar(s_lon = 5)`` is a shortcut for doing
+        E.g., ``myvar(s_lon = 5)`` is a shortcut for doing
         ``myvar(lon = 5).squeeze()`` or ``myvar.squeeze(lon=5)``.
 
 
-    examples
+    Examples
     --------
     >>> from pygeode.tutorial import t1
     >>> print(t1.vars)
-    [<var 'temp'>]
-    >>> t = t1.temp
-    >>> print(t)
-    <var 'temp'>:
-      units: k  shape:  (lat,lon)  (31,60)
-      axes:
-        lat <lat>      :  90 s to 90 n (31 values)
-        lon <lon>      :  0 e to 354 e (60 values)
-      attributes:
+    [<Var 'Temp'>]
+    >>> T = t1.Temp
+    >>> print(T)
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (31,60)
+      Axes:
+        lat <Lat>      :  90 S to 90 N (31 values)
+        lon <Lon>      :  0 E to 354 E (60 values)
+      Attributes:
         {}
-      type:  add_var (dtype="float64")
-    >>> print(t(lat=30,lon=(100,200)))
-    <var 'temp'>:
-      units: k  shape:  (lat,lon)  (1,17)
-      axes:
-        lat <lat>      :  30 n
-        lon <lon>      :  102 e to 198 e (17 values)
-      attributes:
+      Type:  Add_Var (dtype="float64")
+    >>> print(T(lat=30,lon=(100,200)))
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (1,17)
+      Axes:
+        lat <Lat>      :  30 N
+        lon <Lon>      :  102 E to 198 E (17 values)
+      Attributes:
         {}
-      type:  slicedvar (dtype="float64")
+      Type:  SlicedVar (dtype="float64")
     """
-    # check for mean axes
+    # Check for mean axes
     # (kind of a hack... prepend an 'm_' to the keyword)
     # i.e., var(m_lon=(30,40)) is equivalent to var(lon=(30,40)).mean('lon')
 
@@ -389,7 +389,7 @@ class Var(object):
 
     newargs = {}
     for k, v in kwargs.items():
-      # detect special prefixes.
+      # Detect special prefixes.
       if '_' in k and not self.hasaxis(k):
         prefix, ax = k.split('_', 1)
       else:
@@ -414,54 +414,54 @@ class Var(object):
 
       newargs[k] = v
 
-    # get the slices, apply to the variable
-    slices = [a.get_slice(newargs, ignore_mismatch=true) for a in self.axes]
-    assert len(newargs) == 0 or ignore_mismatch, "unmatched slices remain: %s" % str(newargs)
+    # Get the slices, apply to the variable
+    slices = [a.get_slice(newargs, ignore_mismatch=True) for a in self.axes]
+    assert len(newargs) == 0 or ignore_mismatch, "Unmatched slices remain: %s" % str(newargs)
 
     ret = self._getitem_asvar(slices)
 
-    # any means or squeezes requested?
+    # Any means or squeezes requested?
     if len(means) > 0: ret = ret.mean(*means)
     if len(squeezes) > 0: ret = ret.squeeze(*squeezes)
 
     return ret
   # }}}
 
-  # avoid accidentally iterating over vars
+  # Avoid accidentally iterating over vars
   def __iter__ (self):
 # {{{
-    raise exception ("var instances cannot be iterated over")
+    raise Exception ("Var instances cannot be iterated over")
 # }}}
 
-  # include axes names
+  # Include axes names
   def __dir__(self):
 # {{{
     l = list(self.__dict__.keys()) + dir(self.__class__)
     return l + [a.name for a in self.axes]
 # }}}
 
-  # shortcuts to axes
+  # Shortcuts to axes
   # (handled dynamically, in case some fudging is done to the var)
   def __getattr__(self, name):
 # {{{
-    # disregard metaclass stuff
-    if name.startswith('__'): raise attributeerror
+    # Disregard metaclass stuff
+    if name.startswith('__'): raise AttributeError
 
 #    print 'var getattr ??', name
 
 
-    # some things that we *know* should not be axis shortcuts
+    # Some things that we *know* should not be axis shortcuts
     if name in ('axes', 'values'):
-      raise attributeerror(name)
+      raise AttributeError(name)
     try: return self.getaxis(name)
-    except keyerror: raise attributeerror ("'%s' not found in %s"%(name,repr(self)))
+    except KeyError: raise AttributeError ("'%s' not found in %s"%(name,repr(self)))
 
-    raise attributeerror (name)
+    raise AttributeError (name)
 # }}}
 
 
-  # modifies __setattr__ and __delattr__ to avoid further modifications to the var
-  # (should be called by any var subclasses at the end of their __init__)
+  # Modifies __setattr__ and __delattr__ to avoid further modifications to the Var
+  # (should be called by any Var subclasses at the end of their __init__)
   def _finalize (self):
 # {{{
     if self.__setattr__ == self._dont_setattr:
@@ -472,172 +472,172 @@ class Var(object):
     self.__setattr__ = self._dont_setattr
 # }}}
 
-  # send all attribute requests through here, to enforce immutability
+  # Send all attribute requests through here, to enforce immutability
   def _dont_setattr(self,name,value):
 # {{{
-    # can only modify the var name
+    # Can only modify the var name
     if name != 'name':
-#      raise typeerror ("can't modify an immutable var")
+#      raise TypeError ("can't modify an immutable Var")
       from warnings import warn
-      warn ("shouldn't be modifying an immutable var", stacklevel=2)
+      warn ("shouldn't be modifying an immutable Var", stacklevel=2)
     object.__setattr__(self,name,value)
 # }}}
 
   def _dont_delattr(self,name):
 # {{{
-#    raise typeerror ("can't modify an immutable var")
+#    raise TypeError ("can't modify an immutable Var")
     from warnings import warn
-    warn ("shouldn't be modifying an immutable var", stacklevel=2)
+    warn ("shouldn't be modifying an immutable Var", stacklevel=2)
     object.__delattr__(self,name)
 # }}}
 
-  # get an axis based on its class
-  # ie, somevar.getaxis(zaxis)
+  # Get an axis based on its class
+  # ie, somevar.getaxis(ZAxis)
   def getaxis (self, iaxis):
   # {{{
     """
-      grabs a reference to a particular :class:`axis` associated with this variable.
+      Grabs a reference to a particular :class:`Axis` associated with this variable.
 
-      parameters
+      Parameters
       ----------
-      iaxis : string, :class:`axis` class, or int
-        the search criteria for finding the class.
+      iaxis : string, :class:`Axis` class, or int
+        The search criteria for finding the class.
 
-      returns
+      Returns
       -------
-      axis : :class:`axis` object that matches.  raises ``keyerror`` if there is no match.
+      axis : :class:`Axis` object that matches.  Raises ``KeyError`` if there is no match.
 
-      see also
+      See Also
       --------
-      whichaxis, hasaxis, axis
+      whichaxis, hasaxis, Axis
     """
     return self.axes[self.whichaxis(iaxis)]
   # }}}
 
-  # get the index of an axis given its class (or a string)
-  # (similar to above, but return the index, not the axis itself)
+  # Get the index of an axis given its class (or a string)
+  # (similar to above, but return the index, not the Axis itself)
   def whichaxis (self, iaxis):
   # {{{
     """
-    locates a particular :class:`axis` associated with this variable.
+    Locates a particular :class:`Axis` associated with this variable.
 
-    parameters
+    Parameters
     ----------
-    iaxis : string, :class:`axis` class, or int
-      the search criteria for finding the class.
+    iaxis : string, :class:`Axis` class, or int
+      The search criteria for finding the class.
 
-    returns
+    Returns
     -------
-    i : the index of the matching axis.  raises ``keyerror`` if there is no match.
+    i : The index of the matching Axis.  Raises ``KeyError`` if there is no match.
 
-    examples
+    Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> t = t1.temp
-    >>> print(t.axes)
-    (<lat>, <lon>)
-    >>> print(t.whichaxis('lat'))
+    >>> T = t1.Temp
+    >>> print(T.axes)
+    (<Lat>, <Lon>)
+    >>> print(T.whichaxis('lat'))
     0
-    >>> print(t.whichaxis('lon'))
+    >>> print(T.whichaxis('lon'))
     1
-    >>> print(t.whichaxis('time'))
-    traceback (most recent call last):
-      file "<stdin>", line 1, in <module>
-      file "/usr/local/lib/python2.6/dist-packages/pygeode/var.py", line 352, in whichaxis
-        raise keyerror, "axis %s not found in %s"%(repr(iaxis),self.axes)
-    keyerror: "axis 'time' not found in (<lat>, <lon>)"
+    >>> print(T.whichaxis('time'))
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "/usr/local/lib/python2.6/dist-packages/pygeode/var.py", line 352, in whichaxis
+        raise KeyError, "axis %s not found in %s"%(repr(iaxis),self.axes)
+    KeyError: "axis 'time' not found in (<Lat>, <Lon>)"
 
-    see also
+    See Also
     --------
-    getaxis, hasaxis, axis
+    getaxis, hasaxis, Axis
     """
     from pygeode.tools import whichaxis
     return whichaxis(self.axes, iaxis)
   # }}}
 
-  # indicate if an axis is found
+  # Indicate if an axis is found
   def hasaxis (self, iaxis):
   # {{{
     """
-      determines if a particular :class:`axis` is associated with this variable.
+      Determines if a particular :class:`Axis` is associated with this variable.
 
-      parameters
+      Parameters
       ----------
-      iaxis : string, :class:`axis` class, or int
-        the search criteria for finding the class.
+      iaxis : string, :class:`Axis` class, or int
+        The search criteria for finding the class.
 
-      returns
+      Returns
       -------
-      found : boolean.  ``true`` if found, otherwise ``false``
+      found : boolean.  ``True`` if found, otherwise ``False``
 
-      see also
+      See Also
       --------
-      getaxis, whichaxis, axis
+      getaxis, whichaxis, Axis
     """
     try: i = self.whichaxis(iaxis)
-    except keyerror: return false
-    return true
+    except KeyError: return False
+    return True
   # }}}
 
-  def formatvalue(self, value, fmt=none, units=true, unitstr=none):
+  def formatvalue(self, value, fmt=None, units=True, unitstr=None):
   # {{{
     '''
-    returns formatted string representation of ``value``.
+    Returns formatted string representation of ``value``.
 
-    parameters
+    Parameters
     ----------
     value : float or int
-      value to format.
+      Value to format.
     fmt : string (optional)
-      format specification. if the default ``none`` is specified,
+      Format specification. If the default ``None`` is specified,
       ``self.formatstr`` is used.
     units : boolean (optional)
-      if ``true``, will include the units in the string returned.
-      default is ``true``.
+      If ``True``, will include the units in the string returned.
+      Default is ``True``.
     unitstr : string (optional)
-      string to use for the units; default is ``self.units``.
+      String to use for the units; default is ``self.units``.
 
-    returns
+    Returns
     -------
-    if units is true, fmt % value + ' ' + unitstr. otherwise fmt % value.
+    If units is True, fmt % value + ' ' + unitstr. Otherwise fmt % value.
 
-    notes
+    Notes
     -----
-    this is overridden in a number of axis classes for more sophisticated formatting.
+    This is overridden in a number of Axis classes for more sophisticated formatting.
     '''
 
-    if fmt is none: fmt = self.formatstr
+    if fmt is None: fmt = self.formatstr
     strval = fmt % value
 
     if units:
-      if unitstr is none: unitstr = self.units
+      if unitstr is None: unitstr = self.units
       strval += ' ' + unitstr
 
     return strval
   # }}}
 
-  # pretty printing
+  # Pretty printing
   def __str__ (self):
   # {{{
-    from textwrap import textwrapper
+    from textwrap import TextWrapper
 #    axes_list = '(' + ', '.join(a.name if a.name != '' else repr(a) for a in self.axes) + ')'
 #    axes_details = ''.join(['  '+str(a) for a in self.axes])
 #    s = repr(self) + ':\n\n  axes: ' + axes_list + '\n  shape: ' + str(self.shape) + '\n\n' + axes_details
     s = repr(self) + ':\n'
     if self.units != '':
-      s += '  units: ' + self.units
-    s += '  shape:'
+      s += '  Units: ' + self.units
+    s += '  Shape:'
     s += '  (' + ','.join(a.name for a in self.axes) + ')'
     s += '  (' + ','.join(str(len(a)) for a in self.axes) + ')\n'
-    s += '  axes:\n'
+    s += '  Axes:\n'
     for a in self.axes:
       s += '    '+str(a) + '\n'
 
-    w = textwrapper(width=80)
+    w = TextWrapper(width=80)
     w.initial_indent = w.subsequent_indent = '    '
-    w.break_on_hyphens = false
-    s += '  attributes:\n' + w.fill(str(self.atts)) + '\n'
-    s += '  type:  %s (dtype="%s")' % (self.__class__.__name__, self.dtype.name)
+    w.break_on_hyphens = False
+    s += '  Attributes:\n' + w.fill(str(self.atts)) + '\n'
+    s += '  Type:  %s (dtype="%s")' % (self.__class__.__name__, self.dtype.name)
     return s
   # }}}
 
@@ -645,59 +645,59 @@ class Var(object):
   # {{{
     if self.name != '':
 #      return '<' + self.__class__.__name__ + " '" + self.name + "'>"
-      return "<var '" + self.name + "'>"
-    return '<var>'
+      return "<Var '" + self.name + "'>"
+    return '<Var>'
   # }}}
 
-  def get (self, pbar=none, **kwargs):
+  def get (self, pbar=None, **kwargs):
   # {{{
     """
-    gets a raw numpy array containing the values of the variable.
+    Gets a raw numpy array containing the values of the variable.
 
-    parameters
+    Parameters
     ----------
     pbar : boolean (optional)
-      if ``true``, will display a progress bar while the data is being
-      retrieved.  this requires the *python-progressbar* package (not included
-      with pygeode).
+      If ``True``, will display a progress bar while the data is being
+      retrieved.  This requires the *python-progressbar* package (not included
+      with PyGeode).
 
     **kwargs : keyword arguments (optional)
-      one or more keyword arguments may be included to subset the variable
-      before grabbing the data.  see :func:`var.__call__` for a similar
+      One or more keyword arguments may be included to subset the variable
+      before grabbing the data.  See :func:`Var.__call__` for a similar
       method which uses this keyword subsetting.
 
-    returns
+    Returns
     -------
     out : numpy.ndarray
-      the requested values, as a numpy array.
+      The requested values, as a numpy array.
 
-    notes
+    Notes
     -----
 
-    once you grab the data as a numpy array, you can no longer use the pygeode
-    functions to do further work on it directly.  you can, however, use
-    :func:`var.__init__` to re-wrap your numpy array as a pygeode var.  this
+    Once you grab the data as a numpy array, you can no longer use the PyGeode
+    functions to do further work on it directly.  You can, however, use
+    :func:`Var.__init__` to re-wrap your numpy array as a PyGeode Var.  This
     may be useful if you want to do some very complicated operations on the
     data using the numpy interface as an intermediate step.
 
-    pygeode variables can be huge!  they can be larger than the available ram
-    in your computer, or even larger than your hard disk.  numpy arrays, on
+    PyGeode variables can be huge!  They can be larger than the available RAM
+    in your computer, or even larger than your hard disk.  Numpy arrays, on
     the other hand, need to fit in memory, so make sure you are only getting
     a reasonable piece of data at a time.
 
-    examples
+    Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print(t1.temp)
-    <var 'temp'>:
-      units: k  shape:  (lat,lon)  (31,60)
-      axes:
-        lat <lat>      :  90 s to 90 n (31 values)
-        lon <lon>      :  0 e to 354 e (60 values)
-      attributes:
+    >>> print(t1.Temp)
+    <Var 'Temp'>:
+      Units: K  Shape:  (lat,lon)  (31,60)
+      Axes:
+        lat <Lat>      :  90 S to 90 N (31 values)
+        lon <Lon>      :  0 E to 354 E (60 values)
+      Attributes:
         {}
-      type:  add_var (dtype="float64")
-    >>> x = t1.temp.get()
+      Type:  Add_Var (dtype="float64")
+    >>> x = t1.Temp.get()
     >>> print(x)
     [[260.73262556 258.08759192 256.45287123 ... 265.01237988 265.01237988
       263.37765919]
@@ -713,83 +713,83 @@ class Var(object):
      [260.73262556 263.37765919 265.01237988 ... 256.45287123 256.45287123
       258.08759192]]
     """
-    from pygeode.view import view
+    from pygeode.view import View
     import numpy as np
     var = self.__call__(**kwargs)
-    data = view(var.axes).get(var,pbar=pbar)
+    data = View(var.axes).get(var,pbar=pbar)
     if isinstance(data,np.ndarray):
-      data = np.array(data,copy=true)
+      data = np.array(data,copy=True)
     return data
   # }}}
 
-  def getweights (self, iaxes = none):
+  def getweights (self, iaxes = None):
   # {{{
-    ''' returns weights associated with the axes of this variable.
+    ''' Returns weights associated with the axes of this variable.
 
-    parameters
+    Parameters
     ----------
-    iaxes : list of axis identifiers (string, :class:`axis`, or int) (optional)
-      axes over which to compute the weights
+    iaxes : list of axis identifiers (string, :class:`Axis`, or int) (optional)
+      Axes over which to compute the weights
 
-    returns
+    Returns
     -------
-    weights : :class:`var`
+    weights : :class:`Var`
       defined on the subgrid of this variable on which weights are defined.
 
-    see also
+    See Also
     --------
-    axis.__init__
+    Axis.__init__
     '''
-    # add weights object if any of the axes are weighted
-    # take outer product of weights if present on more than one axis
-    if iaxes is none or len(iaxes) == 0:
+    # Add weights object if any of the axes are weighted
+    # Take outer product of weights if present on more than one axis
+    if iaxes is None or len(iaxes) == 0:
       axes = self.axes
     else:
       axes = [self.getaxis(i) for i in iaxes]
     wt = tuple([a.auxasvar('weights') for a in axes if hasattr(a, 'weights')])
     if len(wt) == 0:
-#      return none
-      return var(axes=[], values=1.0)  # return degenerate variable?
+#      return None
+      return Var(axes=[], values=1.0)  # Return degenerate variable?
     else:
       from pygeode.ufunc import vprod
-      return vprod(*wt) # variable-wise product of weights
+      return vprod(*wt) # Variable-wise product of weights
   # }}}
 
-  # preload the values of a variable
-  # if the values are already loaded, then return self
-  def load (self, pbar=true):
+  # Preload the values of a variable
+  # If the values are already loaded, then return self
+  def load (self, pbar=True):
   # {{{
-    ''' returns a version of this variable with all data loaded into memory.
+    ''' Returns a version of this variable with all data loaded into memory.
 
-    parameters
+    Parameters
     ----------
     pbar : boolean
-      if true, display a progress bar while loading data.
+      If True, display a progress bar while loading data.
     '''
-    from pygeode.progress import pbar
+    from pygeode.progress import PBar
     if hasattr(self, 'values'): return self
-    if pbar is true:
-      pbar = pbar(message="loading %s:"%repr(self))
-    var = var(self.axes, values=self.get(pbar=pbar))
+    if pbar is True:
+      pbar = PBar(message="Loading %s:"%repr(self))
+    var = Var(self.axes, values=self.get(pbar=pbar))
     copy_meta (self, var)
     return var
   # }}}
 
-  # plotting helper functions
+  # Plotting helper functions
   def formatter(self):
   # {{{
-    '''returns a matplotlib formatter (pygeode.axisformatter) for use in plotting. '''
-    from pygeode.axis import axisformatter
-    return axisformatter(self)
+    '''Returns a matplotlib formatter (pygeode.AxisFormatter) for use in plotting. '''
+    from pygeode.axis import AxisFormatter
+    return AxisFormatter(self)
   # }}}
 
   def locator(self):
   # {{{
-    '''returns a matplotlib locator object for use in plotting.'''
+    '''Returns a matplotlib locator object for use in plotting.'''
     import pylab as pyl
     scl = self.plotatts.get('plotscale', 'linear')
-    if scl == 'log': return pyl.loglocator()
-    else: return pyl.autolocator()
+    if scl == 'log': return pyl.LogLocator()
+    else: return pyl.AutoLocator()
   # }}}
 # }}}
 
