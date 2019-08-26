@@ -98,6 +98,6 @@ Mimics the same behaviour of the :func:`np.diff` function.
   array([1., 1., 1., 1.])
   >>> v.diff('time', 2)[:]
   array([0., 0., 0.])
-'''
+  '''
   return ForwardDifferenceVar(var, axis, n)
 

@@ -53,14 +53,14 @@ class Axis(Var):
     :doc:`var`
 
   """
-  
-  # Default dictionaries: these are class defaults and are overwritten by child class defaults    
-  
+
+  # Default dictionaries: these are class defaults and are overwritten by child class defaults
+
   #: Auxiliary arrays. These contain additionnal fields beyond the regular value array.
   auxarrays = {}
 
   #: Auxiliary attributes. These are preserved during merge/slice/etc operations.
-  auxatts = {}  
+  auxatts = {}
 
   #: Format specification for plotting values.
   formatstr = '%g'
@@ -72,7 +72,7 @@ class Axis(Var):
   plotatts = Var.plotatts.copy()
 
   def __init__(self, values, name=None, atts=None, plotatts=None, rtol=None, **kwargs):
-# {{{ 
+# {{{
     """
     Create a new Axis object with the given values.
 
@@ -86,7 +86,7 @@ class Axis(Var):
         Any additional metadata to associate with the axis. The dictionary
         keys should be strings.
     plotatts : dict (optional)
-        Parameters that control plotting behaviour; default values are available. 
+        Parameters that control plotting behaviour; default values are available.
         The dictionary keys should be strings.
     rtol : float
         A relative tolerance used for identifying an element of this axis.
@@ -94,7 +94,7 @@ class Axis(Var):
     Notes
     -----
     All subclasses of :class:`Axis` need to call this __init__ method within
-    their own __init__, to properly initialize all attributes. 
+    their own __init__, to properly initialize all attributes.
 
     """
     import numpy as np
@@ -113,7 +113,7 @@ class Axis(Var):
     # Note: Call init before hasattr (or don't use hasattr at all in here)
     # (__getattr__ is overridden to call getaxis, which assumes axes are defined, otherwise __getattr__ is called to find an 'axes' property, ....)
     Var.__init__(self, [self], values=values, name=name, atts=atts, plotatts=plotatts)
- 
+
     # Compute size of spacing relative to magnitude for relative tolerances when mapping
     if rtol is None:
       rtol = 1e-5
@@ -125,7 +125,7 @@ class Axis(Var):
         if not np.isinf(logr) and 10**logr < rtol: rtol = 10**logr
 
     #: The relative tolerance for identifying an element of this axis.
-    self.rtol = rtol 
+    self.rtol = rtol
 
     # Add auxilliary arrays after calling Var.__init__ - the weights
     # array, if present, will be added here, not by the logic in Var.__init___
@@ -139,19 +139,19 @@ class Axis(Var):
         auxarrays[key] = val
       else:
         auxatts[key] = val
-        
-    # update auxiliary attribute (make copy to not change class defaults)        
+
+    # update auxiliary attribute (make copy to not change class defaults)
     self.auxarrays = self.__class__.auxarrays.copy()
     self.auxarrays.update(auxarrays.copy())
-    self.auxatts = self.__class__.auxatts.copy() 
-    self.auxatts.update(auxatts.copy())    
+    self.auxatts = self.__class__.auxatts.copy()
+    self.auxatts.update(auxatts.copy())
 # }}}
 
-  # 
+  #
   @classmethod
   def isparentof(cls,other):
   # {{{
-    """ 
+    """
     Determines if an axis object is an instance of a base class (or the same
     class) of another axis.
 
@@ -274,11 +274,11 @@ class Axis(Var):
   #TODO: include associated arrays when doing the mapping?
   def map_to (self, other):
   # {{{
-    '''Returns indices of this axis which correspond to the axis ``other``. 
-    
+    '''Returns indices of this axis which correspond to the axis ``other``.
+
        Parameters
        ----------
-       other : :class:`Axis` 
+       other : :class:`Axis`
          Axis to find mapping to
 
        Returns
@@ -294,7 +294,7 @@ class Axis(Var):
        exist. The mapping may include only a subset of this axis object, but
        must be as long as the other axis, if it is not None. The mapping
        identifies equivalent elements based on equality up to a tolerance
-       specified by self.rtol. 
+       specified by self.rtol.
        '''
 
     from pygeode.tools import map_to
@@ -330,9 +330,11 @@ class Axis(Var):
     --------
     >>> from pygeode import Lat
     >>> x = Lat([30,20,10])
-    >>> print x 
-    >>> y = x.sorted() 
-    >>> print y
+    >>> print(x)
+    lat <Lat>      :  30 N to 10 N (3 values)
+    >>> y = x.sorted()
+    >>> print(y)
+    lat <Lat>      :  10 N to 30 N (3 values)
 
     See Also
     --------
@@ -350,7 +352,7 @@ class Axis(Var):
       Parameters
       ----------
       reverse : boolean (optional)
-        If ``False``, indices are in ascending order. If ``True``, will produce 
+        If ``False``, indices are in ascending order. If ``True``, will produce
         indices for a *reverse* sort instead. By default, sign of self.plotorder is used.
 
       Returns
@@ -362,12 +364,12 @@ class Axis(Var):
       --------
       >>> from pygeode import Lat
       >>> x = Lat([20,30,10])
-      >>> print x
+      >>> print(x)
       lat <Lat>      :  20 N to 10 N (3 values)
       >>> indices = x.argsort()
-      >>> print indices
+      >>> print(indices)
       [2 0 1]
-      >>> print x.slice[indices]
+      >>> print(x.slice[indices])
       lat <Lat>      :  10 N to 30 N (3 values)
 
 
@@ -456,14 +458,14 @@ class Axis(Var):
       else:
         prefix, ax = '', k
 
-      if 'i' in prefix: 
+      if 'i' in prefix:
         ################### Select by index; key must correspond to this axis
         if not self.has_alias(ax):
           if ignore_mismatch: continue
           raise Exception("'%s' is not associated with this %s axis" % (ax, self.name))
 
         # Build mask
-        kp = np.zeros(n, bool)    
+        kp = np.zeros(n, bool)
 
         if not hasattr(v, '__len__'): # Treat as an index
           kp[v] = True
@@ -486,12 +488,12 @@ class Axis(Var):
           raise Exception("'%s' is not associated with this %s axis" % (ax, self.name))
 
         # Build mask
-        kp = np.zeros(n, bool)  
+        kp = np.zeros(n, bool)
         # Convert string representation if necessary
-        if isinstance(v, str): v = self.str_as_val(ax, v) 
+        if isinstance(v, str): v = self.str_as_val(ax, v)
 
         if isinstance(v,str) or not hasattr(v,'__len__'): # Single value given
-          if vals.dtype.name.startswith('float'): # closest match 
+          if vals.dtype.name.startswith('float'): # closest match
             kp[np.argmin( np.abs(v-vals) )] = True
           else:                 # otherwise require an exact match
             kp[vals == v] = True
@@ -499,9 +501,9 @@ class Axis(Var):
         elif 'l' in prefix:
           for V in v:
             # Convert string representation if necessary
-            if isinstance(V, str): V = self.str_as_val(ax, V) 
+            if isinstance(V, str): V = self.str_as_val(ax, V)
 
-            if vals.dtype.name.startswith('float'): # closest match 
+            if vals.dtype.name.startswith('float'): # closest match
               kp[np.argmin( np.abs(V-vals) )] = True
             else:                 # otherwise require an exact match
               kp[vals == V] = True
@@ -732,7 +734,7 @@ class NamedAxis (Axis):
   # (not only do both axes need to be a NamedAxis, but they need to have the same name)
   # (The name is the only way to uniquely identify them)
   def map_to (self, other):
-        
+
     if not isinstance(other, NamedAxis): return None
     if other.name != self.name: return None
     return Axis.map_to(self, other)
@@ -744,10 +746,13 @@ class NamedAxis (Axis):
 # associated with it.
 class DummyAxis (NamedAxis): pass
 
-class XAxis (Axis): pass
-class YAxis (Axis): pass
+class XAxis (Axis):
+  name = 'xaxis'
 
-class Lon (XAxis): 
+class YAxis (Axis):
+  name = 'yaxis'
+
+class Lon (XAxis):
 # {{{
   ''' Longitude axis. '''
   name = 'lon'
@@ -762,13 +767,13 @@ class Lon (XAxis):
 # {{{
     '''
     Returns formatted string representation of longitude ``value``.
-      
+
     Parameters
     ----------
     value : float or int
       Value to format.
     fmt : string (optional)
-      Format specification; see Notes. If the default ``None`` is specified, 
+      Format specification; see Notes. If the default ``None`` is specified,
       ``self.formatstr`` is used.
     units : boolean (optional)
       If ``True``, will include the units in the string returned.
@@ -788,16 +793,16 @@ class Lon (XAxis):
     boundary between the hemispheres can be specified by adding, for example,
     '<360' after the 'E'; in this case all values less than 360 would have 'E'
     appended. Otherwise the behaviour is like :func:`Var.formatvalue`.
-    
+
     Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print t1.lon.formatvalue(270)
-      270 E
-    >>> print t1.lon.formatvalue(-20.346, '%.4gE')
-      20.35W
-    >>> print t1.lon.formatvalue(-192.4, '%.3g')
-      -192
+    >>> print(t1.lon.formatvalue(270))
+    270 E
+    >>> print(t1.lon.formatvalue(-20.346, '%.4gE'))
+    20.35W
+    >>> print(t1.lon.formatvalue(-192.4, '%.3g'))
+    -192
     '''
     if fmt is None: fmt = self.formatstr
     if 'E' in fmt:
@@ -857,7 +862,7 @@ def rotatelon(v, origin, duplicate = False):
   Examples
   ========
   >>> import pygeode as pyg; from pygeode.tutorial import t1
-  >>> print(t1.Temp)
+  >>> print(t1.Temp.lon)
   lon <Lon>      :  0 E to 354 E (60 values)
   >>> print(pyg.rotatelon(t1.Temp, -180))
   <Var 'Temp'>:
@@ -876,7 +881,7 @@ def rotatelon(v, origin, duplicate = False):
    336. 342. 348. 354. 360.]
 	'''
 	from . import concatenate
-	
+
 	if not v.hasaxis('lon'): return v
 
 	lons = v.lon[:]
@@ -898,7 +903,7 @@ class Lat (YAxis):
   ''' Latitude axis. '''
   name = 'lat'
   formatstr = '%.2g N'
-  plotatts = YAxis.plotatts.copy() 
+  plotatts = YAxis.plotatts.copy()
   plotatts['plottitle'] = ''
 
   # Make sure we get some weights
@@ -909,7 +914,7 @@ class Lat (YAxis):
     # Output weights are area weights
     # If no input weights given, assume uniform
     #TODO: handle non-uniform latitudes?
-    if weights is None: 
+    if weights is None:
       weights = cos(asarray(values) * pi / 180.)
 
     Axis.__init__(self, values, weights=weights, **kwargs)
@@ -919,13 +924,13 @@ class Lat (YAxis):
 # {{{
     '''
     Returns formatted string representation of latitude ``value``.
-      
+
     Parameters
     ----------
     value : float or int
       Value to format.
     fmt : string (optional)
-      Format specification; see Notes. If the default ``None`` is specified, 
+      Format specification; see Notes. If the default ``None`` is specified,
       ``self.formatstr`` is used.
     units : boolean (optional)
       If ``True``, will include the units in the string returned.
@@ -940,27 +945,27 @@ class Lat (YAxis):
     Notes
     -----
     If the last character of fmt is 'N', then the absolute value of ``value``
-    is formatted using the fmt[:-1] as the format specification, and the hemisphere is 
+    is formatted using the fmt[:-1] as the format specification, and the hemisphere is
     added, using 'N' for values greater than 0 and 'S' for values less than 0. The value
     0 is formatted as 'EQ'. Otherwise the behaviour is like :func:`Var.formatvalue`.
-    
+
     Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print t1.lat.formatvalue(0)
-      EQ
-    >>> print t1.lat.formatvalue(-43.61, '%.3gN')
-      43.6S
-    >>> print t1.lat.formatvalue(-43.61, '%.3g')
-      -43.6
+    >>> print(t1.lat.formatvalue(0))
+    EQ
+    >>> print(t1.lat.formatvalue(-43.61, '%.3gN'))
+    43.6S
+    >>> print(t1.lat.formatvalue(-43.61, '%.3g'))
+    -43.6
     '''
 
     if fmt is None: fmt = self.formatstr
-    if fmt[-1] == 'N': 
+    if fmt[-1] == 'N':
       fmt = fmt[:-1]
       if value > 0: strval = fmt % value + 'N'
       elif value < 0: strval = fmt % -value + 'S'
-      else: strval = 'EQ' 
+      else: strval = 'EQ'
     else:
       strval = fmt % value
 
@@ -1012,7 +1017,7 @@ class SpectralM(YAxis): name = 'm'
 class SpectralN(XAxis): name = 'n'
 
 # Vertical axes
-class ZAxis (Axis): 
+class ZAxis (Axis):
 # {{{
   name = 'lev'
   formatstr = '%3g'
@@ -1022,10 +1027,10 @@ class ZAxis (Axis):
 #TODO: weights
 #TODO: attributes
 class Height(ZAxis):
-# {{{  
+# {{{
   ''' Geometric height axis. '''
   name = 'z' # default name
-  formatstr = '%d' 
+  formatstr = '%d'
   units = 'm'
   plotatts = ZAxis.plotatts.copy()
   plotatts['plotname'] = 'Height' # name displayed in plots (axis label)
@@ -1066,13 +1071,13 @@ class Hybrid (ZAxis):
     else: return pyl.LogLocator()
 # }}}
 
-class Pres (ZAxis): 
+class Pres (ZAxis):
 # {{{
   ''' Pressure height axis. '''
   name = 'pres'
   units = 'hPa'
   formatstr = '%.2g<100'
-  plotatts = ZAxis.plotatts.copy() 
+  plotatts = ZAxis.plotatts.copy()
   plotatts['plotname'] = 'Pressure'
   plotatts['plotscale'] = 'log'
   plotatts['plotorder'] = -1
@@ -1100,13 +1105,13 @@ class Pres (ZAxis):
 # {{{
     '''
     Returns formatted string representation of pressure ``value``.
-      
+
     Parameters
     ----------
     value : float or int
       Value to format.
     fmt : string (optional)
-      Format specification; see Notes. If the default ``None`` is specified, 
+      Format specification; see Notes. If the default ``None`` is specified,
       ``self.formatstr`` is used.
     units : boolean (optional)
       If ``True``, will include the units in the string returned.
@@ -1123,19 +1128,19 @@ class Pres (ZAxis):
     If ``fmt`` includes the character '<', it is interpreted as 'fmt<break',
     such that values less than float(break) are formatted using the format
     string fmt, while those greater than float(break) are formatted as integers.
-    Otherwise the behaviour is like :func:`Var.formatvalue`. 
-    
+    Otherwise the behaviour is like :func:`Var.formatvalue`.
+
     Examples
     --------
     >>> from pygeode.tutorial import t2
-    >>> print t2.pres.formatvalue(1000)
-      1000 hPa
-    >>> print t2.pres.formatvalue(1.52)
-      1.5 hPa
-    >>> print t2.pres.formatvalue(20, '%.1g')
-      2e+01 hPa
-    >>> print t2.pres.formatvalue(20, '%.1g<10')
-      20 hPa
+    >>> print(t2.pres.formatvalue(1000))
+    1000 hPa
+    >>> print(t2.pres.formatvalue(1.52))
+    1.5 hPa
+    >>> print(t2.pres.formatvalue(20, '%.1g'))
+    2e+01 hPa
+    >>> print(t2.pres.formatvalue(20, '%.1g<10'))
+    20 hPa
     '''
 
     if fmt is None: fmt = self.formatstr
@@ -1143,7 +1148,7 @@ class Pres (ZAxis):
       lfmt, brk = fmt.split('<')
       if value >= float(brk): strval = '%d' % value
       else: strval = lfmt % value
-    else: 
+    else:
       strval = fmt % value
 
     if units:

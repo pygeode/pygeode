@@ -17,7 +17,7 @@ class FFTSmoothVar (Var):
 
   def getview (self, view, pbar):
   # {{{
-    import numpy 
+    import numpy
     saxis = self.saxis
     # Get bounds of slice on smoothing axis
     ind = view.integer_indices[saxis]
@@ -34,10 +34,10 @@ class FFTSmoothVar (Var):
     smsl = [slice(maxharm,None) if i == saxis else slice(None) for i in range(self.naxes)]
     smsl = tuple(smsl)
     # calculate harmonics and output required data
-    from numpy import fft 
+    from numpy import fft
     if 'complex' in self.dtype.name:
       ct=fft.fft(src,self.shape[saxis],saxis)
-      smsl=[ slice(maxharm,-maxharm+1) if i == saxis else slice(None) for i in range(self.naxes)] 
+      smsl=[ slice(maxharm,-maxharm+1) if i == saxis else slice(None) for i in range(self.naxes)]
       ct[smsl]=0
       st = fft.ifft(ct, self.shape[saxis], saxis)
     else:
@@ -58,7 +58,7 @@ def fft_smooth(var, saxis, maxharm):
     Axis over which the smoothing should be performed
 
   maxharm : int
-    Maximum harmonic to retain.  
+    Maximum harmonic to retain.
 
   Returns
   -------
@@ -73,14 +73,14 @@ def fft_smooth(var, saxis, maxharm):
 
   Examples
   --------
-  >>> import pygeode as pyg; numpy as np
+  >>> import pygeode as pyg, numpy as np
   >>> tm = pyg.modeltime365n('1 Jan 2000', 365)
   >>> v = pyg.cos(3 * 2 * np.pi * tm / 365.)
   >>> np.std(v[:])
   0.7071067811865476
   >>> np.std(v.fft_smooth('time', 3)[:]) # This retains only the annual and semi-annual cycle
-  1.573977932362629e-16
+  1.392158115250162e-16
   >>> np.std(v.fft_smooth('time', 4)[:]) # This retains up to the third harmonic
-  0.7071067811865476
+  0.7071067811865472
   '''
   return FFTSmoothVar(var, saxis=var.whichaxis(saxis), maxharm=maxharm)

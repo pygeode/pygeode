@@ -2,7 +2,7 @@
 
 from pygeode.var import Var
 class DerivativeVar (Var):
-  '''Derivative variable. For now performs centred differences in the 
+  '''Derivative variable. For now performs centred differences in the
     interior of the axis and one sided differences on the boundaries.'''
 
   def __init__ (self, var, daxis, dx=None, df='centre'):
@@ -97,7 +97,7 @@ class DerivativeVar (Var):
   # }}}
 
 class SecondDerivativeVar (Var):
-  '''Finds second derivative, using centred differences in the 
+  '''Finds second derivative, using centred differences in the
     interior of the axis and one sided differences on the boundaries.'''
 
   def __init__ (self, var, daxis, dx=None):
@@ -194,7 +194,7 @@ def deriv(var, daxis, dx=None, df='centre'):
   dx : :class:`Var`, or None (optional)
     Coordinate with respect to which to take the derivative (see notes). Must
     share axis along which the derivative is being taken. If ``None``, the
-    coordinate axis is used. 
+    coordinate axis is used.
   df : string (optional)
     Type of derivative to take. One of 'left', 'right', 'centre', or '2'. See
     notes.
@@ -215,29 +215,30 @@ def deriv(var, daxis, dx=None, df='centre'):
   One-sided differences are used at the axis boundaries so that ``dvar`` is
   defined on the same axis as ``var``. The second derivative can also be
   computed (df = '2')
-  
+
   Examples
   ========
-  >>> import pygeode as pyg; from pygeode.tutorial import t1
+  >>> import pygeode as pyg, numpy as np
+  >>> from pygeode.tutorial import t1
   >>> print(t1.Temp.deriv('lon')) # Compute simple derivative
   <Var 'dTemp'>:
-  Shape:  (lat,lon)  (31,60)
-  Axes:
-    lat <Lat>      :  90 S to 90 N (31 values)
-    lon <Lon>      :  0 E to 354 E (60 values)
-  Attributes:
-    {}
-  Type:  DerivativeVar (dtype="float64")
+    Shape:  (lat,lon)  (31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Attributes:
+      {}
+    Type:  DerivativeVar (dtype="float64")
   >>> x = 6317e3 * pyg.cosd(t1.lat) * np.pi / 180. * t1.lon
   >>> print(t1.Temp.deriv('lon', dx=x, df='2')) # Compute 2nd derivative with respect to geometric length
   <Var 'd2Temp'>:
-  Shape:  (lat,lon)  (31,60)
-  Axes:
-    lat <Lat>      :  90 S to 90 N (31 values)
-    lon <Lon>      :  0 E to 354 E (60 values)
-  Attributes:
-    {}
-  Type:  SecondDerivativeVar (dtype="float64")
+    Shape:  (lat,lon)  (31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Attributes:
+      {}
+    Type:  SecondDerivativeVar (dtype="float64")
   '''
   if df == '2':
     return SecondDerivativeVar(var, var.whichaxis(daxis), dx=dx)

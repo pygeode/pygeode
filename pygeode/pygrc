@@ -22,10 +22,6 @@ poll_interval = 1
 
 [Axes]
 
-# Things like default names for axes could be customized
-
-# Axes format strings, default names
-
 Lon.name = lon
 Lon.rtol = 1e-3
 Lon.formatstr = %.3g E<360

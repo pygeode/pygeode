@@ -2,7 +2,7 @@
 
 from pygeode.var import Var
 class IntegrateVar (Var):
-  '''Definite integration variable. For now performs a cumulative integral along 
+  '''Definite integration variable. For now performs a cumulative integral along
     the specified axis using a trapezoid rule.'''
 
   def __init__ (self, var, iaxis, dx=None, v0=None, order=1, type='trapz'):
@@ -64,7 +64,7 @@ class IntegrateVar (Var):
     Ni = self.shape[iaxis]
 
     # Get all data along the integration axis
-    inview = view.unslice(iaxis)  
+    inview = view.unslice(iaxis)
     data = inview.get(self.var, pbar=pbar.subset(0, 70))
 
     # Get initial values
@@ -86,7 +86,7 @@ class IntegrateVar (Var):
     sl1 = tuple(sl1)
     sl2 = tuple(sl2)
     slr = tuple(slr)
-    
+
     # Accumulate
     if self.type == 'trapz':
       dat = np.concatenate([d0, (0.5*d*(data[sl1] + data[sl2]))[slr]], iaxis)
@@ -97,7 +97,7 @@ class IntegrateVar (Var):
 
     out = np.add.accumulate(dat, iaxis, 'd')[slr]
 
-    # Select the requested values along the integration axis 
+    # Select the requested values along the integration axis
     sl1 = list(sl1)
     sl1[iaxis] = view.integer_indices[iaxis]
     sl1 = tuple(sl1)
@@ -115,7 +115,7 @@ def integrate(var, iaxis, dx=None, v0=None, order = 1, type='trapz'):
   dx : :class:`Var`, or None (optional)
     Coordinate with respect to which to integrate (see notes). Must
     share axis along which the derivative is being taken. If ``None``, the
-    coordinate axis is used. 
+    coordinate axis is used.
   v0 : float, :class:`Var`, or None (optional)
     Constant of integration. See notes.
   order: int (1 or -1)
@@ -133,7 +133,7 @@ def integrate(var, iaxis, dx=None, v0=None, order = 1, type='trapz'):
 
   Notes
   -----
-  Possible integration methods are 
+  Possible integration methods are
     * 'trapz': trapezoidal rule
     * 'rectl': left rectangle method or Riemann sum
     * 'rectr': right rectangle method or Riemann sum
@@ -144,12 +144,12 @@ def integrate(var, iaxis, dx=None, v0=None, order = 1, type='trapz'):
   >>> from pygeode.tutorial import t1
   >>> print(t1.Temp.integrate('lon')) # Compute simple derivative
   <Var 'iTemp'>:
-  Shape:  (lat,lon)  (31,60)
-  Axes:
-    lat <Lat>      :  90 S to 90 N (31 values)
-    lon <Lon>      :  0 E to 354 E (60 values)
-  Attributes:
-    {}
-  Type:  IntegrateVar (dtype="float64")
+    Shape:  (lat,lon)  (31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Attributes:
+      {}
+    Type:  IntegrateVar (dtype="float64")
   '''
   return IntegrateVar(var, var.whichaxis(iaxis), dx, v0, order, type)
