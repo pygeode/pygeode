@@ -19,9 +19,16 @@ for whl in wheelhouse/*.whl; do
     auditwheel repair "$whl" -w /io/wheelhouse/
 done
 
+
 # Install packages and test
-#for PYBIN in /opt/python/*/bin/; do
-#    "${PYBIN}/pip" install python-manylinux-demo --no-index -f /io/wheelhouse
-#    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
-#done
+# Disable TkAgg backend, since manylinux container does not seem to have
+# libtk8.5.so.
+echo "backend : Agg" > matplotlibrc
+export MATPLOTLIBRC=$PWD
+for PYBIN in /opt/python/{cp27,cp3[5-9]}*/bin; do
+    "${PYBIN}/pip" install --upgrade -r /io/test-requirements.txt
+    "${PYBIN}/pip" install pygeode --no-index -f /io/wheelhouse
+    (cd "$HOME/pygeode/tests"; "${PYBIN}/nosetests")
+    (cd "$HOME/pygeode/tests/issues"; "${PYBIN}/nosetests")
+done
 
