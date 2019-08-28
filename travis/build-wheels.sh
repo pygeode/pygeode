@@ -25,8 +25,6 @@ done
 # libtk8.5.so.
 echo "backend : Agg" > matplotlibrc
 export MATPLOTLIBRC=$PWD
-# Install additional packages required by matplotlib on manylinux1_i686.
-yum install -y freetype-devel libpng-devel pkg-config
 for PYBIN in /opt/python/{cp27,cp3[5-9]}*/bin; do
     "${PYBIN}/pip" install --upgrade -r /io/test-requirements.txt
     "${PYBIN}/pip" install pygeode --no-index -f /io/wheelhouse
