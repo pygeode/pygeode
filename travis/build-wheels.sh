@@ -25,9 +25,12 @@ done
 # libtk8.5.so.
 echo "backend : Agg" > matplotlibrc
 export MATPLOTLIBRC=$PWD
-for PYBIN in /opt/python/{cp27,cp3[5-9]}*/bin; do
+for PYBIN in /opt/python/{cp27-cp27mu,cp3[5-9]}*/bin; do
+    # Install the dependencies needed for running the tests.
     "${PYBIN}/pip" install --upgrade -r /io/test-requirements.txt
+    # Install the PyGeode wheel that was created in an earlier stage above.
     "${PYBIN}/pip" install pygeode --no-index -f /io/wheelhouse
+    # Run the unit tests and regression tests.
     (cd "/io/tests"; "${PYBIN}/nosetests")
     (cd "/io/tests/issues"; "${PYBIN}/nosetests")
 done
