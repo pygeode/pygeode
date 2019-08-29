@@ -46,7 +46,7 @@ def to_xarray(dataset):
     # in memory.  These will become the "chunks" for dask.
     inview = View(var.axes)
     for outview in inview.loop_mem():
-      integer_indices = map(tuple,outview.integer_indices)
+      integer_indices = list(map(tuple,outview.integer_indices))
       # Determine *how* loop_mem is splitting the axes, and define the chunk
       # sizes accordingly.
       # A little indirect, but loop_mem doesn't make its chunking choices
@@ -59,7 +59,7 @@ def to_xarray(dataset):
       key = tuple([name] + ind)
       dsk[key] = (var.getview, outview, False)
     # Construct the dask array.
-    chunks = [map(len,sl) for sl in slice_order]
+    chunks = [list(map(len,sl)) for sl in slice_order]
     arr = da.Array(dsk, name, chunks, dtype=var.dtype)
     # Wrap this into an xarray.DataArray (with metadata and named axes).
     out[var.name] = xr.DataArray(arr, dims = dims, attrs = var.atts, name=var.name)
