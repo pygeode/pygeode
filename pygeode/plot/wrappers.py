@@ -89,7 +89,10 @@ class AxesWrapper:
       pyl.ion()
 
       if show:
-        pyl.show()
+        # Check if the current backend has a GUI
+        if mpl.get_backend() in mpl.rcsetup.interactive_bk:
+          pyl.show()
+
         pyl.draw()
 
     return fig

@@ -7,7 +7,7 @@ class ForwardDifferenceVar (Var):
 
   def __init__ (self, var, axis, n):
   # {{{
-    ''' __init__()'''
+    '''__init__()'''
 
     from pygeode.var import Var
 
@@ -74,7 +74,7 @@ class ForwardDifferenceVar (Var):
 
 def diff(var, axis=0, n=1):
   '''Computes the forward difference along the given axis.
-Mimics the same behaviour of the :func:`np.diff` function.
+  Mimics the same behaviour of the :func:`np.diff` function.
 
   Parameters
   ----------

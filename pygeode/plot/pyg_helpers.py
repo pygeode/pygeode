@@ -448,7 +448,10 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
     axes.contourf(x, y, z, 21, **kwargs)
 
   if not clevs is None:
+    lw = kwargs.pop('linewidths', None)
     axes.contourf(x, y, z, clevs, **kwargs)
+    if lw is not None:
+      kwargs['linewidths'] = lw
     # Special case; if plotting both filled and unfilled contours
     # with a single call, set the color of the latter to black
     kwargs['colors'] = 'k'

@@ -987,14 +987,14 @@ def isnonzero(X, axes=None, alpha=0.05, N_fac = None, output='m,p', pbar=None):
     the effective number will be given by the number estimated from the dataset
     divided by ``N_fac``.
 
-  pbar : progress bar, optional
-    A progress bar object. If nothing is provided, a progress bar will be displayed
-    if the calculation takes sufficiently long.
-
   output : string, optional
     A string determining which parameters are returned; see list of possible outputs
     in the Returns section. The specifications must be separated by a comma. Defaults 
     to 'm,p'.
+
+  pbar : progress bar, optional
+    A progress bar object. If nothing is provided, a progress bar will be displayed
+    if the calculation takes sufficiently long.
 
   Returns
   =======
