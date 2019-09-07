@@ -547,6 +547,9 @@ def annotate(axes, text, pos='b'):
 # }}}
 __all__.extend(['save', 'load', 'grid'])
 
+basemap_avail = True
+cartopy_avail = True
+
 try:
   from .basemap import *
   from .basemap import __all__ as bm_all
@@ -557,12 +560,11 @@ try:
     return isinstance(axes, BasemapAxes)
   # }}}
 except ImportError:
-  import warnings
-  warnings.warn('Basemap functionality not available.')
   def isbasemapaxis(axes):
   # {{{
     return False
   # }}}
+  basemap_avail = False
 
 try:
   from .cartopy import *
@@ -574,10 +576,12 @@ try:
     return isinstance(axes, CartopyAxes)
   # }}}
 except ImportError:
-  import warnings
-  warnings.warn('Cartopy functionality not available.')
   def iscartopyaxis(axes):
   # {{{
     return False
   # }}}
+  cartopy_avail = False
 
+if not (basemap_avail or cartopy_avail):
+  import warnings
+  warnings.warn('Neither Cartopy nor Basemap functionality is available.')

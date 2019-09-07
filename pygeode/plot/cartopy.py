@@ -15,7 +15,7 @@ class CartopyAxes(AxesWrapper):
   def _build_axes(self, fig, root):
 # {{{
     prj = self.axes_args.get('projection', 'PlateCarree')
-    prj_args = self.axes_args.get('prj_args', {})
+    prj_args = self.axes_args.get('prj_args', dict(central_longitude = 180.))
 
     self.projection = ccrs.__dict__[prj](**prj_args)
     
@@ -36,6 +36,24 @@ class CRTContourf(Contourf):
     self._cnt = axes.contourf (*self.plot_args, transform = self.axes.transform, **self.plot_kwargs)
 # }}}
 
+class CRTPColor(PColor):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.pcolor (*self.plot_args, transform = self.axes.transform, **self.plot_kwargs)
+# }}}
+
+class CRTStreamplot(Streamplot):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.streamplot (*self.plot_args, transform = self.axes.transform, **self.plot_kwargs)
+# }}}
+
+class CRTQuiver(Quiver):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.quiver (*self.plot_args, transform = self.axes.transform, **self.plot_kwargs)
+# }}}
+
 class CRTCoastlines(PlotOp):
 # {{{
   def render (self, axes):
@@ -48,14 +66,36 @@ class CRTGridlines(PlotOp):
     axes.gridlines(*self.plot_args, **self.plot_kwargs)
 # }}}
 
-contour    = make_plot_func(CRTContour)
-contourf   = make_plot_func(CRTContourf)
-coastlines = make_plot_func(CRTCoastlines)
-gridlines  = make_plot_func(CRTGridlines)
+class CRTAddFeature(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.add_feature(*self.plot_args, **self.plot_kwargs)
+# }}}
 
-CartopyAxes.contour    = make_plot_member(contour)
-CartopyAxes.contourf   = make_plot_member(contourf)
-CartopyAxes.coastlines = make_plot_member(coastlines)
-CartopyAxes.gridlines  = make_plot_member(gridlines)
+class CRTAddGeometries(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.add_geometries(*self.plot_args, **self.plot_kwargs)
+# }}}
 
-__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines']
+contour        = make_plot_func(CRTContour)
+contourf       = make_plot_func(CRTContourf)
+coastlines     = make_plot_func(CRTCoastlines)
+gridlines      = make_plot_func(CRTGridlines)
+pcolor         = make_plot_func(CRTPColor)
+streamplot     = make_plot_func(CRTStreamplot)
+quiver         = make_plot_func(CRTQuiver)
+add_feature    = make_plot_func(CRTAddFeature)
+add_geometries = make_plot_func(CRTAddGeometries)
+
+CartopyAxes.contour        = make_plot_member(contour)
+CartopyAxes.contourf       = make_plot_member(contourf)
+CartopyAxes.coastlines     = make_plot_member(coastlines)
+CartopyAxes.gridlines      = make_plot_member(gridlines)
+CartopyAxes.pcolor         = make_plot_member(pcolor)
+CartopyAxes.streamplot     = make_plot_member(streamplot)
+CartopyAxes.quiver         = make_plot_member(quiver)
+CartopyAxes.add_feature    = make_plot_member(add_feature)
+CartopyAxes.add_geometries = make_plot_member(add_geometries)
+
+__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries']
