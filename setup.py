@@ -20,11 +20,6 @@ eofcore = Extension ('pygeode.eofcore', sources=['pygeode/eof.c'], libraries=['l
 opendapcore = Extension ('pygeode.formats.opendapcore', sources=['pygeode/formats/opendap.c'], extra_compile_args=['-std=c99'])
 gribcore = Extension ('pygeode.formats.gribcore', sources=['pygeode/formats/grib.c'], extra_compile_args=['-std=c99'])
 
-import sys
-if sys.version_info < (3,):
-  progressbar = "progressbar"
-else:
-  progressbar = "progressbar33"
 
 with open('pygeode/_version.py','r') as f:
   version = f.readline().split()[-1].strip("'")
@@ -54,7 +49,7 @@ the underlying computations and to create plots.
         author="Peter Hitchcock, Andre Erler, Mike Neish",
         author_email="pygeode-users@googlegroups.com",
         url="http://pygeode.github.io",
-	install_requires=['numpy>=1.8','scipy','matplotlib',progressbar],
+	install_requires=['numpy','scipy','matplotlib','progressbar2'],
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll','pygrc'], 'pygeode.formats': ['*.dll']},

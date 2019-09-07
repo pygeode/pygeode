@@ -92,29 +92,29 @@ def extend (self, pos, *newaxes):
   Examples
   --------
   >>> from pygeode.tutorial import t1
-  >>> print t1.Temp
+  >>> print(t1.Temp)
   <Var 'Temp'>:
-    Shape:  (lat,lon)  (32,64)
+    Units: K  Shape:  (lat,lon)  (31,60)
     Axes:
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
-      {'units': 'K'}
-    Type:  Var (dtype="float64")
+      {}
+    Type:  Add_Var (dtype="float64")
   >>> from pygeode import Pres
   >>> paxis = Pres([1000,850,700])  # Create a pressure axis
-  >>> print paxis
-  pres <Pres>    :  1000  hPa to 700  hPa (3 values)
+  >>> print(paxis)
+  pres <Pres>    :  1000 hPa to 700 hPa (3 values)
   >>> extended_var = t1.Temp.extend(0, paxis)  # Extend the data with this axis
-  >>> print extended_var
+  >>> print(extended_var)
   <Var 'Temp'>:
-    Shape:  (pres,lat,lon)  (3,32,64)
+    Units: K  Shape:  (pres,lat,lon)  (3,31,60)
     Axes:
-      pres <Pres>    :  1000  hPa to 700  hPa (3 values)
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      pres <Pres>    :  1000 hPa to 700 hPa (3 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
-      {'units': 'K'}
+      {}
     Type:  ExtendedVar (dtype="float64")
   """
   var = self
@@ -147,24 +147,24 @@ def transpose (self, *axes):
   Examples
   --------
   >>> from pygeode.tutorial import t1
-  >>> print t1.Temp
+  >>> print(t1.Temp)
   <Var 'Temp'>:
-    Shape:  (lat,lon)  (32,64)
+    Units: K  Shape:  (lat,lon)  (31,60)
     Axes:
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
-      {'units': 'K'}
-    Type:  Var (dtype="float64")
+      {}
+    Type:  Add_Var (dtype="float64")
   >>> transposed_var = t1.Temp.transpose('lon','lat')
-  >>> print transposed_var
+  >>> print(transposed_var)
   <Var 'Temp'>:
-    Shape:  (lon,lat)  (64,32)
+    Units: K  Shape:  (lon,lat)  (60,31)
     Axes:
-      lon <Lon>      :  0 E to 354 E (64 values)
-      lat <Lat>      :  85 S to 85 N (32 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
     Attributes:
-      {'units': 'K'}
+      {}
     Type:  TransposedVar (dtype="float64")
   """
   var = self
@@ -191,7 +191,7 @@ class SortedVar(Var):
 
     Var.__init__(self, outaxes, dtype=var.dtype)
     copy_meta (var, self)
-  def getview (self, view, pbar): 
+  def getview (self, view, pbar):
     r = view.get(self.var, pbar=pbar)
     return r
 #TODO: rename to sort_by_axis
@@ -216,37 +216,37 @@ def sorted (self, *iaxes, **kwargs):
   Examples
   --------
   >>> from pygeode.tutorial import t2
-  >>> print t2.Temp
+  >>> print(t2.Temp)
   <Var 'Temp'>:
-    Shape:  (time,pres,lat,lon)  (3650,20,32,64)
+    Shape:  (time,pres,lat,lon)  (3650,20,31,60)
     Axes:
       time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
-      pres <Pres>    :  1000  hPa to 50  hPa (20 values)
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
       {}
-    Type:  Mul_Var (dtype="float64")
-  >>> print t2.Temp.sorted('pres')  # Sort by default/natural order
+    Type:  TransposedVar (dtype="float64")
+  >>> print(t2.Temp.sorted('pres'))  # Sort by default/natural order
   <Var 'Temp'>:
-    Shape:  (time,pres,lat,lon)  (3650,20,32,64)
+    Shape:  (time,pres,lat,lon)  (3650,20,31,60)
     Axes:
       time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
-      pres <Pres>    :  1000  hPa to 50  hPa (20 values)
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
       {}
     Type:  SortedVar (dtype="float64")
   >>> # ^^ no change, since pressure was already in its natrual order (decreasing)
-  >>> print t2.Temp.sorted(pres=1)  # Sort pressure explicitly as increasing order
+  >>> print(t2.Temp.sorted(pres=1))  # Sort pressure explicitly as increasing order
   <Var 'Temp'>:
-    Shape:  (time,pres,lat,lon)  (3650,20,32,64)
+    Shape:  (time,pres,lat,lon)  (3650,20,31,60)
     Axes:
       time <ModelTime365>:  Jan 1, 2011 00:00:00 to Dec 31, 2020 00:00:00 (3650 values)
-      pres <Pres>    :  50  hPa to 1000  hPa (20 values)
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      pres <Pres>    :  50 hPa to 1000 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
       {}
     Type:  SortedVar (dtype="float64")
@@ -348,35 +348,35 @@ def replace_axes (self, axisdict={}, ignore_mismatch=False, newaxes=None, keep_o
   Examples
   --------
   >>> from pygeode.tutorial import t1
-  >>> print t1.Temp
+  >>> print(t1.Temp)
   <Var 'Temp'>:
-    Shape:  (lat,lon)  (32,64)
+    Units: K  Shape:  (lat,lon)  (31,60)
     Axes:
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
-      {'units': 'K'}
-    Type:  Var (dtype="float64")
+      {}
+    Type:  Add_Var (dtype="float64")
   >>> from pygeode import XAxis, YAxis
   >>> new_var = t1.Temp.replace_axes(lon=XAxis, lat=YAxis)
-  >>> print new_var
+  >>> print(new_var)
   <Var 'Temp'>:
-    Shape:  (lat,lon)  (32,64)
+    Units: K  Shape:  (lat,lon)  (31,60)
     Axes:
-      lat <YAxis>    :  -85.7606 to 85.7606 (32 values)
-      lon <XAxis>    :  0 to 354.375 (64 values)
+      lat <YAxis>    :  -90  to 90  (31 values)
+      lon <XAxis>    :  0  to 354  (60 values)
     Attributes:
-      {'units': 'K'}
+      {}
     Type:  Replace_axes (dtype="float64")
   >>> new_var = t1.Temp.replace_axes(lon=XAxis, lat=YAxis, keep_old_name=False)
-  >>> print new_var
+  >>> print(new_var)
   <Var 'Temp'>:
-    Shape:  (yaxis,xaxis)  (32,64)
+    Units: K  Shape:  (yaxis,xaxis)  (31,60)
     Axes:
-      yaxis <YAxis>  :  -85.7606 to 85.7606 (32 values)
-      xaxis <XAxis>  :  0 to 354.375 (64 values)
+      yaxis <YAxis>  :  -90  to 90  (31 values)
+      xaxis <XAxis>  :  0  to 354  (60 values)
     Attributes:
-      {'units': 'K'}
+      {}
     Type:  Replace_axes (dtype="float64")
   """
   var = self
@@ -408,10 +408,6 @@ def rename (self, newname):
   renamed_var : Var
     The same variable, but with a different name.
 
-  Examples
-  --------
-  >>> x = x.rename('i_prefer_really_long_variable_names')
-
   Notes
   -----
   In most cases, you could probably change the ``name`` attribute of the
@@ -419,6 +415,19 @@ def rename (self, newname):
   is being used in other places, this method guarantees that the name change
   will only affect a local version of the variable, and won't have any
   side-effects on other existing references.
+
+  Examples
+  --------
+  >>> from pygeode.tutorial import t1
+  >>> print(t1.Temp.rename('i_prefer_really_long_variable_names'))
+  <Var 'i_prefer_really_long_variable_names'>:
+    Units: K  Shape:  (lat,lon)  (31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Attributes:
+      {}
+    Type:  RenamedVar (dtype="float64")
   """
   var = self
   return RenamedVar(var, newname)
@@ -448,24 +457,24 @@ def rename_axes (self, ignore_mismatch=False, axisdict={}, **namemap):
   Examples
   --------
   >>> from pygeode.tutorial import t1
-  >>> print t1.Temp
+  >>> print(t1.Temp)
   <Var 'Temp'>:
-    Shape:  (lat,lon)  (32,64)
+    Units: K  Shape:  (lat,lon)  (31,60)
     Axes:
-      lat <Lat>      :  85 S to 85 N (32 values)
-      lon <Lon>      :  0 E to 354 E (64 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
     Attributes:
-      {'units': 'K'}
-    Type:  Var (dtype="float64")
+      {}
+    Type:  Add_Var (dtype="float64")
   >>> new_var = t1.Temp.rename_axes(lat="latitude",lon="longitude")
-  >>> print new_var
+  >>> print(new_var)
   <Var 'Temp'>:
-    Shape:  (latitude,longitude)  (32,64)
+    Units: K  Shape:  (latitude,longitude)  (31,60)
     Axes:
-      latitude <Lat> :  85 S to 85 N (32 values)
-      longitude <Lon>:  0 E to 354 E (64 values)
+      latitude <Lat> :  90 S to 90 N (31 values)
+      longitude <Lon>:  0 E to 354 E (60 values)
     Attributes:
-      {'units': 'K'}
+      {}
     Type:  Replace_axes (dtype="float64")
   """
   var = self
@@ -516,7 +525,7 @@ class SlicedVar(Var):
     # Slice the output axes
     axes = [a.slice[s] for a,s in zip(var.axes,slices)]
 
-    Var.__init__(self, axes, dtype=var.dtype, atts=self.atts, plotatts=self.plotatts)        
+    Var.__init__(self, axes, dtype=var.dtype, atts=self.atts, plotatts=self.plotatts)
   # }}}
 
   def getview (self, view, pbar):
@@ -651,8 +660,17 @@ def as_type(self, dtype):
 
   Examples
   --------
-  >>> # Treat the values as double-precision
-  >>> x = x.as_type('float64')
+  >>> from pygeode.tutorial import t1
+  >>> # Treat the values as single-precision
+  >>> print(t1.Temp.as_type('float32'))
+  <Var 'Temp' float32>:
+    Units: K  Shape:  (lat,lon)  (31,60)
+    Axes:
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Attributes:
+      {}
+    Type:  Cast (dtype="float32")
   """
   var = self
   return Cast(var, dtype)

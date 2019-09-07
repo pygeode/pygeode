@@ -1,0 +1,8 @@
+numpy
+scipy
+matplotlib
+progressbar2
+netCDF4
+xarray
+dask
+toolz

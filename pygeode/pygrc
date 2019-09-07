@@ -12,11 +12,15 @@ max_array_size = 4194304
 #  recalculate over again.)
 MAX_SWAP_SIZE = 1073741824
 
+[ProgressBar]
+
+# Time (in seconds) to wait before displaying progress bars
+no_show_time = 5
+
+# Update interval (in seconds) for progress bars
+poll_interval = 1
+
 [Axes]
-
-# Things like default names for axes could be customized
-
-# Axes format strings, default names
 
 Lon.name = lon
 Lon.rtol = 1e-3

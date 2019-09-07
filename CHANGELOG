@@ -1,3 +1,18 @@
+1.3.0-rc2 - 2019/08/07
+  - Support for Python 3.
+  - Fix ext_xarray.from_xarray() method, which was failing on xarray versions
+    > 0.10.0.
+  - Handle Var objects passed into netcdf.save and netcdf4.save.
+  - Properly detect attributes that are 1-element list of strings when writing
+    to netcdf.
+  - Force attributes from netcdf4 module to be string instead of unicode.
+  - Support for netcdf4 groups.
+  - Fix lazy variable loading for netcdf4 module.
+  - Added new bar() and errorbar() plot wrappers.
+  - Fix colorbar=False option for showvar.
+  - Fix nl=0 option for clfdict.
+  - Updated progress bar to be compatible with progressbar2 package.
+
 1.2.2 - 2018/07/06
   - Handle netCDF time units that are separated by a "T" instead of a space.
     E.g., "hours since 2010-02-01T03:00:00".

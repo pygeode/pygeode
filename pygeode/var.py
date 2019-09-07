@@ -47,7 +47,7 @@ class Var(object):
   units = '' # default units (none)
 
   #: Formatting code to use for printing values.
-  formatstr = '%g' 
+  formatstr = '%g'
 
   #: Dictionary of metadata associated with the variable.
   atts = {} # shared dictionary - replace this in init!
@@ -65,7 +65,7 @@ class Var(object):
   #: The dimensions of this variable, as a ``tuple``. Similar to :attr:`numpy.ndarray.shape`.
   shape = None
 
-  #: The total number of data points represented by this variable. 
+  #: The total number of data points represented by this variable.
   size = 0
 
   #: The numerical type of the data as a :class:`numpy.dtype`. See also :meth:`Var.__init__`.
@@ -90,12 +90,12 @@ class Var(object):
     name : string (optional)
         What to call the variable (i.e. for plot titles & when saving to file)
     values : numpy.ndarray
-        The data to be wrapped. 
+        The data to be wrapped.
     atts : dict (optional)
         Any additional metadata to associate with the variable. The dictionary
         keys should be strings.
     plotatts : dict (optional)
-        Parameters that control plotting behaviour; default values are available. 
+        Parameters that control plotting behaviour; default values are available.
         The dictionary keys should be strings.
 
     Returns
@@ -123,7 +123,7 @@ class Var(object):
     assert all(isinstance(a,Axis) for a in axes)
     self.axes = tuple(axes)
     self.naxes = len(axes)
-    
+
     # If we're given a Var as the input data, then we need to grab the data.
     if isinstance(values,Var): values = values.get()
 
@@ -157,10 +157,10 @@ class Var(object):
     # handle meta data (create unique copy of each dictionary for each instance)
     if name is not None: self.name = name
     self.atts = self.__class__.atts.copy()
-    if atts is not None: 
+    if atts is not None:
       self.atts.update(atts)
     self.plotatts = self.__class__.plotatts.copy()
-    if plotatts is not None: 
+    if plotatts is not None:
       self.plotatts.update(plotatts)
     # Note: the default empty dict {} used to be set as a static thing right
     # after the 'class Var' line, but this meant that all vars which weren't
@@ -220,7 +220,7 @@ class Var(object):
     Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print t1.Temp
+    >>> print(t1.Temp)
     <Var 'Temp'>:
       Units: K  Shape:  (lat,lon)  (31,60)
       Axes:
@@ -229,7 +229,7 @@ class Var(object):
       Attributes:
         {}
       Type:  Add_Var (dtype="float64")
-    >>> print t1.Temp.slice[10:-10, ::10]
+    >>> print(t1.Temp.slice[10:-10, ::10])
     <Var 'Temp'>:
       Units: K  Shape:  (lat,lon)  (11,6)
       Axes:
@@ -238,7 +238,7 @@ class Var(object):
       Attributes:
         {}
       Type:  SlicedVar (dtype="float64")
-    >>> print t1.Temp.slice[17, :]
+    >>> print(t1.Temp.slice[17, :])
     <Var 'Temp'>:
       Units: K  Shape:  (lat,lon)  (1,60)
       Axes:
@@ -283,14 +283,14 @@ class Var(object):
     Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print t1.Temp[:].shape
+    >>> print(t1.Temp[:].shape)
     (31, 60)
-    >>> print t1.Temp[20:-6, ::12]
-    [[ 285.64721554  287.07380031  286.52889342  284.76553766  284.22063076]
-     [ 281.09169696  282.80359869  282.14971042  280.03368351  279.37979523]
-     [ 276.73945224  278.73667093  277.97380127  275.50510321  274.74223356]
-     [ 272.82122084  275.10375648  274.23190545  271.41053624  270.5386852 ]
-     [ 269.47711035  272.04496294  271.06413053  267.89009017  266.90925775]]
+    >>> print(t1.Temp[20:-6, ::12])
+    [[285.64721554 287.07380031 286.52889342 284.76553766 284.22063076]
+     [281.09169696 282.80359869 282.14971042 280.03368351 279.37979523]
+     [276.73945224 278.73667093 277.97380127 275.50510321 274.74223356]
+     [272.82122084 275.10375648 274.23190545 271.41053624 270.5386852 ]
+     [269.47711035 272.04496294 271.06413053 267.89009017 266.90925775]]
     """
     # Get the raw numpy array (with degenerate axes intact)
     array = self._getitem_asvar(slices).get()
@@ -358,26 +358,26 @@ class Var(object):
     Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print t1.vars
+    >>> print(t1.vars)
     [<Var 'Temp'>]
     >>> T = t1.Temp
-    >>> print T
+    >>> print(T)
     <Var 'Temp'>:
-      Shape:  (lat,lon)  (32,64)
+      Units: K  Shape:  (lat,lon)  (31,60)
       Axes:
-        lat <Lat>      :  85 S to 85 N (32 values)
-        lon <Lon>      :  0 E to 354 E (64 values)
+        lat <Lat>      :  90 S to 90 N (31 values)
+        lon <Lon>      :  0 E to 354 E (60 values)
       Attributes:
-        {'units': 'K'}
-      Type:  Var (dtype="float64")
-    >>> print T(lat=30,lon=(100,200))
+        {}
+      Type:  Add_Var (dtype="float64")
+    >>> print(T(lat=30,lon=(100,200)))
     <Var 'Temp'>:
-      Shape:  (lat,lon)  (1,18)
+      Units: K  Shape:  (lat,lon)  (1,17)
       Axes:
         lat <Lat>      :  30 N
-        lon <Lon>      :  101 E to 196 E (18 values)
+        lon <Lon>      :  102 E to 198 E (17 values)
       Attributes:
-        {'units': 'K'}
+        {}
       Type:  SlicedVar (dtype="float64")
     """
     # Check for mean axes
@@ -534,13 +534,13 @@ class Var(object):
     --------
     >>> from pygeode.tutorial import t1
     >>> T = t1.Temp
-    >>> print T.axes
+    >>> print(T.axes)
     (<Lat>, <Lon>)
-    >>> print T.whichaxis('lat')
+    >>> print(T.whichaxis('lat'))
     0
-    >>> print T.whichaxis('lon')
+    >>> print(T.whichaxis('lon'))
     1
-    >>> print T.whichaxis('time')
+    >>> print(T.whichaxis('time'))
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
       File "/usr/local/lib/python2.6/dist-packages/pygeode/var.py", line 352, in whichaxis
@@ -583,13 +583,13 @@ class Var(object):
   # {{{
     '''
     Returns formatted string representation of ``value``.
-      
+
     Parameters
     ----------
     value : float or int
       Value to format.
     fmt : string (optional)
-      Format specification. If the default ``None`` is specified, 
+      Format specification. If the default ``None`` is specified,
       ``self.formatstr`` is used.
     units : boolean (optional)
       If ``True``, will include the units in the string returned.
@@ -609,7 +609,7 @@ class Var(object):
     if fmt is None: fmt = self.formatstr
     strval = fmt % value
 
-    if units: 
+    if units:
       if unitstr is None: unitstr = self.units
       strval += ' ' + unitstr
 
@@ -632,7 +632,7 @@ class Var(object):
     s += '  Axes:\n'
     for a in self.axes:
       s += '    '+str(a) + '\n'
-    
+
     w = TextWrapper(width=80)
     w.initial_indent = w.subsequent_indent = '    '
     w.break_on_hyphens = False
@@ -688,30 +688,30 @@ class Var(object):
     Examples
     --------
     >>> from pygeode.tutorial import t1
-    >>> print t1.Temp
+    >>> print(t1.Temp)
     <Var 'Temp'>:
-      Shape:  (lat,lon)  (32,64)
+      Units: K  Shape:  (lat,lon)  (31,60)
       Axes:
-        lat <Lat>      :  85 S to 85 N (32 values)
-        lon <Lon>      :  0 E to 354 E (64 values)
+        lat <Lat>      :  90 S to 90 N (31 values)
+        lon <Lon>      :  0 E to 354 E (60 values)
       Attributes:
-        {'units': 'K'}
-      Type:  Var (dtype="float64")
+        {}
+      Type:  Add_Var (dtype="float64")
     >>> x = t1.Temp.get()
-    >>> print x
-    [[ 261.05848727  259.81373805  258.6761858  ...,  264.37317879
-       263.44078874  262.30323649]
-     [ 261.66049058  260.49545075  259.43074336 ...,  264.76292084
-       263.89023779  262.82553041]
-     [ 262.53448988  261.44963014  260.45819779 ...,  265.42340543
-       264.61078196  263.61934962]
-     ..., 
-     [ 262.53448988  263.61934962  264.61078196 ...,  259.64557433
-       260.45819779  261.44963014]
-     [ 261.66049058  262.82553041  263.89023779 ...,  258.55806031
-       259.43074336  260.49545075]
-     [ 261.05848727  262.30323649  263.44078874 ...,  257.74379575  258.6761858
-       259.81373805]]
+    >>> print(x)
+    [[260.73262556 258.08759192 256.45287123 ... 265.01237988 265.01237988
+      263.37765919]
+     [261.22683172 258.75813366 257.23239435 ... 265.22126909 265.22126909
+      263.69552978]
+     [261.98265134 259.69028886 258.27353093 ... 265.69177175 265.69177175
+      264.27501382]
+     ...
+     [261.98265134 264.27501382 265.69177175 ... 258.27353093 258.27353093
+      259.69028886]
+     [261.22683172 263.69552978 265.22126909 ... 257.23239435 257.23239435
+      258.75813366]
+     [260.73262556 263.37765919 265.01237988 ... 256.45287123 256.45287123
+      258.08759192]]
     """
     from pygeode.view import View
     import numpy as np

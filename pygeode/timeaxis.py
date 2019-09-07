@@ -477,12 +477,12 @@ class CalendarTime(Time):
     Examples
     --------
     >>> from pygeode.tutorial import t2
-    >>> print t2.time.formatvalue(17.25)
-      Jan 18, 2011 06:00:00
-    >>> print t2.time.formatvalue(0, '$B $d')
-      January 1
-    >>> print t2.time.formatvalue(512, '$d/$m/$y')
-      28/5/12
+    >>> print(t2.time.formatvalue(17.25))
+    Jan 18, 2011 06:00:00
+    >>> print(t2.time.formatvalue(0, '$B $d'))
+    January 1
+    >>> print(t2.time.formatvalue(512, '$d/$m/$y'))
+    28/5/12
     '''
     import numpy as np
     from string import Template

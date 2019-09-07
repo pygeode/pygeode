@@ -18,7 +18,7 @@ class Offset(Axis): name = 'offset'
 class CompositeVar(Var):
   '''CompositeVar(var, caxis, cinds)
     Creates a new view of pygeode variable var'''
-    
+
   def __init__ (self, var, iaxis, ievents, evlen, evoff=0, saxes=None, sindices=None):
   #{{{
     # Replace the time axis with a reference time (of an event?), and the offset
@@ -27,7 +27,7 @@ class CompositeVar(Var):
     ievents = np.array(ievents)
     n = ievents.shape[0]
     caxis = var.axes[iaxis]
-    
+
     # Event offsets can either be specified per event or as a single offset
     if hasattr(evoff, '__len__'):
       evoff = np.array(evoff)
@@ -48,10 +48,11 @@ class CompositeVar(Var):
 
     # Construct event and offset axes
     from pygeode.timeaxis import Time, Yearless
+    from pygeode import timeutils
     ev = Event(np.arange(n)+1, indices=ievents)
     if isinstance(caxis, Time):
       units = caxis.units
-      delta = caxis.delta()
+      delta = timeutils.delta(caxis, units = units)
       off = Yearless(values=delta*np.arange(-mevoff, mevlen-mevoff), units=units, startdate={'day':0})
     else:
       off = Offset(np.arange(-mevoff, mevlen-mevoff))
@@ -75,12 +76,12 @@ class CompositeVar(Var):
       #assert iev - eo >= 0 and iev - eo + el < len(caxis), \
          #'Event %d (i: %d) is not fully defined' % (np.where(ievents==iev)[0][0], iev)
     Var.__init__(self, axes, dtype=var.dtype, name=var.name, atts=var.atts, plotatts=var.plotatts)
-  #}}} 
+  #}}}
 
   def getview (self, view, pbar):
   #{{{
     import numpy as np
-    
+
     src = self.var
     iev = self.iaxis     # Index of event axis
     iof = iev + 1        # Index of offset axis
@@ -94,7 +95,7 @@ class CompositeVar(Var):
 
     # Prepare view on composited variable
     icmsl = view.integer_indices[iof] - self.mevoff
-    inviewt = view.remove(iev, iof).add_axis(icm, src.axes[icm], slice(None)) 
+    inviewt = view.remove(iev, iof).add_axis(icm, src.axes[icm], slice(None))
 
     # Loop over events, get requested subset of composited axis
     ievsl = view.integer_indices[iev]
@@ -104,28 +105,80 @@ class CompositeVar(Var):
     n = len(ievsl)
 
     progs = np.linspace(0, 100, n+1)
-    for i, ev, el, eo in zip(np.arange(n), events, evlens, evoffs): 
+    for i, ev, el, eo in zip(np.arange(n), events, evlens, evoffs):
       # Construct slice on composite variable for this event
       mask = (icmsl >= -eo) & (icmsl < el-eo)
       icsl = icmsl[mask] + ev
-      inview = inviewt.modify_slice(icm, icsl) 
+      inview = inviewt.modify_slice(icm, icsl)
 
       # Construct slice into output array; clip to this events' duration
       outsl[iev] = i
       outsl[iof] = iofsl[mask]
-      out[outsl] = inview.get(src, pbar=pbar.subset(progs[i], progs[i+1]))
+      out[tuple(outsl)] = inview.get(src, pbar=pbar.subset(progs[i], progs[i+1]))
 
     return out
   #}}}
 
 def composite (var, **kwargs):
 # {{{
-  ''' composite(var, <events>, evlen, [evoff])
-        Returns a composite variable based on var. <events> is interpreted
-        as a selection; it follows the same syntax as a call to axis.get_slices().
-        The axis matched is used as the composite axis and the returned indices
-        are the key dates. evlen is required; it can either be an integer or a 
-        list of integers specifying the length of each event. evoff is a single integer.'''
+  '''Creates a composite based on this variable.
+
+  Parameters
+  ----------
+  <axis selection> : string
+    A single axis selection string (similar to :func:`Var.__call__`) that
+    specifies the central 'date' of each event to composite (although
+    composites need not be constructed along time axes). See Notes.
+  evlen : int
+    Length of segement around each central 'date' to extract.
+  evoff : int
+    Offset from the central 'dates' to include. A positive value
+    will lead to dates prior to the central 'date' being included.
+
+  Returns
+  -------
+  cvar : :class:`Var`
+    Composite variable. The axis along which composites are to be constructed
+    is replaced by an Event axis and an Offset axis.
+
+  Notes
+  -----
+  The axis matched is used as the composite axis and the returned indices
+  are the key dates. evlen is required; it can either be an integer or a
+  list of integers specifying the length of each event. evoff is a single integer.
+  If the requested composite extends past the ends of the underlying axis, the
+  variable will contain NaNs.
+
+  Examples
+  ========
+  >>> import pygeode as pyg
+  >>> from pygeode.tutorial import t2
+  >>> dts = ['12 May 2012', '15 Aug 2015', '1 Feb 2018', '28 Dec 2020']
+  >>> cT = t2.Temp.composite(l_time = dts, evlen = 15, evoff = 10)
+  >>> print(cT)
+  <Var 'Temp'>:
+    Shape:  (event,time,pres,lat,lon)  (4,15,20,31,60)
+    Axes:
+      event <Event>  :  1  to 4  (4 values)
+      time <Yearless>:  day -10, 00:00:00 to day 4, 00:00:00 (15 values)
+      pres <Pres>    :  1000 hPa to 50 hPa (20 values)
+      lat <Lat>      :  90 S to 90 N (31 values)
+      lon <Lon>      :  0 E to 354 E (60 values)
+    Attributes:
+      {}
+    Type:  CompositeVar (dtype="float64")
+  >>> cT(s_event=1, s_pres=50, s_lat=0, s_lon = 180)[:]
+  array([199.66766628, 199.69594407, 199.72479591, 199.75418884,
+         199.78408917, 199.81446257, 199.84527408, 199.87648814,
+         199.90806866, 199.939979  , 199.97218208, 200.00464036,
+         200.03731592, 200.07017048, 200.10316548])
+  >>> cT(s_event=4, s_pres=50, s_lat=0, s_lon = 180)[:]
+  array([201.02847025, 201.04367089, 201.05782423, 201.07091237,
+         201.08291874, 201.09382812, 201.10362669, 201.112302  ,
+         201.11984303, 201.12624021, 201.1314854 , 201.13557193,
+         201.1384946 , 201.14024969,          nan])
+
+  '''
 
   from pygeode.view import expand
   evlen = kwargs.pop('evlen')
@@ -153,7 +206,7 @@ def composite (var, **kwargs):
 class FlattenVar(Var):
   '''FlattenVar(var, outer, inner)
     Creates a new view of pygeode variable var'''
-    
+
   def __init__ (self, var, inner = -1, naxis=None):
   #{{{
     from numpy import concatenate
@@ -170,7 +223,7 @@ class FlattenVar(Var):
       out = inner - 1
       stride = len(var.axes[inner])
       vals = concatenate([i*stride + var.axes[inner].values for i in range(len(var.axes[out]))])
-    
+
     if naxis is None:
       if isinstance(var.axes[out], NamedAxis):
         naxis = var.axes[out].__class__(vals, var.axes[out].name)
@@ -181,7 +234,7 @@ class FlattenVar(Var):
     self.iin = inner
     self.stride = stride
     self.source_var = var
-   
+
     self.name = var.name
 
     Var.__init__(self, axes, var.dtype)
@@ -199,22 +252,22 @@ class FlattenVar(Var):
     import numpy as np
     out = np.empty(view.shape, self.dtype)
     slf = view.slices[ifl]  # Again, need these indices in the space of the variable (?)
-    slo = slice(int(np.floor(slf.start / float(stride))), 
+    slo = slice(int(np.floor(slf.start / float(stride))),
                           int(np.ceil(slf.stop / float(stride))))
 
     inviewt = view.replace_axis(ifl, src.axes[io], slice(None))
     inviewt = inviewt.add_axis(ii, src.axes[ii], slice(None))
-  
+
     sllen = lambda sl: sl.stop-sl.start
     if sllen(slo) == 1: # Request lies within a single stride
       # Build inner slice
       sli = slice(slf.start - slo.start * stride, slf.stop - slo.start * stride)
-      
+
       # Set bounds on inner view
       inview = inviewt.modify_slice(io, slo).modify_slice(ii, sli)
 
-      return inview.get(src, pbar=pbar.subset(0, 100)).reshape(view.shape) # Get data, reshape 
-    else:     # Request spans multiple strides; 
+      return inview.get(src, pbar=pbar.subset(0, 100)).reshape(view.shape) # Get data, reshape
+    else:     # Request spans multiple strides;
       # Need to get interior slice, initial and final partial strides
       # Build slices
       slos = [slice(slo.start, slo.start + 1),  # Initial
@@ -249,9 +302,9 @@ def clim_detrend(var, yrlen, itime = -1, sig=False):
   from pygeode.timeaxis import Time
   from . import stats
   from numpy import arange
-  if itime == -1: itime = var.whichaxis(Time) 
+  if itime == -1: itime = var.whichaxis(Time)
   tlen = var.shape[itime]
-  
+
   vary = composite(var, itime, list(range(0, tlen, yrlen)), yrlen)
   yrs = vary.axes[itime]
   yrs.values=arange(len(yrs)).astype(yrs.dtype)
@@ -278,10 +331,10 @@ def clim_detrend(var, yrlen, itime = -1, sig=False):
 
 def clim_anoms(var, yrlen, itime = -1):
 # {{{
-  ''' clim_anoms() - quick and dirty implementation; 
+  ''' clim_anoms() - quick and dirty implementation;
         returns climatology and anomalies of given variable.'''
   from pygeode.timeaxis import Time
-  if itime == -1: itime = var.whichaxis(Time) 
+  if itime == -1: itime = var.whichaxis(Time)
   tlen = (var.shape[itime] // yrlen) * yrlen
   vary = composite(var, itime, list(range(0, tlen, yrlen)), yrlen)
   varc = vary.mean(itime).load()
@@ -304,7 +357,7 @@ def time_ave(var, type, itime = -1):
             'm' - monthly averages
             'y' - annual averages '''
   from pygeode.timeaxis import Time
-  if itime == -1: itime = var.whichaxis(Time) 
+  if itime == -1: itime = var.whichaxis(Time)
   tlen = var.shape[itime]
 
   if type == 'd':
@@ -320,7 +373,7 @@ def time_ave(var, type, itime = -1):
 
   vary = composite(var, itime, list(range(0, tlen, ilen)), ilen)
   varave = vary.mean(itime + 1)
-  return varave 
+  return varave
 # }}}
 
 def test():

@@ -239,6 +239,7 @@ def vsum(*args):
   return ans
 vsum = wrap_npfunc(-1, vsum, "Adds an arbitrary number of variables together")
 
+clip = wrap_npfunc(-1, np.clip, "Clips values to given interval.")
 
 
 
@@ -247,7 +248,8 @@ del np
 unary_flist = (abs, sign, exp, log, log10, cos, sin, tan, cosd, sind, tand,
     cosh, sinh, tanh, arccos, arcsin, arctan,
     arccosd, arcsind, arctand, arccosh, arcsinh, arctanh,
-    sqrt, nan_to_num, real, imag, conj, angle
+    sqrt, nan_to_num, real, imag, conj, angle,
+    clip
 )
 
 binary_flist = (arctan2, arctand2, minimum, maximum)

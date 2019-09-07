@@ -59,7 +59,7 @@ class ReducedVar(Var):
     N = int(np.product(N))
     self.N =  N # number of values to reduce over
     self.var = var
-    self.indices = indices
+    self.indices = tuple(indices)
 
     self.in_axes = axes
 
@@ -88,12 +88,10 @@ class NANMinVar(ReducedVar):
   def getview (self, view, pbar):
     import numpy as np
     from pygeode.tools import loopover, npnanmin
-    out = np.empty(view.shape, self.dtype)
-    out *= np.nan
-    out[()] = float('inf')
+    out = np.full(view.shape, np.nan, self.dtype)
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       #Ignore NaNs when finding mininum
-      out[outsl] = np.nanmin([out[outsl], npnanmin(indata, self.indices)])
+      out[outsl] = np.nanmin([out[outsl], npnanmin(indata, self.indices)], 0)
     return out
 # }}}
 
@@ -114,12 +112,10 @@ class NANMaxVar(ReducedVar):
   def getview (self, view, pbar):
     import numpy as np
     from pygeode.tools import loopover, npnanmax
-    out = np.empty(view.shape, self.dtype)
-    out *= np.nan
-    out[()] = float('-inf')
+    out = np.full(view.shape, np.nan, self.dtype)
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       #Ignore NaNs when finding maximum
-      out[outsl] = np.nanmax([out[outsl], npnanmax(indata, self.indices)])
+      out[outsl] = np.nanmax([out[outsl], npnanmax(indata, self.indices)], 0)
     return out
 # }}}
 
@@ -222,8 +218,7 @@ class NANSumVar(ReducedVar):
   def getview (self, view, pbar):
     import numpy as np
     from pygeode.tools import loopover, npnansum
-    out = np.zeros(view.shape, self.dtype)
-    out *= np.nan
+    out = np.full(view.shape, np.nan, self.dtype)
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       # Accumulation must be nan-safe
       out[outsl] = np.nansum([out[outsl], npnansum(indata, self.indices)], 0)
@@ -247,8 +242,7 @@ class WeightedNANSumVar(ReducedVar):
   # {{{
     import numpy as np
     from pygeode.tools import loopover, npnansum
-    out = np.zeros(view.shape, self.dtype)
-    out *= np.nan
+    out = np.full(view.shape, np.nan, self.dtype)
     for outsl, (indata, inw) in loopover([self.var, self.mweights], view, self.var.axes, pbar=pbar):
       # Accumulation must be nan-safe
       out[outsl] = np.nansum([out[outsl], \
@@ -305,17 +299,19 @@ class NANMeanVar(ReducedVar):
   def getview (self, view, pbar):
     import numpy as np
     from pygeode.tools import loopover, npnansum
-    out = np.zeros(view.shape, self.dtype)
-    out *= np.nan
-    N = np.zeros(view.shape, self.dtype)
-    N *= np.nan
+    out = np.full(view.shape, np.nan, self.dtype)
+    N   = np.full(view.shape, np.nan, self.dtype)
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       # Must increment in a nan-safe way
       out[outsl] = np.nansum([out[outsl], npnansum(indata, self.indices)], 0)
       # Sum of weights (kludge to get masking right)
-      N[outsl] = np.nansum([N[outsl], npnansum(1. + indata*0., self.indices)], 0) 
+      N[outsl] = np.nansum([N[outsl], npnansum(~np.isnan(indata), self.indices)], 0)
 
-    return out / N
+    nmsk = (N > 0.)
+    out[nmsk] /= N[nmsk]
+    out[~nmsk] = np.nan
+
+    return out
  # }}}
 class WeightedNANMeanVar(ReducedVar):
 # {{{ 
@@ -335,18 +331,20 @@ class WeightedNANMeanVar(ReducedVar):
   # {{{
     import numpy as np
     from pygeode.tools import loopover, npnansum
-    out = np.zeros(view.shape, self.dtype)
-    out *= np.nan
-    W = np.zeros(view.shape, self.dtype)
-    W *= np.nan
+    out = np.full(view.shape, np.nan, self.dtype)
+    W   = np.full(view.shape, np.nan, self.dtype)
     for outsl, (indata, inw) in loopover([self.var, self.mweights], view, self.var.axes, pbar=pbar):
       # Must increment in a nan-safe way
       out[outsl] = np.nansum([out[outsl], \
               npnansum(indata * inw, self.indices)], 0)     # Product of data and weights
       W[outsl] = np.nansum([W[outsl], \
-              npnansum(inw + indata*0., self.indices)], 0)  # Sum of weights (kludge to get masking right)
+              npnansum((~np.isnan(indata)) * inw, self.indices)], 0)  # Sum of weights (kludge to get masking right)
 
-    return out / W
+    nmsk = (W > 0.)
+    out[nmsk] /= W[nmsk]
+    out[~nmsk] = np.nan
+
+    return out
   # }}}
 # }}}
 
@@ -404,25 +402,26 @@ class NANVarianceVar(ReducedVar):
   def getview (self, view, pbar):
     import numpy as np
     from pygeode.tools import loopover, npnansum
-    x = np.zeros(view.shape, self.dtype)
-    x *= np.nan
-    x2 = np.zeros(view.shape, self.dtype)
-    x2 *= np.nan
-    N = np.zeros(view.shape, self.dtype)
-    N *= np.nan
+    x  = np.full(view.shape, np.nan, self.dtype)
+    x2 = np.full(view.shape, np.nan, self.dtype)
+    N  = np.full(view.shape, np.nan, self.dtype)
+
+    out = np.zeros(view.shape, self.dtype)
+
     for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
       x[outsl] = np.nansum([x[outsl],\
                   npnansum(indata, self.indices)], 0)
       x2[outsl] = np.nansum([x2[outsl],\
                   npnansum(indata**2, self.indices)], 0)  
-      N[outsl] = np.nansum([N[outsl],\
-                  npnansum(1. + indata*0., self.indices)], 0)
-    
-    zeros = np.asarray(N <= 1.)
-    x[zeros] = np.nan
-    x2[zeros] = np.nan
+      N[outsl] = np.nansum([N[outsl],
+                  npnansum(~np.isnan(indata), self.indices)], 0)
 
-    return (x2 - x**2/N) / (N - 1.)
+    nmsk = (N > 1.)
+    out[nmsk] = x2[nmsk] - x[nmsk]**2/N[nmsk]
+    out[nmsk] /= N[nmsk] - 1.
+    out[~nmsk] = np.nan
+
+    return out
 # }}}
 
 # naive single-pass standard deviation
@@ -449,7 +448,7 @@ class NANSDVar(NANVarianceVar):
     if np.isscalar(variance):
       if variance < 0.: variance = 0.
     else:
-      variance[np.where(variance<=0)] = 0
+      variance[variance<=0] = 0
     return np.sqrt(variance)
 # }}}
 

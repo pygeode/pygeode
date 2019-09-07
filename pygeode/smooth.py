@@ -92,7 +92,7 @@ class SmoothVar (Var):
       if mright_len > 0:
         ssli[saxis] = slice(-mright_len-1,-2*mright_len-1,-1)
         sslo[saxis] = slice(-mright_len, None)
-        src[sslo] = src[ssli]
+        src[tuple(sslo)] = src[tuple(ssli)]
 
       out[outsl] = self._convolve(src, self.kernel, 'same')[tuple(cnvsl)]
 

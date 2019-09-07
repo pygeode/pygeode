@@ -11,62 +11,98 @@
 
 # Change criteria for updating the bar to: once a second
 # Also, don't show a bar for tasks of a short duration (10 seconds)
+
+from pygeode import _config
+
 try:
-  from progressbar import ProgressBar, Percentage, Bar, ETA
-  _NOSHOWTIME = 10.
-  class PygProgressBar(ProgressBar):
-    if hasattr(ProgressBar, '__slots__'):
-       __slots__ = ProgressBar.__slots__ + ('first_update_time', 'prev_update_time', 'message', 'printed_message')
-    
+  import progressbar as pb
+  from datetime import datetime
+
+  class PygProgressBar(pb.ProgressBar):
+    ''' Version of progressbar.ProgressBar that does not display until a minimum 
+    time has elapsed. '''
     def __init__(self, **kwargs):
-      ProgressBar.__init__(self, **kwargs)
-      self.first_update_time = None
-      self.prev_update_time = None
-      self.message = None
-      self.printed_message = False
+      self._no_show_time = _config.getfloat('ProgressBar', 'no_show_time')
+      self.message = kwargs.pop('message', '')
+      if self.message is not '': self.message = '{:<30}'.format(self.message)
+      self.init_kwargs = kwargs
+      pb.bar.ProgressBarMixinBase.__init__(self)
 
-    def _need_update(self):
-      import time
-      # Force this to be updated independant of the need_update decision
-      # (this is normally computed in update(), but is skipped if we don't need to display anything)
-      if not self.start_time: self.start_time = time.time()
-      self.seconds_elapsed = time.time() - self.start_time
-      if self.seconds_elapsed < _NOSHOWTIME: return False
-      if not ProgressBar._need_update(self): return False
-      if not self.printed_message:
-        if self.message is not None: print(self.message)
-        self.printed_message = True
-      return True
+    def default_widgets(self):
+      return [pb.FormatCustomText(format = self.message),
+              pb.Percentage(**self.widget_kwargs), 
+              pb.Bar(**self.widget_kwargs), 
+              pb.AdaptiveETA(**self.widget_kwargs)]
 
-    def finish(self): # Overloaded to fix unneccesary newlines when not displayed
-      if self.finished: return
-      else: self.finished = True
-      self.update(self.maxval)
-      #if self.seconds_elapsed < _NOSHOWTIME: self.fd.write('\n')
+    def start(self, max_value=None, init=True):
+      # Avoid initializing progress bar until _no_show_time has elapsed.
+      self.init()
+      self.max_value = max_value
+      self.start_time = datetime.now()
+      return self
 
-except ImportError:
+    def update(self, value=None, force=False, **kwargs):
+      if self.start_time is None:
+        self.start()
+
+      if self.end_time is None:
+        et = datetime.now()
+      else:
+        et = self.end_time
+
+      total_seconds_elapsed = pb.utils.timedelta_to_seconds(et - self.start_time)
+      if total_seconds_elapsed < self._no_show_time: 
+        return
+      else:
+        if self.last_update_time is None:
+          # Create underlying progress bar
+          st = self.start_time 
+          pb.ProgressBar.__init__(self, **self.init_kwargs)
+          pb.ProgressBar.start(self, self.max_value, init=True)
+          self.start_time = st
+
+        return pb.ProgressBar.update(self, value, force, **kwargs)
+
+    def finish(self, end='\n'):
+      if self._finished: return
+
+      if self.start_time is None:
+        total_seconds_elapsed = 0.
+      else:
+        if self.end_time is None:
+          self.end_time = datetime.now()
+        total_seconds_elapsed = pb.utils.timedelta_to_seconds(self.end_time - self.start_time)
+
+      if total_seconds_elapsed >= self._no_show_time: 
+        pb.ProgressBar.finish(self, end = end)
+
+      self._finished = True
+
+except ImportError as e:
   from warnings import warn
-  warn ("progressbar module not found; progress bars will not be displayed.")
+  warn ("progressbar module not found (%s). Progress bars will not be displayed." % repr(e))
   PygProgressBar = None
 
 class PBar:
-  def __init__ (self, pbar=None, lower=0, upper=100, message=None):
+  def __init__ (self, pbar=None, lower=0, upper=100, message=''):
     self.lower = lower
     self.upper = upper
+    self.parent = False
 
     if pbar is not None:
       self.pbar = pbar
       return
 
     if PygProgressBar is not None:
-      pbar = PygProgressBar(widgets=[Percentage(), ' ', Bar(), ' ', ETA()])
+      self.parent = True
+      pbar = PygProgressBar(message = message, max_value=100.0, \
+                            poll_interval = _config.getfloat('ProgressBar', 'poll_interval'))
       self.pbar = pbar.start()
-      self.pbar.message = message  # staple a title message to the progress bar
-                                   # (to be used in _need_update)
     else:
       self.pbar = None
 
   def update(self, x):
+    import time
     lower = self.lower
     upper = self.upper
     dx = upper - lower
@@ -75,7 +111,8 @@ class PBar:
     y = min(y,100)
     if self.pbar is not None:
       self.pbar.update(y)
-      if y == 100 and not self.pbar.finished: self.pbar.finish()
+      if y >= 100 and self.parent:
+        self.pbar.finish()
 
   def subset(self, L, U):
     lower = self.lower
