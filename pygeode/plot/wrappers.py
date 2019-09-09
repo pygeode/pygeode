@@ -582,6 +582,9 @@ except ImportError:
   # }}}
   cartopy_avail = False
 
+def ismapaxis(axis):
+  return isbasemapaxis(axis) or iscartopyaxis(axis)
+
 if not (basemap_avail or cartopy_avail):
   import warnings
   warnings.warn('Neither Cartopy nor Basemap functionality is available.')

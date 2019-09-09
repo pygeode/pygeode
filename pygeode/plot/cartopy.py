@@ -1,4 +1,4 @@
-from .wrappers import AxesWrapper, PlotOp, Contour, Contourf, Streamplot, Quiver, make_plot_func, make_plot_member
+from .wrappers import AxesWrapper, PlotOp, Contour, Contourf, PColor, Streamplot, Quiver, make_plot_func, make_plot_member
 
 import cartopy as crt
 import cartopy.crs as ccrs
@@ -63,7 +63,18 @@ class CRTCoastlines(PlotOp):
 class CRTGridlines(PlotOp):
 # {{{
   def render (self, axes):
-    axes.gridlines(*self.plot_args, **self.plot_kwargs)
+    self._gl = axes.gridlines(*self.plot_args, **self.plot_kwargs)
+# }}}
+
+class CRTModifyGridlines(PlotOp):
+# {{{
+  def __init__(self, gl, **kwargs):
+    self.gl = gl
+    PlotOp.__init__(self, **kwargs)
+
+  def render (self, axes):
+    gl = self.gl._gl
+    gl.__dict__.update(self.plot_kwargs)
 # }}}
 
 class CRTAddFeature(PlotOp):
@@ -82,6 +93,7 @@ contour        = make_plot_func(CRTContour)
 contourf       = make_plot_func(CRTContourf)
 coastlines     = make_plot_func(CRTCoastlines)
 gridlines      = make_plot_func(CRTGridlines)
+modifygridlines = make_plot_func(CRTModifyGridlines)
 pcolor         = make_plot_func(CRTPColor)
 streamplot     = make_plot_func(CRTStreamplot)
 quiver         = make_plot_func(CRTQuiver)
@@ -92,10 +104,11 @@ CartopyAxes.contour        = make_plot_member(contour)
 CartopyAxes.contourf       = make_plot_member(contourf)
 CartopyAxes.coastlines     = make_plot_member(coastlines)
 CartopyAxes.gridlines      = make_plot_member(gridlines)
+CartopyAxes.modifygridlines = make_plot_member(modifygridlines)
 CartopyAxes.pcolor         = make_plot_member(pcolor)
 CartopyAxes.streamplot     = make_plot_member(streamplot)
 CartopyAxes.quiver         = make_plot_member(quiver)
 CartopyAxes.add_feature    = make_plot_member(add_feature)
 CartopyAxes.add_geometries = make_plot_member(add_geometries)
 
-__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries']
+__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'modifygridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries']

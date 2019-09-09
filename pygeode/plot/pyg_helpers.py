@@ -86,7 +86,7 @@ def set_xaxis(axes, axis, lbl, xscale=True):
     axes.pad = [pl, 0.5, pr, 0.3]
   else:
     axes.pad = [pl, 0.3, pr, 0.3]
-# }}}
+# }}} 
 
 def set_yaxis(axes, axis, lbl, yscale=True):
 # {{{
@@ -114,85 +114,95 @@ def set_yaxis(axes, axis, lbl, yscale=True):
     axes.pad = [0.5, pb, 0.1, pt]
 # }}}
 
-def build_basemap(lons, lats, **kwargs):
+def build_projection(lons, lats, **kwargs):
 # {{{
-  if not hasattr(wr, 'BasemapAxes'):
+  if wr.cartopy_avail:
+    # Use cartopy preferentially, if it is available.
+    if not hasattr(wr, 'CartopyAxes'):
+      return wr.AxesWrapper()
+
+    prd = dict(projection = 'PlateCarree')
+    prd.update(kwargs.pop('map', {}))
+
+    return wr.CartopyAxes(**prd)
+
+  elif wr.basemap_avail:
+    # Use basemap if available
+    prd = dict(projection = 'cyl', resolution = 'c')
+    prd.update(kwargs.pop('map', {}))
+    proj = prd['projection']
+    bnds = {}
+
+    if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
+                          'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho', 'nsper']:
+      bnds = {'llcrnrlat':lats.min(),
+              'urcrnrlat':lats.max(),
+              'llcrnrlon':lons.min(),
+              'urcrnrlon':lons.max()}
+
+    if proj == 'npstere':
+      bnds = {'boundinglat':20, 'lon_0':0}
+
+    if proj == 'spstere':
+      bnds = {'boundinglat':-20, 'lon_0':0}
+
+    bnds.update(prd)
+    prd.update(bnds)
+
+    return wr.BasemapAxes(**prd)
+  else:
     return wr.AxesWrapper()
-
-  prd = dict(projection = 'cyl', resolution = 'c')
-  prd.update(kwargs.pop('map', {}))
-  proj = prd['projection']
-  bnds = {}
-
-  if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
-                        'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho', 'nsper']:
-    bnds = {'llcrnrlat':lats.min(),
-            'urcrnrlat':lats.max(),
-            'llcrnrlon':lons.min(),
-            'urcrnrlon':lons.max()}
-
-  if proj == 'npstere':
-    bnds = {'boundinglat':20, 'lon_0':0}
-
-  if proj == 'spstere':
-    bnds = {'boundinglat':-20, 'lon_0':0}
-
-  bnds.update(prd)
-  prd.update(bnds)
-
-  return wr.BasemapAxes(**prd)
 # }}}
 
-def build_cartopy(lons, lats, **kwargs):
+def decorate_projection(axes, xaxis, yaxis, **kwargs):
 # {{{
-  if not hasattr(wr, 'CartopyAxes'):
-    return wr.AxesWrapper()
+  if wr.iscartopyaxis(axes):
+    # Add coastlines, meridians, parallels
+    dec = kwargs.pop('decorate', {})
 
-  prd = dict(projection = 'PlateCarree')
-  prd.update(kwargs.pop('map', {}))
+    if isinstance(dec, dict):
+      cst = dict(resolution = '110m')
+      cst.update(dec.pop('coastline_args', {}))
+      if cst: 
+        axes.coastlines(**cst)
 
-  return wr.CartopyAxes(**prd)
-# }}}
+      grd = dict(draw_labels=True, color = 'k', linestyle = ':', linewidth = 1.)
+      grd.update(dec.pop('grid_args', {}))
+      if grd: 
+        axes.gridlines(**grd)
 
-def decorate_basemap(axes, **kwargs):
-# {{{
-  prd = dict(projection = 'cyl', resolution = 'c')
-  prd.update(kwargs.pop('map', {}))
+        scale, label, lim, xform, xloc = axes_parm(xaxis)
+        scale, label, lim, yform, yloc = axes_parm(yaxis)
 
-  if kwargs.pop('bluemarble', False):
-    axes.bluemarble()
+        grdprm = dict(xlabels_top = False,   xlocator = xloc, xformatter = xform, \
+                      ylabels_right = False, ylocator = yloc, yformatter = yform)
+        axes.modifygridlines(axes.plots[-1], **grdprm)
+  
+      axes.pad = [0.6, 0.5, 0.2, 0.2]
 
-  # Add coastlines, meridians, parallels
-  cld = {}
-  merd = dict(meridians=[-180,-90,0,90,180,270,360],
-              labels=[1,0,0,1])
-  pard = dict(circles=[-90,-60,-30,0,30,60,90],
-              labels=[1,0,0,1])
+  elif wr.isbasemapaxis(axes): 
+    prd = dict(projection = 'cyl', resolution = 'c')
+    prd.update(kwargs.pop('map', {}))
 
-  cld.update(kwargs.pop('coastlines', {}))
-  merd.update(kwargs.pop('meridians', {}))
-  pard.update(kwargs.pop('parallels', {}))
+    if kwargs.pop('bluemarble', False):
+      axes.bluemarble()
 
-  axes.pad=(0.6, 0.4, 0.4, 0.4)
-  if prd.get('resolution', 'c') is not None:
-    axes.drawcoastlines(**cld)
-    axes.drawmeridians(**merd)
-    axes.drawparallels(**pard)
-# }}}
+    # Add coastlines, meridians, parallels
+    cld = {}
+    merd = dict(meridians=[-180,-90,0,90,180,270,360],
+                labels=[1,0,0,1])
+    pard = dict(circles=[-90,-60,-30,0,30,60,90],
+                labels=[1,0,0,1])
 
-def decorate_cartopy(axes, **kwargs):
-# {{{
-  # Add coastlines, meridians, parallels
-  dec = kwargs.pop('decorate', {})
+    cld.update(kwargs.pop('coastlines', {}))
+    merd.update(kwargs.pop('meridians', {}))
+    pard.update(kwargs.pop('parallels', {}))
 
-  if isinstance(dec, dict):
-    cst = dict()
-    cst.update(dec.pop('coastline_args', {}))
-    if cst: axes.coastlines(**cst)
-
-    grd = dict(draw_labels = False)
-    grd.update(dec.pop('grid_args', {}))
-    if grd: axes.gridlines(**grd)
+    axes.pad=(0.6, 0.4, 0.4, 0.4)
+    if prd.get('resolution', 'c') is not None:
+      axes.drawcoastlines(**cld)
+      axes.drawmeridians(**merd)
+      axes.drawparallels(**pard)
 # }}}
 
 def _parse_autofmt_kwargs(Z, kwargs):
@@ -467,7 +477,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_cartopy(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, map = map, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
@@ -491,11 +501,8 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.isbasemapaxis(axes):
-      decorate_basemap(axes, **kwargs)
-    elif wr.iscartopyaxis(axes):
-      print(kwargs)
-      decorate_cartopy(axes, **kwargs)
+    if wr.ismapaxis(axes):
+      decorate_projection(axes, X, Y, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -634,8 +641,7 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      #axes = build_basemap(x, y, map = map, **kwargs)
-      axes = build_cartopy(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, map = map, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
@@ -644,10 +650,8 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.isbasemapaxis(axes):
-      decorate_basemap(axes, map = map, **kwargs)
-    elif wr.iscartopyaxis(axes):
-      decorate_cartopy(axes, **kwargs)
+    if wr.ismapaxis(axes):
+      decorate_projection(axes, X, Y, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -698,8 +702,7 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      #axes = build_basemap(x, y, map = map, **kwargs)
-      axes = build_cartopy(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, map = map, **kwargs)
     else:
       axes = wr.AxesWrapper()
 
@@ -711,10 +714,8 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.isbasemapaxis(axes):
+    if wr.ismapaxis(axes):
       decorate_basemap(axes, map = map, **kwargs)
-    elif wr.iscartopyaxis(axes):
-      decorate_cartopy(axes, map = map, **kwargs)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
