@@ -1,0 +1,28 @@
+These files are needed to update the conda packages currently hosted 
+on the aph42 anaconda channel.
+
+Update meta.yaml.<release> to the git repository release number.
+
+Copy 
+  bld.bat
+  build.sh
+  meta.yaml.<release> --> meta.yaml
+
+to a subdirectory somewhere called 'pygeode'.
+
+create a clean conda environment including
+  conda install conda-build anaconda-client
+
+In order to automatically upload successfully build packages, 
+  conda config --set anaconda_upload yes
+  anaconda login
+
+Then run 
+  conda-build pygeode
+  conda-build --python=2.7 pygeode
+
+This needs to be done independently on linux, osx and windows since the package
+includes compiled c-code, not only python sources.
+
+The package can be tested by creating a new conda environment and running
+  conda install pygeode -c aph42
