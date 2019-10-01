@@ -4,23 +4,33 @@ import cartopy as crt
 import cartopy.crs as ccrs
 
 class CartopyAxes(AxesWrapper):
-  def __init__(self, transform = None, **kwargs):
+  def __init__(self, projection = 'PlateCarree', prj_args = None, transform = None, global = False, **kwargs):
     AxesWrapper.__init__(self, **kwargs)
+
+    self.prj_name = projection
+
+    if prj_args is None:
+      if self.prj_name in ['PlateCarree']:
+        prj_args = dict(central_longitude = 0.)
+      else:
+        prj_args = dict()
+
+    self.prj_args = prj_args
+
+    self.projection = ccrs.__dict__[self.prj_name](**self.prj_args)
 
     if transform is None:
       transform = ccrs.PlateCarree()
 
     self.transform = transform
 
+    self.global = global
+
   def _build_axes(self, fig, root):
 # {{{
-    prj = self.axes_args.get('projection', 'PlateCarree')
-    prj_args = self.axes_args.get('prj_args', dict(central_longitude = 180.))
-
-    self.projection = ccrs.__dict__[prj](**prj_args)
-    
     AxesWrapper._build_axes(self, fig, root)
-    self.ax.set_global()
+    if self.global:
+      self.ax.set_global()
 # }}}
 
 # Contour

@@ -122,14 +122,14 @@ def build_projection(lons, lats, **kwargs):
       return wr.AxesWrapper()
 
     prd = dict(projection = 'PlateCarree')
-    prd.update(kwargs.pop('map', {}))
+    prd.update(kwargs)
 
     return wr.CartopyAxes(**prd)
 
   elif wr.basemap_avail:
     # Use basemap if available
     prd = dict(projection = 'cyl', resolution = 'c')
-    prd.update(kwargs.pop('map', {}))
+    prd.update(kwargs)
     proj = prd['projection']
     bnds = {}
 
@@ -157,28 +157,47 @@ def build_projection(lons, lats, **kwargs):
 def decorate_projection(axes, xaxis, yaxis, **kwargs):
 # {{{
   if wr.iscartopyaxis(axes):
-    # Add coastlines, meridians, parallels
-    dec = kwargs.pop('decorate', {})
+    cst_def = dict(resolution = '110m')
+    cst = kwargs.pop('coastlines', cst_def)
+    if isinstance(cst, dict):
+      axes.coastlines(**cst)
 
-    if isinstance(dec, dict):
-      cst = dict(resolution = '110m')
-      cst.update(dec.pop('coastline_args', {}))
-      if cst: 
-        axes.coastlines(**cst)
+    grd = kwargs.pop('gridlines', {})
 
-      grd = dict(draw_labels=True, color = 'k', linestyle = ':', linewidth = 1.)
-      grd.update(dec.pop('grid_args', {}))
-      if grd: 
-        axes.gridlines(**grd)
+    if isinstance(grd, dict):
+      lblprjs = ['PlateCarree', 'Mercator']
+      grd_def = dict(color = 'k', linestyle = ':', linewidth = 1.)
 
-        scale, label, lim, xform, xloc = axes_parm(xaxis)
-        scale, label, lim, yform, yloc = axes_parm(yaxis)
+      if axes.prj_name in lblprjs:
+        grd_def['draw_labels'] = True
+      else:
+        grd_def['draw_labels'] = False
 
-        grdprm = dict(xlabels_top = False,   xlocator = xloc, xformatter = xform, \
-                      ylabels_right = False, ylocator = yloc, yformatter = yform)
-        axes.modifygridlines(axes.plots[-1], **grdprm)
+      grd_def.update(grd)
+      axes.gridlines(**grd_def)
+
+      scale, label, lim, xform, xloc = axes_parm(xaxis)
+      scale, label, lim, yform, yloc = axes_parm(yaxis)
+
+      # Set default grid appearance and labeling if appropriate
+      grd_prm = {}
+
+      if grd_def['draw_labels'] and axes.prj_name in lblprjs:
+        grd_prm['xlabels_top']   = False
+        grd_prm['ylabels_right'] = False
+        grd_prm['xformatter'] = xform
+        grd_prm['yformatter'] = yform
+
+      if 'xlocs' not in grd_def:
+        grd_prm['xlocs'] = xloc
+
+      if 'ylocs' not in grd_def:
+        grd_prm['ylocs'] = yloc
+
+      if len(grd_prm) > 0:
+        axes.modifygridlines(axes.plots[-1], **grd_prm)
   
-      axes.pad = [0.6, 0.5, 0.2, 0.2]
+    axes.pad = [0.6, 0.5, 0.2, 0.2]
 
   elif wr.isbasemapaxis(axes): 
     prd = dict(projection = 'cyl', resolution = 'c')
@@ -477,7 +496,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_projection(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, **map)
     else:
       axes = wr.AxesWrapper()
 
@@ -502,7 +521,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.ismapaxis(axes):
-      decorate_projection(axes, X, Y, **kwargs)
+      decorate_projection(axes, X, Y, **map)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -641,7 +660,7 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_projection(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, **map)
     else:
       axes = wr.AxesWrapper()
 
@@ -702,7 +721,7 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_projection(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, **map)
     else:
       axes = wr.AxesWrapper()
 
@@ -715,7 +734,7 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
     if wr.ismapaxis(axes):
-      decorate_basemap(axes, map = map, **kwargs)
+      decorate_projection(axes, X, Y, **map)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
