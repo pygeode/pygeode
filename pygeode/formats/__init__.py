@@ -21,7 +21,8 @@ __all__ = ['openall', 'open_multi', 'open', 'save']
 
 extdict = {'.nc':'netcdf',
            '.hdf': 'hdf4',
-           '.grib':'grib' }
+           '.grib':'grib',
+           '.grb2':'netcdf4' }
 
 from pygeode.var import Var
 class PackVar(Var):
