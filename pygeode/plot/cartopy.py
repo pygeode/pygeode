@@ -4,7 +4,7 @@ import cartopy as crt
 import cartopy.crs as ccrs
 
 class CartopyAxes(AxesWrapper):
-  def __init__(self, projection = 'PlateCarree', prj_args = None, transform = None, global = False, **kwargs):
+  def __init__(self, projection = 'PlateCarree', prj_args = None, transform = None, setglobal = False, **kwargs):
     AxesWrapper.__init__(self, **kwargs)
 
     self.prj_name = projection
@@ -24,12 +24,12 @@ class CartopyAxes(AxesWrapper):
 
     self.transform = transform
 
-    self.global = global
+    self.setglobal = setglobal
 
   def _build_axes(self, fig, root):
-# {{{
+# {{{ 
     AxesWrapper._build_axes(self, fig, root)
-    if self.global:
+    if self.setglobal:
       self.ax.set_global()
 # }}}
 
