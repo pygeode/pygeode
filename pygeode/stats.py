@@ -211,18 +211,17 @@ def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
     * 'm': Linear coefficient of the regression
     * 'b': Constant coefficient of the regression
     * 'r2': Fraction of the variance in Y explained by X (:math:`R^2`)
-    * 'p': p-value of regression; see notes.
-    * 'sm': Standard deviation of linear coefficient estimate
-    * 'se': Standard deviation of residuals
+    * 'p': Probability of this fit under null hypothesis that true linear coefficient is zero
+    * 'sm': Standard deviation of linear coefficient estimate (:math:`\hat{\sigma}_E/\sqrt{S_{XX}}`)
+    * 'se': Standard deviation of residuals (:math:`\hat{\sigma}_E`)
 
   Notes
   =====
   The statistics described are computed following von Storch and Zwiers 1999,
   section 8.3. The p-value 'p' is computed using the t-statistic given in
   section 8.3.8, and confidence intervals for the slope and intercept can be
-  computed from 'se' and 'se' (:math:`\hat{\sigma}_E` and
-  :math:`\hat{\sigma}_E/\sqrt{S_{XX}}` in von Storch and Zwiers, respectively).
-  The data is assumed to be normally distributed.'''
+  computed from 'sm' or 'se'.  The data is assumed to be normally
+  distributed.'''
 
   from pygeode.tools import loopover, whichaxis, combine_axes, shared_axes, npnansum
   from pygeode.view import View
