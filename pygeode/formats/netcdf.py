@@ -79,7 +79,7 @@ def get_attributes (fileid, varid):
       valstr = create_string_buffer(size.value)
       ret = get_att_f[vtype.value](fileid, varid, name, valstr);
       assert ret == 0, lib.nc_strerror(ret)
-      value = str(valstr.value.decode())
+      value = valstr.value.decode('UTF8').encode('ascii', 'ignore')
     else:
       valnp = empty([size.value], numpy_type[vtype.value])
       ret = get_att_f[vtype.value](fileid, varid, name, point(valnp))
@@ -546,6 +546,7 @@ def save (filename, in_dataset, version=3, pack=None, compress=False, cfmeta = T
         data = np.ascontiguousarray(data, dtype=dtype)
         ret = chunkf[t](fileid, varids[i], start, count, point(data))
         assert ret == 0, "Error writing var '%s' to netcdf: %s (error %d)" % (var.name, lib.nc_strerror(ret), ret)
+    pbar.update(100)
 
   finally:
     # Finished
