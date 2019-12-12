@@ -52,7 +52,7 @@ class CompositeVar(Var):
     ev = Event(np.arange(n)+1, indices=ievents)
     if isinstance(caxis, Time):
       units = caxis.units
-      delta = timeutils.delta(caxis, units = units)
+      delta = timeutils.delta(caxis, units = units, allow_multiple=True)
       off = Yearless(values=delta*np.arange(-mevoff, mevlen-mevoff), units=units, startdate={'day':0})
     else:
       off = Offset(np.arange(-mevoff, mevlen-mevoff))
