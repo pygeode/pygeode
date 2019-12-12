@@ -54,6 +54,9 @@ def correlate(X, Y, axes=None, output = 'r2,p', pbar=None):
   output = [o for o in output.split(',') if o in ovars]
   if len(output) < 1: raise ValueError('No valid outputs are requested from correlation. Possible outputs are %s.' % str(ovars))
 
+  xn = X.name if X.name != '' else 'X' # Note: could write:  xn = X.name or 'X'
+  yn = Y.name if Y.name != '' else 'Y'
+
   # Put all the axes being reduced over at the end 
   # so that we can reshape 
   srcaxes = combine_axes([X, Y])
@@ -63,7 +66,7 @@ def correlate(X, Y, axes=None, output = 'r2,p', pbar=None):
     for a in axes:
       i = whichaxis(srcaxes, a)
       if i not in riaxes: 
-        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, X.name, Y.name))
+        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, xn, yn))
       ri_new.append(i)
     oiaxes.extend([r for r in riaxes if r not in ri_new])
     riaxes = ri_new
@@ -84,7 +87,7 @@ def correlate(X, Y, axes=None, output = 'r2,p', pbar=None):
 
   if pbar is None:
     from pygeode.progress import PBar
-    pbar = PBar()
+    pbar = PBar(message = "Computing correlation '%s' vs '%s'" % (xn, yn))
 
   for outsl, (xdata, ydata) in loopover([X, Y], oview, inaxes, pbar=pbar):
     xdata = xdata.astype('d')
@@ -130,6 +133,7 @@ def correlate(X, Y, axes=None, output = 'r2,p', pbar=None):
 
   den = 1 - rho**2
   # Saturate the denominator (when correlation is perfect) to avoid div by zero warnings
+  eps = 1e-8
   den[den < eps] = eps
 
   t = np.zeros(oview.shape, 'd')
@@ -144,10 +148,9 @@ def correlate(X, Y, axes=None, output = 'r2,p', pbar=None):
   p[~dmsk] = np.nan
   rho[~dmsk] = np.nan
 
-  # Construct and return variables
-  xn = X.name if X.name != '' else 'X' # Note: could write:  xn = X.name or 'X'
-  yn = Y.name if Y.name != '' else 'Y'
+  pbar.update(100)
 
+  # Construct and return variables
   from pygeode.var import Var
   from pygeode.dataset import asdataset
 
@@ -229,6 +232,9 @@ def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
   output = [o for o in output.split(',') if o in ovars]
   if len(output) < 1: raise ValueError('No valid outputs are requested from regression. Possible outputs are %s.' % str(ovars))
 
+  xn = X.name if X.name != '' else 'X'
+  yn = Y.name if Y.name != '' else 'Y'
+
   srcaxes = combine_axes([X, Y])
   oiaxes, riaxes = shared_axes(srcaxes, [X.axes, Y.axes])
   if axes is not None:
@@ -236,7 +242,7 @@ def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
     for a in axes:
       i = whichaxis(srcaxes, a)
       if i not in riaxes: 
-        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, X.name, Y.name))
+        raise KeyError('%s axis not shared by X ("%s") and Y ("%s")' % (a, xn, yn))
       ri_new.append(i)
     oiaxes.extend([r for r in riaxes if r not in ri_new])
     riaxes = ri_new
@@ -248,9 +254,9 @@ def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
 
   if pbar is None:
     from pygeode.progress import PBar
-    pbar = PBar()
+    pbar = PBar(message = "Computing regression '%s' vs '%s'" % (xn, yn))
 
-  assert len(riaxes) > 0, '%s and %s share no axes to be regressed over' % (X.name, Y.name)
+  assert len(riaxes) > 0, '%s and %s share no axes to be regressed over' % (xn, yn)
 
   # Construct work arrays
   x  = np.full(oview.shape, np.nan, 'd')
@@ -314,11 +320,11 @@ def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
   t = np.zeros(oview.shape, 'd')
   p = np.zeros(oview.shape, 'd')
 
-  sige[nmsk] = (yy[nmsk] - m[nmsk] * xy[nmsk]) / N_eff[nmsk]
+  sige[dmsk] = (yy[dmsk] - m[dmsk] * xy[dmsk]) / N_eff[dmsk]
   sigm[dmsk] = np.sqrt(sige[dmsk] / xx[dmsk])
-  sige[nmsk] = np.sqrt(sige[dmsk])
+  sige[dmsk] = np.sqrt(sige[dmsk])
   t[dmsk] = np.abs(m[dmsk]) / sigm[dmsk]
-  p[nmsk] = 2. * (1. - tdist.cdf(t[nmsk], N_eff[nmsk]))
+  p[dmsk] = 2. * (1. - tdist.cdf(t[dmsk], N_eff[dmsk]))
 
   msk = nmsk & dmsk
    
@@ -331,8 +337,7 @@ def regress(X, Y, axes=None, N_fac=None, output='m,b,p', pbar=None):
   msk = nmsk & d2msk
   r2[~msk] = np.nan
 
-  xn = X.name if X.name != '' else 'X'
-  yn = Y.name if Y.name != '' else 'Y'
+  pbar.update(100)
 
   from pygeode.var import Var
   from pygeode.dataset import asdataset
@@ -517,6 +522,8 @@ def multiple_regress(Xs, Y, axes=None, N_fac=None, output='B,p', pbar=None):
   else: N_eff = N // N_fac
 
   sigbeta = [np.sqrt((yy - vare) * xxinv[..., i, i] / N_eff) for i in range(Nr)]
+
+  pbar.update(100)
 
   xns = [X.name if X.name != '' else 'X%d' % i for i, X in enumerate(Xs)]
   yn = Y.name if Y.name != '' else 'Y'
@@ -753,6 +760,8 @@ def difference(X, Y, axes=None, alpha=0.05, Nx_fac = None, Ny_fac = None, output
   p [~dmsk] = np.nan
   ci[~dmsk] = np.nan
 
+  pbar.update(100)
+
   # Construct dataset to return
   xn = X.name if X.name != '' else 'X'
   yn = Y.name if Y.name != '' else 'Y'
@@ -928,6 +937,8 @@ def paired_difference(X, Y, axes=None, alpha=0.05, N_fac = None, output='d,p,ci'
   p[dmsk]  = 2. * (1. - tdist.cdf(p[dmsk], eN[dmsk] - 1))
   ci[dmsk] = tdist.ppf(1. - alpha/2, eN[dmsk] - 1) * den[dmsk]
 
+  pbar.update(100)
+
   # Construct dataset to return
   xn = X.name if X.name != '' else 'X'
   yn = Y.name if Y.name != '' else 'Y'
@@ -1081,6 +1092,8 @@ def isnonzero(X, axes=None, alpha=0.05, N_fac = None, output='m,p', pbar=None):
   t[dmsk] = np.abs(x[dmsk]) / sdom[dmsk]
   p[imsk]  = 2. * (1. - tdist.cdf(t[imsk], eNa[imsk] - 1))
   ci[imsk] = tdist.ppf(1. - alpha/2, eNa[imsk] - 1) * sdom[imsk]
+
+  pbar.update(100)
 
   name = X.name if X.name != '' else 'X'
 
