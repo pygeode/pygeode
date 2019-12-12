@@ -23,7 +23,7 @@ def make_atts (v):
     # netcdf4-python module in Python 2 uses unicode instead of strings.
     # Need to force this back to string type.
     if isinstance(att,unicode_type):
-      att = str(att)
+      att = att.encode('ascii', 'replace')
     atts[str(name)] = att
   return atts
 
