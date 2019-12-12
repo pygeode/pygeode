@@ -363,7 +363,7 @@ class Multifile_Var (Var):
       try:
         file = self.opener(self.files[file_index])
       except Exception as e:
-        raise Exception("Multifile: error encountered with file '%s': %s"%(self.files[file_index], str(e)))
+        raise Exception("Multifile: error encountered when opening file '%s': %s"%(self.files[file_index], str(e)))
       if self.name not in file:
         raise Exception("Multifile: var '%s' was expected to be in file '%s', but it's not there!"%(self.name, self.files[file_index]))
       var = file[self.name] # abandon all hope, ye who use non-unique variable names
@@ -379,11 +379,13 @@ class Multifile_Var (Var):
       bigmap, smallmap = times.common_map(timechunk)
       # Check for any funky problems with the map
 #      assert len(bigmap) > 0, "?? %s <-> %s"%(times,timechunk)
+
       if len(bigmap) == 0:
-        raise Exception("Multifile: Can't find an entire chunk of data for variable '%s'.  Perhaps a file is missing?"%self.name)
+        raise Exception("Multifile: Expected to find data for variable %s for times %s in file %s, but none is present. Perhaps a file is missing, or filename to date mapping is incorrect?" % (self.name, timechunk, self.files[file_index]))
 
       slices = [slice(None)] * self.naxes
       slices[itime] = bigmap
+      slices = tuple(slices)
       newview = view.replace_axis(Time, times, bigmap)
       try:
         data = newview.get(var, pbar=pbar.part(i,len(newfile_pos)))
@@ -394,7 +396,22 @@ class Multifile_Var (Var):
       handled_times[bigmap] = True
 
     if not np.all(handled_times):
-      raise Exception("Multifile: Can't find some data for variable '%s'.  Perhaps a file is missing?"%self.name)
+      missing_times = ~handled_times
+      missing_files = [self.files[i] for i in np.unique(file_indices[missing_times])]
+
+      itms = times[missing_times]
+      if len(itms) < 5:
+        stms = ', '.join([times.formatvalue(t) for t in itms])
+      else:
+        stms = ', ... '.join([times.formatvalue(t) for t in [itms[0], itms[-1]]])
+
+      if len(missing_files) < 4:
+        sfiles = ', '.join(missing_files)
+      else:
+        sfiles = ', ... '.join([missing_files[0], missing_files[-1]])
+
+      raise Exception("Multifile: can't find %d timesteps (%s) from %d files (%s) for variable '%s'." % \
+            (len(itms), stms, len(missing_files), sfiles, self.name))
     return out
 # }}}
 # }}}
