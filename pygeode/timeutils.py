@@ -17,7 +17,7 @@ def _uniquify (fields):
 
   assert len(fields) > 0, 'no fields provided'
   S = _argsort(fields)
-  in_atts = np.vstack(f[S] for f in fields).transpose()
+  in_atts = np.vstack([f[S] for f in fields]).transpose()
   in_atts = np.ascontiguousarray(in_atts,dtype='int32')
   out_atts = np.empty(in_atts.shape, dtype='int32')
   nout = lib.uniquify (len(fields), in_atts, len(in_atts), out_atts)
@@ -94,7 +94,7 @@ def reltime (taxis, startdate=None, units=None):
 
 # Get time increment
 # Units: day, hour, minute, second
-def delta (taxis, units=None):
+def delta (taxis, units=None, allow_multiple = False):
 # {{{
   ''' Returns the interval between values of a given time axis. If
   non-unique intervals are found an exception is raised. The units
@@ -106,10 +106,16 @@ def delta (taxis, units=None):
   # If we have more than one 'unique' value, check if it's just a case of numerical precision
   if len(delt) > 1:
     if np.allclose(delt, delt[0]): delt = delt[0:1]
+    else: delt = np.sort(np.unique(delt))
   # Not enough values to determine a delt?
   if len(delt) == 0: return 0
 
-  assert len(delt) == 1, 'Non-unique deltas found: '+str(delt)
+  if len(delt) > 1:
+    estr = 'Warning: non-unique deltas found in axis %s: %s.' % (taxis, delt)
+    if allow_multiple: 
+      print(estr + ' Returning smallest.')
+    else:
+      raise ValueError(estr)
 
   return delt[0]
 # }}}
