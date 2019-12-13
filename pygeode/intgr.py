@@ -71,10 +71,11 @@ class IntegrateVar (Var):
     data = inview.get(self.var, pbar=pbar.subset(0, 70))
 
     # Get initial values
+    shp = [s if i != iaxis else 1 for i, s in enumerate(view.shape)]
     if isinstance(self.v0, Var):
       d0 = view.get(self.v0, pbar=pbar.subset(70, 90))
+      d0 = np.broadcast_to(d0, shp)
     else:
-      shp = [s if i != iaxis else 1 for i, s in enumerate(view.shape)]
       d0 = np.full(shp, self.v0, 'd')
 
     # Compute differences
