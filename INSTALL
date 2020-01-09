@@ -5,9 +5,10 @@ Prerequisites:
 
   Python packages:
     numpy
+    scipy
     matplotlib (required for the 'plot' module)
     basemap (matplotlib toolkit, for overlaying maps and doing projections)
-    python-progressbar (if you want to see a progress indicator)
+    progressbar2 (if you want to see a progress indicator)
 
   Libraries:
     GSL development package (libgsl0-dev?) - for the interpolation module
@@ -20,7 +21,7 @@ To install:
 -----------
 
   python setup.py build
-  sudo python setup.py install
+  python setup.py install
 
 If the build process fails, check if you have all the prerequisites.
 
