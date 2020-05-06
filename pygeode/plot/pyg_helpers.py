@@ -204,9 +204,6 @@ def decorate_projection(axes, xaxis, yaxis, **kwargs):
     axes.pad = [0.6, 0.5, 0.2, 0.2]
 
   elif wr.isbasemapaxis(axes): 
-    prd = dict(projection = 'cyl', resolution = 'c')
-    prd.update(kwargs.pop('map', {}))
-
     if kwargs.pop('bluemarble', False):
       axes.bluemarble()
 
@@ -222,10 +219,10 @@ def decorate_projection(axes, xaxis, yaxis, **kwargs):
     pard.update(kwargs.pop('parallels', {}))
 
     axes.pad=(0.6, 0.4, 0.4, 0.4)
-    if prd.get('resolution', 'c') is not None:
-      axes.drawcoastlines(**cld)
-      axes.drawmeridians(**merd)
-      axes.drawparallels(**pard)
+
+    axes.drawcoastlines(**cld)
+    axes.drawmeridians(**merd)
+    axes.drawparallels(**pard)
 # }}}
 
 def _parse_autofmt_kwargs(Z, kwargs):
@@ -497,6 +494,7 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   z = scalevalues(Z.transpose(Y, X))
 
   map = kwargs.pop('map', {})
+  mapd = kwargs.pop('mapdecor', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
@@ -524,8 +522,8 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes):
-      decorate_projection(axes, X, Y, **map)
+    if wr.ismapaxis(axes) and mapd is not False:
+      decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -661,6 +659,7 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   v = scalevalues(V.transpose(Y, X))
 
   map = kwargs.pop('map', {})
+  mapd = kwargs.pop('mapdecor', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
@@ -673,8 +672,8 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes):
-      decorate_projection(axes, X, Y, **kwargs)
+    if wr.ismapaxis(axes) and mapd is not False:
+      decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -722,6 +721,7 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
     c = scalevalues(C.transpose(Y, X))
 
   map = kwargs.pop('map', {})
+  mapd = kwargs.pop('mapdecor', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
@@ -737,8 +737,8 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes):
-      decorate_projection(axes, X, Y, **map)
+    if wr.ismapaxis(axes) and mapd is not False:
+      decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
