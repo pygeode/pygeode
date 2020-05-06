@@ -5,7 +5,7 @@ __all__ = ('correlate', 'regress', 'multiple_regress', 'difference', 'paired_dif
 import numpy as np
 from scipy.stats import norm, t as tdist
 
-def correlate(X, Y, axes=None, output = 'r,r2,p', pbar=None):
+def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
 # {{{
   r'''Computes correlation between variables X and Y.
 
@@ -21,7 +21,7 @@ def correlate(X, Y, axes=None, output = 'r,r2,p', pbar=None):
   output : string, optional
     A string determining which parameters are returned; see list of possible outputs
     in the Returns section. The specifications must be separated by a comma. Defaults
-    to 'r,r2,p'.
+    to 'r,p'.
 
   pbar : progress bar, optional
     A progress bar object. If nothing is provided, a progress bar will be displayed
@@ -51,6 +51,7 @@ def correlate(X, Y, axes=None, output = 'r,r2,p', pbar=None):
   from pygeode.view import View
 
   # Split output request now
+  # Default output is 'r,p' so as not to break existing scripts
   ovars = ['r', 'r2', 'p']
   output = [o for o in output.split(',') if o in ovars]
   if len(output) < 1: raise ValueError('No valid outputs are requested from correlation. Possible outputs are %s.' % str(ovars))
@@ -167,6 +168,8 @@ def correlate(X, Y, axes=None, output = 'r,r2,p', pbar=None):
     rvs.append(r)
 
   if 'r2' in output:
+    from warnings import warn
+    warn ("r2 now returns the correct value as opposed to r")
     r2 = Var(oaxes, values=rho2, name='r2')
     r2.atts['longname'] = 'Correlation coefficient r^2 between %s and %s' % (xn, yn)
     rvs.append(r2)
