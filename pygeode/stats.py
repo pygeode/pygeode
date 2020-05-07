@@ -34,7 +34,7 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
     is the returned dataset, the correlation coefficient can be obtained
     through ``ds.r2``).
 
-    * 'r': The r value of the correlation coefficient :math:`\rho_{XY}`
+    * 'r': The Pearson correlation coefficient :math:`\rho_{XY}`
     * 'r2': The coefficient of determination :math:`\rho^2_{XY}`
     * 'p':  The p-value; see notes.
 
