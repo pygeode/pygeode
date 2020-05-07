@@ -149,7 +149,6 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
 
   p[~dmsk] = np.nan
   rho[~dmsk] = np.nan
-  rho2[~dmsk] = np.nan
 
   pbar.update(100)
 
