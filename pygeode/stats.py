@@ -127,7 +127,6 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
   # Compute correlation coefficient, t-statistic, p-value
   den = np.zeros(oview.shape, 'd')
   rho = np.zeros(oview.shape, 'd')
-  rho2 = np.zeros(oview.shape, 'd')
 
   den[imsk] = np.sqrt((xx*yy)[imsk])
   dmsk = (den > 0.)
