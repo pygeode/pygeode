@@ -167,7 +167,7 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
     from warnings import warn
     warn ("r2 now returns the correct value as opposed to r")
     r2 = Var(oaxes, values=rho2, name='r2')
-    r2.atts['longname'] = 'Correlation coefficient r^2 between %s and %s' % (xn, yn)
+    r2.atts['longname'] = 'Coefficient of determination r^2 between %s and %s' % (xn, yn)
     rvs.append(r2)
 
   if 'p' in output:
