@@ -7,7 +7,7 @@ from scipy.stats import norm, t as tdist
 
 def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
 # {{{
-  r'''Computes correlation between variables X and Y.
+  r'''Computes Pearson correlation coefficient between variables X and Y.
 
   Parameters
   ==========
