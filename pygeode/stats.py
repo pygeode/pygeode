@@ -132,7 +132,6 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
   dmsk = (den > 0.)
 
   rho[dmsk] = xy[dmsk] / np.sqrt(xx*yy)[dmsk]
-  rho2[dmsk] = xy[dmsk]**2 / (xx*yy[dmsk])
 
   den = 1 - rho**2
   # Saturate the denominator (when correlation is perfect) to avoid div by zero warnings
