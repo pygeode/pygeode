@@ -35,7 +35,7 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
     through ``ds.r2``).
 
     * 'r': The r value of the correlation coefficient :math:`\rho_{XY}`
-    * 'r2': The correlation coefficient :math:`\rho_{XY}`
+    * 'r2': The coefficient of determination :math:`\rho^2_{XY}`
     * 'p':  The p-value; see notes.
 
   Notes
