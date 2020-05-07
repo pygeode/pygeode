@@ -147,7 +147,6 @@ def correlate(X, Y, axes=None, output = 'r,p', pbar=None):
 
   p[~imsk] = np.nan
   rho[~imsk] = np.nan
-  rho2[~imsk] = np.nan
 
   p[~dmsk] = np.nan
   rho[~dmsk] = np.nan
