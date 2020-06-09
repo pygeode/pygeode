@@ -1,8 +1,5 @@
 # Pygeode interface for the netCDF4 Python module.
 
-# Re-use some methods from the pygeode.formats.netcdf module.
-from pygeode.formats.netcdf import override_values, dims2axes
-
 # constructor for the dims (wrapper for NCDim so it's only created once)
 def make_dim (name, size, dimdict={}):
   from pygeode.formats.netcdf import NCDim
@@ -133,6 +130,56 @@ def write_var (ncfile, dataset, unlimited=None, compress=False):
       ncvar[v.slices] = v.get(var, pbar=vpbar)
 
 # }}}
+
+###########################################################
+# Internal methods needed for open command.  Copied from pygeode.formats.netcdf
+
+# Override values from the source?
+def override_values (dataset, value_override):
+# {{{
+  from warnings import warn
+  import numpy as np
+  from pygeode.var import Var, copy_meta
+  vardict = {}
+  for name, values in value_override.items():
+    if name not in dataset:
+      warn ("var '%s' not found - values not overridden"%name, stacklevel=3)
+      continue
+    values = np.asarray(values)
+    oldvar = dataset[name]
+    assert values.shape == oldvar.shape, "bad shape for '%s'.  Expected %s, got %s"%(name,oldvar.shape,values.shape)
+    var = Var(oldvar.axes, values=values)
+    copy_meta (oldvar, var)
+    vardict[name] = var
+  dataset = dataset.replace_vars(vardict)
+  return dataset
+# }}}
+
+
+# Find axes (1D vars with the same name as a dimension)
+def dims2axes (dataset):
+# {{{
+  from pygeode.axis import NamedAxis
+  from pygeode.var import copy_meta
+  # Loop over current set of generic "dimensions"  
+  replacements = {}
+  for i,dim in enumerate(dataset.axes):
+    # Do we have a Var with this name?
+#    if dim.name in dataset:
+    if any (var.name == dim.name for var in dataset.vars):
+      # Get the var
+      var = dataset[dim.name]
+      if var.naxes != 1: continue  # abort if we have > 1 dimension
+      # Turn it into a proper axis
+      axis = NamedAxis (name=var.name, values=var.get())  # need the values pre-loaded for axes
+      copy_meta (var, axis)
+      replacements[dim.name] = axis
+  dataset = dataset.replace_axes(axisdict=replacements)
+  # Remove the axes from the list of variables
+  dataset = dataset.remove(*list(replacements.keys()))
+  return dataset
+# }}}
+
 
 def open(filename, value_override = {}, dimtypes = {}, namemap = {},  varlist = [], cfmeta = True):
 # {{{
