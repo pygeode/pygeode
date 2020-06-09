@@ -134,7 +134,8 @@ from pygeode.dataset import asdataset
 try:
   from pygeode.formats import netcdf
 except Exception:
-  print("Warning: can't import netcdf module")
+  pass  # old netcdf format unavailable.
+
 from pygeode.formats import *
 
 #### Dynamic shortcuts to plugins ####
