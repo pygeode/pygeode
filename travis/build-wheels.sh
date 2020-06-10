@@ -9,8 +9,12 @@ for PYBIN in /opt/python/{cp27,cp3[56]}*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
-for PYBIN in /opt/python/cp3[7-9]*/bin; do
+for PYBIN in /opt/python/cp37*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements-3.7.txt
+    "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
+done
+for PYBIN in /opt/python/cp3[8-9]*/bin; do
+    "${PYBIN}/pip" install -r /io/dev-requirements-3.8.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
 
