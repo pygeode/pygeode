@@ -1,8 +1,12 @@
 # Pygeode interface for the netCDF4 Python module.
 
+# A generic dimension (has no attributes except a name and a length)
+from pygeode.axis import DummyAxis
+class NCDim (DummyAxis): pass
+del DummyAxis
+
 # constructor for the dims (wrapper for NCDim so it's only created once)
 def make_dim (name, size, dimdict={}):
-  from pygeode.formats.netcdf import NCDim
   if (name,size) not in dimdict:
     dimdict[(name,size)] = NCDim(size, name=str(name))
   return dimdict[(name,size)]
