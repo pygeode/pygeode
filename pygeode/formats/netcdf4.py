@@ -14,17 +14,17 @@ def make_dim (name, size, dimdict={}):
 # Extract attributes
 def make_atts (v):
   import sys
-  if sys.version_info[0] >= 3:
-    unicode_type = str
-  else:
-    unicode_type = unicode
   atts = dict()
   for name in v.ncattrs():
     att = v.getncattr(name)
-    # netcdf4-python module in Python 2 uses unicode instead of strings.
-    # Need to force this back to string type.
-    if isinstance(att,unicode_type):
-      att = att.encode('ascii', 'replace')
+
+    if sys.version_info[0] < 3:
+      # netcdf4-python module in Python 2 uses unicode instead of strings.
+      # Need to force this back to string type.
+      if isinstance(att, unicode): 
+        att = att.encode('utf-8')
+      #att = att.encode('ascii', 'replace').decode('ascii')
+
     atts[str(name)] = att
   return atts
 
