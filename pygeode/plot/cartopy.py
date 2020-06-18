@@ -11,7 +11,7 @@ class CartopyAxes(AxesWrapper):
 
     if prj_args is None:
       if self.prj_name in ['PlateCarree']:
-        prj_args = dict(central_longitude = 0.)
+        prj_args = dict(central_longitude = 180.)
       else:
         prj_args = dict()
 

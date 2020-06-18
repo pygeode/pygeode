@@ -79,7 +79,7 @@ def get_attributes (fileid, varid):
       valstr = create_string_buffer(size.value)
       ret = get_att_f[vtype.value](fileid, varid, name, valstr);
       assert ret == 0, lib.nc_strerror(ret)
-      value = valstr.value.decode('UTF8').encode('ascii', 'ignore')
+      value = valstr.value.decode('utf-8')
     else:
       valnp = empty([size.value], numpy_type[vtype.value])
       ret = get_att_f[vtype.value](fileid, varid, name, point(valnp))
@@ -103,7 +103,8 @@ def put_attributes (fileid, varid, atts, version):
     # String?
     if isinstance(value, str):
       vtype = 2
-      ret = put_att_f[vtype](fileid, varid, name.encode('ascii'), len(value), value.encode('ascii'))
+      val = value.encode('utf-8')
+      ret = put_att_f[vtype](fileid, varid, name.encode('utf-8'), len(val), val)
       assert ret == 0, lib.nc_strerror(ret)
     else:
       oldvalue = value
@@ -125,7 +126,7 @@ def put_attributes (fileid, varid, atts, version):
       # (in case there is an implicit cast involved, i.e. int64's need to be cast to something else for netcdf)
       dtype = numpy_type[vtype]
       value = asarray(value, dtype=dtype)
-      ret = put_att_f[vtype](fileid, varid, name.encode('ascii'), vtype, len(value), point(value))
+      ret = put_att_f[vtype](fileid, varid, name.encode('utf-8'), vtype, len(value), point(value))
       assert ret == 0, lib.nc_strerror(ret)
 
 # }}}
