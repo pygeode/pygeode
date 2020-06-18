@@ -79,7 +79,6 @@ def get_attributes (fileid, varid):
       valstr = create_string_buffer(size.value)
       ret = get_att_f[vtype.value](fileid, varid, name, valstr);
       assert ret == 0, lib.nc_strerror(ret)
-      print(valstr, valstr.value)
       value = valstr.value.decode('utf-8')
     else:
       valnp = empty([size.value], numpy_type[vtype.value])
