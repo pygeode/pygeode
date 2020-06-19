@@ -35,6 +35,8 @@ class NCVar(Var):
   def __init__ (self, axes, name, ncvar, atts):
     from pygeode.var import Var
     self._ncvar = ncvar
+    # Turn off netcdf4 masking and scaling algorithm so that they don't get applied twice
+    ncvar.set_auto_maskandscale(False)
     Var.__init__(self, axes=axes, name=name, dtype=ncvar.dtype, atts=atts)
   def getvalues (self, start, count):
     sl = [slice(s,s+c) for s,c in zip(start,count)]
@@ -108,6 +110,7 @@ def write_var (ncfile, dataset, unlimited=None, compress=False):
   for var in vars:
     dimensions = [a.name for a in var.axes]
     v = ncfile.createVariable(var.name, datatype=var.dtype, dimensions=dimensions, zlib=compress, fill_value=var.atts.get('_FillValue',None))
+    v.set_auto_maskandscale(False)
     v.setncatts(var.atts)
 
   # global attributes
@@ -263,6 +266,7 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
   import numpy as np
   from pygeode.progress import PBar, FakePBar
   from pygeode.formats import finalize_save
+  from pygeode.dataset import asdataset
   
   # Version?
   if compress: version = 4
@@ -271,6 +275,8 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
     format = 'NETCDF3_CLASSIC'
   else:
     format = 'NETCDF4'
+
+  in_dataset = asdataset(in_dataset)
 
   assert format in ('NETCDF3_CLASSIC','NETCDF4')
   
