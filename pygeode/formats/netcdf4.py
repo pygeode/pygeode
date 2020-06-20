@@ -276,20 +276,20 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
   else:
     format = 'NETCDF4'
 
-  in_dataset = asdataset(in_dataset)
-
   assert format in ('NETCDF3_CLASSIC','NETCDF4')
   
   with nc.Dataset(filename,'w',format=format) as f:
     
     if isinstance(in_dataset, dict):
-      dataset =  {key: finalize_save(value, cfmeta, pack) for key, value in in_dataset.items()}
+      dataset =  {key: finalize_save(asdataset(value), cfmeta, pack) for key, value in in_dataset.items()}
       dataset =  {key: tidy_axes(value, unlimited=unlimited) for key, value in dataset.items()}
       for key, value in dataset.items():
         group = f.createGroup(key)
         write_var(group, value, unlimited=unlimited, compress=compress)
         
     else:
+      in_dataset = asdataset(in_dataset)
+
       dataset = finalize_save(in_dataset, cfmeta, pack)
       dataset = tidy_axes(dataset, unlimited=unlimited)
       write_var(f, dataset, unlimited=unlimited, compress=compress)
