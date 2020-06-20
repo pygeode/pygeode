@@ -390,8 +390,9 @@ def decode_cf (dataset, ignore=[]):
         warn ("unknown calendar '%s'"%_calendar)
         continue
       # Extract the time resolution (day, hour, etc), and the reference date
-      res, date = re.match("([a-z]+)\s+since\s+(.*)", _units).groups()
+      res, date = re.match("([a-zA-Z]+)\s+since\s+(.*)", _units).groups()
       # Pluralize the increment (i.e. day->days)?
+      res = res.lower()
       if not res.endswith('s'): res += 's'
       # Extract the rest of the date
       date = date.rstrip()

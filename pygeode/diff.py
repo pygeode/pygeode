@@ -2,6 +2,7 @@
 
 from pygeode.var import Var
 from functools import reduce
+
 class ForwardDifferenceVar (Var):
   '''Forward difference variable.'''
 
@@ -73,6 +74,7 @@ class ForwardDifferenceVar (Var):
   # }}}
 
 def diff(var, axis=0, n=1):
+# {{{
   '''Computes the forward difference along the given axis.
   Mimics the same behaviour of the :func:`np.diff` function.
 
@@ -100,4 +102,4 @@ def diff(var, axis=0, n=1):
   array([0., 0., 0.])
   '''
   return ForwardDifferenceVar(var, axis, n)
-
+# }}}

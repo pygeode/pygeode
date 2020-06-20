@@ -5,13 +5,16 @@ class IntegrateVar (Var):
   '''Definite integration variable. For now performs a cumulative integral along
     the specified axis using a trapezoid rule.'''
 
+  types = ['trapz', 'rectr', 'rectl', 'cumsum']
+
   def __init__ (self, var, iaxis, dx=None, v0=None, order=1, type='trapz'):
   # {{{
     ''' __init__()'''
 
     from pygeode.var import Var
 
-    self.iaxis = var.whichaxis(iaxis)
+    iaxis = var.whichaxis(iaxis)
+    self.iaxis = iaxis
     if var.shape[iaxis] < 2:
       raise ValueError('At least two values are needed to integrate %s along axis %s' % (var.name, var.axis[iaxis]))
 
@@ -39,10 +42,10 @@ class IntegrateVar (Var):
     else:
       self.dx = var.axes[iaxis]
 
-    self.order=order
+    self.order = order
 
-    if type not in ['trapz', 'rectr', 'rectl']:
-      raise ValueError("type (%s) must be one of 'trapz', 'rectr', 'rectl'." % type)
+    if type not in IntegrateVar.types:
+      raise ValueError("type (%s) must be one of %s." % (type, IntegrateVar.types))
 
     self.type = type
 
@@ -68,14 +71,16 @@ class IntegrateVar (Var):
     data = inview.get(self.var, pbar=pbar.subset(0, 70))
 
     # Get initial values
+    shp = [s if i != iaxis else 1 for i, s in enumerate(view.shape)]
     if isinstance(self.v0, Var):
       d0 = view.get(self.v0, pbar=pbar.subset(70, 90))
+      d0 = np.broadcast_to(d0, shp)
     else:
-      shp = [s if i != iaxis else 1 for i, s in enumerate(view.shape)]
       d0 = np.full(shp, self.v0, 'd')
 
     # Compute differences
-    d = np.diff(inview.get(self.dx), axis=iaxis)
+    if not self.type == 'cumsum':
+      d = np.diff(inview.get(self.dx), axis=iaxis)
 
     sl1 = [slice(None)] * self.naxes
     sl2 = [slice(None)] * self.naxes
@@ -94,6 +99,8 @@ class IntegrateVar (Var):
       dat = np.concatenate([d0, (d*data[sl1])[slr]], iaxis)
     elif self.type == 'rectr':
       dat = np.concatenate([d0, (d*data[sl2])[slr]], iaxis)
+    elif self.type == 'cumsum':
+      dat = np.concatenate([d0, (data[sl2])[slr]], iaxis)
 
     out = np.add.accumulate(dat, iaxis, 'd')[slr]
 
@@ -106,6 +113,7 @@ class IntegrateVar (Var):
   # }}}
 
 def integrate(var, iaxis, dx=None, v0=None, order = 1, type='trapz'):
+# {{{
   '''Computes an indefinite integral along the given axis.
 
   Parameters
@@ -152,4 +160,35 @@ def integrate(var, iaxis, dx=None, v0=None, order = 1, type='trapz'):
       {}
     Type:  IntegrateVar (dtype="float64")
   '''
-  return IntegrateVar(var, var.whichaxis(iaxis), dx, v0, order, type)
+  return IntegrateVar(var, iaxis, dx, v0, order, type)
+# }}}
+
+def cumsum(var, axis, v0 = None, order = 1):
+# {{{ 
+  '''Computes a cumulative sum along an axis.
+  Mimics the same behaviour of the :func:`np.cumsum` function.
+
+  Parameters
+  ----------
+  axis : string, :class:`Axis` class, or int
+    Axis along which to compute differences.
+  v0 : float, :class:`Var`, or None (optional)
+    Constant of integration. See notes.
+  order : int (1 or -1, optional)
+    Order along axis to compute sum. Default is 1.
+
+  Returns
+  -------
+  csvar : :class:`Var`
+    New variable containing cumulative sum
+
+  Examples
+  --------
+  >>> import pygeode as pyg
+  >>> v = pyg.yearlessn(5)
+  >>> v[:]
+  array([0., 1., 2., 3., 4.])
+  >>> v.cumsum('time')
+  '''
+  return IntegrateVar(var, axis, v0 = v0, dx = None, order = order, type='cumsum')
+# }}}

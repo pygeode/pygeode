@@ -34,6 +34,7 @@ class AxesWrapper:
 
     self.args = {}
     self.axes_args = kwargs
+    self.projection = None
     self.xaxis_args = {}
     self.yaxis_args = {}
 
@@ -132,7 +133,7 @@ class AxesWrapper:
          w = r - l
          h = t - b
 
-      self.ax = fig.add_axes([l, b, w, h])
+      self.ax = fig.add_axes([l, b, w, h], projection = self.projection)
     else:
       self.ax = None
 
@@ -546,6 +547,9 @@ def annotate(axes, text, pos='b'):
 # }}}
 __all__.extend(['save', 'load', 'grid'])
 
+basemap_avail = True
+cartopy_avail = True
+
 try:
   from .basemap import *
   from .basemap import __all__ as bm_all
@@ -556,10 +560,31 @@ try:
     return isinstance(axes, BasemapAxes)
   # }}}
 except ImportError:
-  import warnings
-  warnings.warn('Basemap functionality is unavailable.')
-
   def isbasemapaxis(axes):
   # {{{
     return False
   # }}}
+  basemap_avail = False
+
+try:
+  from .cartopy import *
+  from .cartopy import __all__ as crt_all
+  __all__.extend(crt_all)
+
+  def iscartopyaxis(axes):
+  # {{{
+    return isinstance(axes, CartopyAxes)
+  # }}}
+except ImportError:
+  def iscartopyaxis(axes):
+  # {{{
+    return False
+  # }}}
+  cartopy_avail = False
+
+def ismapaxis(axis):
+  return isbasemapaxis(axis) or iscartopyaxis(axis)
+
+if not (basemap_avail or cartopy_avail):
+  import warnings
+  warnings.warn('Neither Cartopy nor Basemap functionality is available.')

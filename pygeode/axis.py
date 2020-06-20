@@ -1095,10 +1095,11 @@ class Pres (ZAxis):
   def locator(self):
 # {{{
     import pylab as pyl, numpy as np
-    ndecs = np.log10(np.max(self.values) / np.min(self.values))
-    if ndecs < 1.2: return pyl.LogLocator(subs=[1., 2., 4., 7.])
-    elif ndecs < 3.: return pyl.LogLocator(subs=[1., 3.])
-    else: return pyl.LogLocator()
+    numdecs = np.log10(np.max(self.values) / np.min(self.values))
+    if numdecs < 1.2: subs = [1., 2., 4., 7.]
+    elif numdecs < 3.: subs = [1., 3.]
+    else: subs = [1.]
+    return pyl.LogLocator(subs = subs, numdecs = numdecs)
 # }}}
 
   def formatvalue(self, value, fmt=None, units=True, unitstr=None):

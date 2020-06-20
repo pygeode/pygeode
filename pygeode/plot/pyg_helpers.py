@@ -74,8 +74,10 @@ def set_xaxis(axes, axis, lbl, xscale=True):
     prm['xlim']   = lim
 
   if lbl:
+    import pylab as pyl
     prm['xlabel'] = label
     axprm['major_formatter'] = form
+    axprm['minor_formatter'] = pyl.NullFormatter()
   else:
     prm['xticklabels'] = []
 
@@ -86,7 +88,7 @@ def set_xaxis(axes, axis, lbl, xscale=True):
     axes.pad = [pl, 0.5, pr, 0.3]
   else:
     axes.pad = [pl, 0.3, pr, 0.3]
-# }}}
+# }}} 
 
 def set_yaxis(axes, axis, lbl, yscale=True):
 # {{{
@@ -100,8 +102,10 @@ def set_yaxis(axes, axis, lbl, yscale=True):
     prm['ylim']   = lim
 
   if lbl:
+    import pylab as pyl
     prm['ylabel'] = label
     axprm['major_formatter'] = form
+    axprm['minor_formatter'] = pyl.NullFormatter()
   else:
     prm['yticklabels'] = []
 
@@ -114,56 +118,108 @@ def set_yaxis(axes, axis, lbl, yscale=True):
     axes.pad = [0.5, pb, 0.1, pt]
 # }}}
 
-def build_basemap(lons, lats, **kwargs):
+def build_projection(lons, lats, **kwargs):
 # {{{
-  if not hasattr(wr, 'BasemapAxes'):
+  if wr.cartopy_avail:
+    # Use cartopy preferentially, if it is available.
+    if not hasattr(wr, 'CartopyAxes'):
+      return wr.AxesWrapper()
+
+    prd = dict(projection = 'PlateCarree')
+    prd.update(kwargs)
+
+    return wr.CartopyAxes(**prd)
+
+  elif wr.basemap_avail:
+    # Use basemap if available
+    prd = dict(projection = 'cyl', resolution = 'c')
+    prd.update(kwargs)
+    proj = prd['projection']
+    bnds = {}
+
+    if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
+                          'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho', 'nsper']:
+      bnds = {'llcrnrlat':lats.min(),
+              'urcrnrlat':lats.max(),
+              'llcrnrlon':lons.min(),
+              'urcrnrlon':lons.max()}
+
+    if proj == 'npstere':
+      bnds = {'boundinglat':20, 'lon_0':0}
+
+    if proj == 'spstere':
+      bnds = {'boundinglat':-20, 'lon_0':0}
+
+    bnds.update(prd)
+    prd.update(bnds)
+
+    return wr.BasemapAxes(**prd)
+  else:
     return wr.AxesWrapper()
-
-  prd = dict(projection = 'cyl', resolution = 'c')
-  prd.update(kwargs.pop('map', {}))
-  proj = prd['projection']
-  bnds = {}
-
-  if proj not in ['sinu', 'moll', 'hammer', 'npstere', 'spstere', 'nplaea', 'splaea', 'npaeqd', \
-                        'spaeqd', 'robin', 'eck4', 'kav7', 'mbtfpq', 'ortho', 'nsper']:
-    bnds = {'llcrnrlat':lats.min(),
-            'urcrnrlat':lats.max(),
-            'llcrnrlon':lons.min(),
-            'urcrnrlon':lons.max()}
-
-  if proj == 'npstere':
-    bnds = {'boundinglat':20, 'lon_0':0}
-
-  if proj == 'spstere':
-    bnds = {'boundinglat':-20, 'lon_0':0}
-
-  bnds.update(prd)
-  prd.update(bnds)
-
-  return wr.BasemapAxes(**prd)
 # }}}
 
-def decorate_basemap(axes, **kwargs):
+def decorate_projection(axes, xaxis, yaxis, **kwargs):
 # {{{
-  prd = dict(projection = 'cyl', resolution = 'c')
-  prd.update(kwargs.pop('map', {}))
+  if wr.iscartopyaxis(axes):
+    cst_def = dict(resolution = '110m')
+    cst = kwargs.pop('coastlines', cst_def)
+    if isinstance(cst, dict):
+      axes.coastlines(**cst)
 
-  if kwargs.pop('bluemarble', False):
-    axes.bluemarble()
+    grd = kwargs.pop('gridlines', {})
 
-  # Add coastlines, meridians, parallels
-  cld = {}
-  merd = dict(meridians=[-180,-90,0,90,180,270,360],
-              labels=[1,0,0,1])
-  pard = dict(circles=[-90,-60,-30,0,30,60,90],
-              labels=[1,0,0,1])
+    if isinstance(grd, dict):
+      lblprjs = ['PlateCarree', 'Mercator']
+      grd_def = dict(color = 'k', linestyle = ':', linewidth = 1.)
 
-  cld.update(kwargs.pop('coastlines', {}))
-  merd.update(kwargs.pop('meridians', {}))
-  pard.update(kwargs.pop('parallels', {}))
+      if axes.prj_name in lblprjs:
+        grd_def['draw_labels'] = True
+      else:
+        grd_def['draw_labels'] = False
 
-  axes.pad=(0.6, 0.4, 0.4, 0.4)
-  if prd.get('resolution', 'c') is not None:
+      grd_def.update(grd)
+      axes.gridlines(**grd_def)
+
+      scale, label, lim, xform, xloc = axes_parm(xaxis)
+      scale, label, lim, yform, yloc = axes_parm(yaxis)
+
+      # Set default grid appearance and labeling if appropriate
+      grd_prm = {}
+
+      if grd_def['draw_labels'] and axes.prj_name in lblprjs:
+        grd_prm['xlabels_top']   = False
+        grd_prm['ylabels_right'] = False
+        grd_prm['xformatter'] = xform
+        grd_prm['yformatter'] = yform
+
+      if 'xlocs' not in grd_def:
+        grd_prm['xlocs'] = xloc
+
+      if 'ylocs' not in grd_def:
+        grd_prm['ylocs'] = yloc
+
+      if len(grd_prm) > 0:
+        axes.modifygridlines(axes.plots[-1], **grd_prm)
+  
+    axes.pad = [0.6, 0.5, 0.2, 0.2]
+
+  elif wr.isbasemapaxis(axes): 
+    if kwargs.pop('bluemarble', False):
+      axes.bluemarble()
+
+    # Add coastlines, meridians, parallels
+    cld = {}
+    merd = dict(meridians=[-180,-90,0,90,180,270,360],
+                labels=[1,0,0,1])
+    pard = dict(circles=[-90,-60,-30,0,30,60,90],
+                labels=[1,0,0,1])
+
+    cld.update(kwargs.pop('coastlines', {}))
+    merd.update(kwargs.pop('meridians', {}))
+    pard.update(kwargs.pop('parallels', {}))
+
+    axes.pad=(0.6, 0.4, 0.4, 0.4)
+
     axes.drawcoastlines(**cld)
     axes.drawmeridians(**merd)
     axes.drawparallels(**pard)
@@ -437,9 +493,12 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   y = scalevalues(Y)
   z = scalevalues(Z.transpose(Y, X))
 
+  map = kwargs.pop('map', {})
+  mapd = kwargs.pop('mapdecor', {})
+
   if axes is None:
-    if isinstance(X, Lon) and isinstance(Y, Lat) and kwargs.get('map', None) is not False:
-      axes = build_basemap(x, y, **kwargs)
+    if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
+      axes = build_projection(x, y, **map)
     else:
       axes = wr.AxesWrapper()
 
@@ -463,10 +522,9 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.isbasemapaxis(axes):
-      decorate_basemap(axes, **kwargs)
+    if wr.ismapaxis(axes) and mapd is not False:
+      decorate_projection(axes, X, Y, **mapd)
     else:
-      axes.pad = (0.1, 0.1, 0.1, 0.1)
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
     plt = _getplotatts(var)
@@ -600,11 +658,12 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   u = scalevalues(U.transpose(Y, X))
   v = scalevalues(V.transpose(Y, X))
 
-  map = kwargs.pop('map', None)
+  map = kwargs.pop('map', {})
+  mapd = kwargs.pop('mapdecor', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_basemap(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, **map)
     else:
       axes = wr.AxesWrapper()
 
@@ -613,8 +672,8 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.isbasemapaxis(axes):
-      decorate_basemap(axes, map = map, **kwargs)
+    if wr.ismapaxis(axes) and mapd is not False:
+      decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -661,11 +720,12 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   if varc is not None:
     c = scalevalues(C.transpose(Y, X))
 
-  map = kwargs.pop('map', None)
+  map = kwargs.pop('map', {})
+  mapd = kwargs.pop('mapdecor', {})
 
   if axes is None:
     if isinstance(X, Lon) and isinstance(Y, Lat) and map is not False:
-      axes = build_basemap(x, y, map = map, **kwargs)
+      axes = build_projection(x, y, **map)
     else:
       axes = wr.AxesWrapper()
 
@@ -677,8 +737,8 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.isbasemapaxis(axes):
-      decorate_basemap(axes, map = map, **kwargs)
+    if wr.ismapaxis(axes) and mapd is not False:
+      decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
