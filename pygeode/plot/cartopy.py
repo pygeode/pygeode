@@ -3,21 +3,41 @@ from .wrappers import AxesWrapper, PlotOp, Contour, Contourf, PColor, Streamplot
 import cartopy as crt
 import cartopy.crs as ccrs
 
+prj_grid = ['PlateCarree', 'Mercator', 'Miller', 'TransverseMercator']
+
+prj_regn = ['AlbersEqualArea', 'EquidistantConic', 'LambertConformal', \
+            'LambertCylindrical', 'RotatedPole']
+
+prj_glob = ['AzimuthalEquidistant', 'Mollweide', 'Orthographic',  \
+            'Stereographic', 'Robinson', 'Sinusoidal', 'NearsidePerspective', \
+            'Geostationary', 'LambertAzimuthalEqualArea', 'EckertIII']
+
 class CartopyAxes(AxesWrapper):
-  def __init__(self, projection = 'PlateCarree', prj_args = None, transform = None, setglobal = False, **kwargs):
+  def __init__(self, projection = 'PlateCarree', prj_args = None, transform = None, setglobal = None, **kwargs):
     AxesWrapper.__init__(self, **kwargs)
 
-    self.prj_name = projection
+    # Allow users to pass in an already constructed projection
+    if isinstance(projection, ccrs.Projection):
+      self.projection = projection
+      self.prj_name = projection.__class__.__name__
+      self.prj_args = None
+    else:
+      self.prj_name = projection
 
-    if prj_args is None:
-      if self.prj_name in ['PlateCarree']:
-        prj_args = dict(central_longitude = 180.)
+      if prj_args is None:
+        if self.prj_name in ['PlateCarree']:
+          prj_args = dict(central_longitude = 180.)
+        else:
+          prj_args = dict()
+
+      self.prj_args = prj_args
+      self.projection = ccrs.__dict__[self.prj_name](**self.prj_args)
+
+    if setglobal is None:
+      if self.prj_name in prj_glob:
+        setglobal = True
       else:
-        prj_args = dict()
-
-    self.prj_args = prj_args
-
-    self.projection = ccrs.__dict__[self.prj_name](**self.prj_args)
+        setglobal = False
 
     if transform is None:
       transform = ccrs.PlateCarree()
@@ -99,6 +119,12 @@ class CRTAddGeometries(PlotOp):
     axes.add_geometries(*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class CRTSetExtent(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.set_extent(*self.plot_args, **self.plot_kwargs)
+# }}}
+
 contour        = make_plot_func(CRTContour)
 contourf       = make_plot_func(CRTContourf)
 coastlines     = make_plot_func(CRTCoastlines)
@@ -109,6 +135,7 @@ streamplot     = make_plot_func(CRTStreamplot)
 quiver         = make_plot_func(CRTQuiver)
 add_feature    = make_plot_func(CRTAddFeature)
 add_geometries = make_plot_func(CRTAddGeometries)
+set_extent     = make_plot_func(CRTSetExtent)
 
 CartopyAxes.contour        = make_plot_member(contour)
 CartopyAxes.contourf       = make_plot_member(contourf)
@@ -120,5 +147,6 @@ CartopyAxes.streamplot     = make_plot_member(streamplot)
 CartopyAxes.quiver         = make_plot_member(quiver)
 CartopyAxes.add_feature    = make_plot_member(add_feature)
 CartopyAxes.add_geometries = make_plot_member(add_geometries)
+CartopyAxes.set_extent     = make_plot_member(set_extent)
 
-__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'modifygridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries']
+__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'modifygridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries', 'set_extent']

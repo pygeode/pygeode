@@ -91,7 +91,7 @@ class AxesWrapper:
 
       if show:
         # Check if the current backend has a GUI
-        if mpl.get_backend() in mpl.rcsetup.interactive_bk:
+        if mpl.get_backend() in mpl.rcsetup.interactive_bk + ['module://ipympl.backend_nbagg', 'nbAgg']:
           pyl.show()
 
         pyl.draw()
