@@ -1,3 +1,20 @@
+1.4.0 - 2020/06/21
+  - Cartopy (version > 0.17.0) is now supported in addition to Basemap for map
+    projections. 
+  - Error reporting for openmulti() has been improved.
+  - Non-ASCII character support in NetCDF attributes are now better handled.
+  - Improvements and bugfixes in stats module
+
+1.3.1 - 2020/06/14
+  - Fix bug where pygeode.formats.netcdf4 fails if the libnetcdf shared library
+    is not installed on the system.  It should not be required, since the
+    interface uses the Python netCDF4 package to handle I/O.
+  - Updated the INSTALL file with more up-to-date information.
+  - Removed warning message when libnetcdf unavailable.  This was always
+    displayed, even when libnetcdf was not actually needed.  This could cause
+    confusion if using the newer pygeode.formats.netcdf4 interface, since it
+    doesn't require the shared library at all.
+
 1.3.0 - 2019/10/02
   - Support for Python 3.
   - Fix ext_xarray.from_xarray() method, which was failing on xarray versions
