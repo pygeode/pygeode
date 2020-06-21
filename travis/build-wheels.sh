@@ -13,7 +13,7 @@ for PYBIN in /opt/python/cp37*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements-3.7.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
-for PYBIN in /opt/python/cp3[8-9]*/bin; do
+for PYBIN in /opt/python/cp38*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements-3.8.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
@@ -29,7 +29,7 @@ done
 # libtk8.5.so.
 echo "backend : Agg" > matplotlibrc
 export MATPLOTLIBRC=$PWD
-for PYBIN in /opt/python/{cp27-cp27mu,cp3[5-9]}*/bin; do
+for PYBIN in /opt/python/{cp27-cp27mu,cp3[5-8]}*/bin; do
     # Install the dependencies needed for running the tests.
     "${PYBIN}/pip" install --upgrade -r /io/test-requirements.txt
     # Install the PyGeode wheel that was created in an earlier stage above.
