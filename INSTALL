@@ -17,7 +17,8 @@ Prerequisites:
 Optional:
 ---------
   Python packages:
-    cartopy (map projections; -- or --)
+    cartopy (map projections)
+      -- or --
     basemap (matplotlib toolkit, for overlaying maps and doing projections)
 
 

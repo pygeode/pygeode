@@ -24,7 +24,7 @@ try:
     def __init__(self, **kwargs):
       self._no_show_time = _config.getfloat('ProgressBar', 'no_show_time')
       self.message = kwargs.pop('message', '')
-      if self.message is not '': self.message = '{:<30}'.format(self.message)
+      if self.message != '': self.message = '{:<30}'.format(self.message)
       self.init_kwargs = kwargs
       pb.bar.ProgressBarMixinBase.__init__(self)
 

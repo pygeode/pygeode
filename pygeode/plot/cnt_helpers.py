@@ -169,7 +169,7 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
     if p2 < 0 and p98 > 0: style = 'div'
     else: style = 'seq'
 
-  if style is 'div':
+  if style == 'div':
     if ndiv is None: 
       if clf: ndiv = 3
       else: ndiv = 10
@@ -182,22 +182,22 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
     p = np.floor(np.log10(np.abs(div)))
     m = div / 10**p
     
-    if m > 6.: spc = 10.
-    elif m > 5.: spc = 6.
-    elif m > 4.: spc = 5.
-    elif m > 3.: spc = 4.
-    elif m > 2.: spc = 3.
-    elif m > 1.5: spc = 2.
-    elif m > 1.: spc = 1.5
-    else: spc = 1.
+    if m > 6.:    spc = 10.; nf = 5
+    elif m > 5.:  spc = 6. ; nf = 6
+    elif m > 4.:  spc = 5. ; nf = 6
+    elif m > 3.:  spc = 4. ; nf = 4
+    elif m > 2.:  spc = 3. ; nf = 6
+    elif m > 1.5: spc = 2. ; nf = 6
+    elif m > 1.:  spc = 1.5; nf = 6
+    else:         spc = 1. ; nf = 5
 
     #print style, div, p, m, spc
 
     spc *= 10**p
-    if clf: kws = dict(ndiv=ndiv, style=style)
+    if clf: kws = dict(ndiv=ndiv, nf=nf, style=style)
     else: kws = dict(range=ndiv*spc)
 
-  elif style is 'seq':
+  elif style == 'seq':
     if ndiv is None: 
       if clf: ndiv = 5
       else: ndiv = 10
@@ -207,19 +207,19 @@ def guessclimits(z, style=None, ndiv=None, clf=True):
     p = np.floor(np.log10(np.abs(div)))
     m = div / 10**p
     
-    if m > 6.: spc = 10.
-    elif m > 5.: spc = 6.
-    elif m > 4.: spc = 5.
-    elif m > 3.: spc = 4.
-    elif m > 2.: spc = 3.
-    elif m > 1.5: spc = 2.
-    else: spc = 1.5
+    if m > 6.:    spc = 10.; nf = 5
+    elif m > 5.:  spc = 6. ; nf = 6
+    elif m > 4.:  spc = 5. ; nf = 5
+    elif m > 3.:  spc = 4. ; nf = 4
+    elif m > 2.:  spc = 3. ; nf = 6
+    elif m > 1.5: spc = 2. ; nf = 6
+    else:         spc = 1.5; nf = 6
 
     #print style, p, m, spc
 
     spc *= 10**p
     min = lo - np.remainder(lo, spc)
-    if clf: kws = dict(ndiv=ndiv, min=min, style=style)
+    if clf: kws = dict(ndiv=ndiv, min=min, nf=nf, style=style)
     else: kws = dict(range=ndiv*spc/2., min=min)
     
   return spc, kws
@@ -249,7 +249,7 @@ def cldict(cdelt, range=None, min=None, mid=0, cidelt=0., nozero=False, **kwargs
   return kwa
 # }}}
 
-def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='div', clr=True, **kwargs):
+def clfdict(cdelt, min=None, mid=0., nf=None, nl=2, ndiv=3, nozero=False, style='div', clr=True, **kwargs):
 # {{{
   ''' 
   Returns kwargs to :meth:`showvar` for a filled contour plot.

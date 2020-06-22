@@ -19,7 +19,7 @@ from .multifile import openall, open_multi
 
 __all__ = ['openall', 'open_multi', 'open', 'save']
 
-extdict = {'.nc':'netcdf',
+extdict = {'.nc':'netcdf4',
            '.hdf': 'hdf4',
            '.grib':'grib' }
 
