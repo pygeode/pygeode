@@ -12,7 +12,7 @@ int dsyev_ (char *JOBZ, char *UPLO, int *N, double *A, int *LDA, double *W, doub
 // Local wrapper
 // Eigenvectors are stored as the *rows* of A (overwriting original data)
 // Ordered from smallest to largest
-int dsyev (int N, double *A, double *W) {
+int dsyev_pyg (int N, double *A, double *W) {
   char JOBZ = 'V';
   char UPLO = 'L';
   int LDA = N;
@@ -150,7 +150,7 @@ void svd (int nx, int N, int m, double *A, double *U, double *eig, double *V) {
   // Compute the inner covariance matrix
   dot (N, nx, N, A, A, C[0]);
   // Compute inner eigenvalue decomposition
-  dsyev (N, C[0], e);
+  dsyev_pyg (N, C[0], e);
   // Compute V and outer eigenvalues
   for (int i = 0; i < m; i++) {
     memcpy (V+i*N, C[N-1-i], N*sizeof(double));
