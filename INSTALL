@@ -8,6 +8,7 @@ Prerequisites:
     scipy
     matplotlib (required for the 'plot' module)
     progressbar2 (if you want to see a progress indicator)
+    netcdf4
 
   Libraries:
     GSL development package (libgsl0-dev?) - for the interpolation module
