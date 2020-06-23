@@ -40,7 +40,10 @@ class NCVar(Var):
     Var.__init__(self, axes=axes, name=name, dtype=ncvar.dtype, atts=atts)
   def getvalues (self, start, count):
     sl = [slice(s,s+c) for s,c in zip(start,count)]
-    return self._ncvar[sl]
+    if len(sl) > 0:
+      return self._ncvar[sl]
+    else:
+      return self._ncvar[:]
 del Var
 
 # A netcdf variable
