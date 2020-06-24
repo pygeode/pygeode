@@ -1,4 +1,4 @@
-1.4.0a1 - 2020/06/22
+1.4.0 - 2020/06/23
   - Cartopy (version > 0.17.0) is now supported in addition to Basemap for map
     projections. 
   - Error reporting for openmulti() has been improved.
