@@ -19,7 +19,9 @@ class DerivativeVar (Var):
         assert dx.shape[0] == var.shape[daxis]
         self.dx = dx.replace_axes(newaxes=(var.axes[daxis],))
       else:
-        assert all([dx.hasaxis(a) for a in var.axes])
+        # dx must have axis over which derivative is being computed
+        assert dx.hasaxis(var.axes[daxis]), "dx must have axis being differentiated."
+        assert all([var.hasaxis(a) for a in dx.axes]), "dx must not contain axes beyond those in the variable."
         self.dx = dx
     else:
       self.dx = var.axes[daxis]
@@ -114,7 +116,9 @@ class SecondDerivativeVar (Var):
         assert dx.shape[0] == var.shape[daxis]
         self.dx = dx.replace_axes(newaxes=(var.axes[daxis],))
       else:
-        assert all([dx.hasaxis(a) for a in var.axes])
+        # dx must have axis over which derivative is being computed
+        assert dx.hasaxis(var.axes[daxis]), "dx must have axis being differentiated."
+        assert all([var.hasaxis(a) for a in dx.axes]), "dx must not contain axes beyond those in the variable."
         self.dx = dx
     else:
       self.dx = var.axes[daxis]
