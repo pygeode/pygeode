@@ -249,7 +249,7 @@ def cldict(cdelt, range=None, min=None, mid=0, cidelt=0., nozero=False, **kwargs
   return kwa
 # }}}
 
-def clfdict(cdelt, min=None, mid=0., nf=None, nl=2, ndiv=3, nozero=False, style='div', clr=True, **kwargs):
+def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='div', clr=True, **kwargs):
 # {{{
   ''' 
   Returns kwargs to :meth:`showvar` for a filled contour plot.
