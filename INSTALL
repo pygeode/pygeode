@@ -7,14 +7,20 @@ Prerequisites:
     numpy
     scipy
     matplotlib (required for the 'plot' module)
-    basemap (matplotlib toolkit, for overlaying maps and doing projections)
     progressbar2 (if you want to see a progress indicator)
+    netcdf4
 
   Libraries:
     GSL development package (libgsl0-dev?) - for the interpolation module
     netcdf shared library - to read/write netcdf files
     lapack shared library (version 3), for the EOF module
 
+Optional:
+---------
+  Python packages:
+    cartopy (map projections)
+      -- or --
+    basemap (matplotlib toolkit, for overlaying maps and doing projections)
 
 
 To install:

@@ -15,12 +15,12 @@ def _buildaxistitle(name = '', plotname = '', plottitle = '', plotunits = '', **
   assert type(plotunits) is str
   assert type(name) is str
   
-  if plotname is not '': title = plotname # plotname is shorter, hence more suitable for axes
-  elif plottitle is not '': title = plottitle
-  elif name is not '': title = name
+  if plotname != '': title = plotname # plotname is shorter, hence more suitable for axes
+  elif plottitle != '': title = plottitle
+  elif name != '': title = name
   else: title = ''
 
-  if plotunits is not '': title += ' [%s]' % plotunits
+  if plotunits != '': title += ' [%s]' % plotunits
 
   return title
 # }}}
@@ -37,12 +37,12 @@ def _buildvartitle(axes = None, name = '', plotname = '', plottitle = '', plotun
   assert type(plotunits) is str
   assert type(name) is str
 
-  if plottitle is not '': title = plottitle # plottitle is longer, hence more suitable for axes
-  elif plotname is not '': title = plotname
-  elif name is not '': title = name
+  if plottitle != '': title = plottitle # plottitle is longer, hence more suitable for axes
+  elif plotname != '': title = plotname
+  elif name != '': title = name
   else: title = 'Unnamed Var'
 
-  if plotunits is not '': title += ' (%s)' % plotunits
+  if plotunits != '': title += ' (%s)' % plotunits
     
   # Add information on degenerate axes to the title
   if axes is not None:
