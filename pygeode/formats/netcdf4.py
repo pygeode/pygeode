@@ -139,6 +139,7 @@ def write_var (ncfile, dataset, unlimited=None, compress=False):
       vpbar = varpbar.part(j, len(views))
       ncvar[v.slices] = v.get(var, pbar=vpbar)
 
+  pbar.update(100)
 # }}}
 
 ###########################################################

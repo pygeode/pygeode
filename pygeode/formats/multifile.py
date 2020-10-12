@@ -495,6 +495,7 @@ def check_multi (*args, **kwargs):
       try:
         file_taxis = current_file[var.name].getaxis('time')
         times = reltime(file_taxis, startdate=full_taxis.startdate, units=full_taxis.units)
+        rtimes = reltime(file_taxis, startdate=faxis.startdate, units=faxis.units)
         multifile_data = var(l_time=list(times)).get().flatten()
       except Exception as e:
         print("  ERROR: unable to read multifile variable '%s'.  Reason: %s"%(var.name, str(e)))
@@ -518,10 +519,10 @@ def check_multi (*args, **kwargs):
         continue
 
     covered_times.update(times)
-    if i < len(files)-1 and np.any(times >= faxis[i+1]):
+    if i < len(files)-1 and np.any(rtimes >= faxis[i+1]):
       print("  ERROR: found timesteps beyond the expected range of this file.")
       all_ok = False
-    if np.any(times < faxis[i]):
+    if np.any(rtimes < faxis[i]):
       print("  ERROR: found timestep(s) earlier than the expected start of this file.")
       all_ok = False
 
