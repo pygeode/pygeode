@@ -434,12 +434,14 @@ def make_plot_func(fclass, make_axes=True):
   def f(*args, **kwargs):
     axes = kwargs.pop('axes', None)
     if axes is None: axes = AxesWrapper()
-    axes.add_plot(fclass(*args, **kwargs), make_axes=make_axes)
-    return axes
+    plotop = fclass(*args, **kwargs)
+    axes.add_plot(plotop, make_axes=make_axes)
+    return plotop
   return f
 
 def make_plot_member(f):
-  def g(self, *args, **kwargs): f(*args, axes = self, **kwargs)
+  def g(self, *args, **kwargs):
+    return f(*args, axes = self, **kwargs)
   return g
 
 plot = make_plot_func(Plot)

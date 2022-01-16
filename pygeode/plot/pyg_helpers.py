@@ -178,7 +178,6 @@ def decorate_projection(axes, xaxis, yaxis, **kwargs):
         grd_def['draw_labels'] = False
 
       grd_def.update(grd)
-      axes.gridlines(**grd_def)
 
       scale, label, lim, xform, xloc = axes_parm(xaxis)
       scale, label, lim, yform, yloc = axes_parm(yaxis)
@@ -186,20 +185,28 @@ def decorate_projection(axes, xaxis, yaxis, **kwargs):
       # Set default grid appearance and labeling if appropriate
       grd_prm = {}
 
-      if grd_def['draw_labels'] and axes.prj_name in lblprjs:
-        grd_prm['xlabels_top']   = False
-        grd_prm['ylabels_right'] = False
+      if grd_def['draw_labels']:
+        grd_prm['top_labels']   = False
+        grd_prm['right_labels'] = False
         grd_prm['xformatter'] = xform
         grd_prm['yformatter'] = yform
 
       if 'xlocs' not in grd_def:
-        grd_prm['xlocs'] = xloc
+        grd_prm['xlocator'] = xloc
 
       if 'ylocs' not in grd_def:
-        grd_prm['ylocs'] = yloc
+        grd_prm['ylocator'] = yloc
+
+      mod_args = ['rotate_labels', 'top_labels', 'bottom_labels', 'right_labels', 'left_labels']
+
+      for arg in mod_args:
+        if arg in grd_def:
+          grd_prm[arg] = grd_def.pop(arg)
+
+      gl = axes.gridlines(**grd_def)
 
       if len(grd_prm) > 0:
-        axes.modifygridlines(axes.plots[-1], **grd_prm)
+        axes.modifygridlines(gl, **grd_prm)
   
     axes.pad = [0.6, 0.5, 0.2, 0.2]
 
@@ -342,7 +349,10 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   x = scalevalues(X)
   y = scalevalues(Y)
 
-  axes = wr.plot(x, y, fmt, axes=axes, **kwargs)
+  if axes is None:
+    axes = wr.AxesWrapper()
+
+  axes.plot(x, y, fmt, **kwargs)
 
   # Apply the custom axes args
   if not hold:
@@ -371,10 +381,13 @@ def vhist(var, axes=None, lblx=True, lbly=True, **kwargs):
 
   v = scalevalues(V).ravel()
 
-  axes = wr.hist(v, axes=axes, **kwargs)
+  if axes is None:
+    axes = wr.AxesWrapper()
+
+  axes.hist(v, **kwargs)
 
   # Apply the custom axes args
-  axes.pad = (0.1, 0.1, 0.1, 0.1)
+  axes.pad = [0.5, 0.1, 0.1, 0.1]
   set_xaxis(axes, V, lblx)
   plt = _getplotatts(var)
   lbl = _buildvartitle(var.axes, **plt)
@@ -407,7 +420,10 @@ def vscatter(varx, vary, axes=None, lblx=True, lbly=True, **kwargs):
   x = scalevalues(varx).ravel()
   y = scalevalues(vary).ravel()
 
-  axes = wr.scatter(x, y, axes=axes, **kwargs)
+  if axes is None:
+    axes = wr.AxesWrapper()
+
+  axes.scatter(x, y, **kwargs)
 
   # Apply the custom axes args
   axes.pad = (0.1, 0.1, 0.1, 0.1)
