@@ -679,4 +679,27 @@ class MonthLocator(Locator):
     return tcks
   # }}}
 # }}}
-    
+
+#########################################
+## DayOfMonthLocator - matplotlib locator object for the time axis
+class DayOfMonthLocator(Locator):
+# {{{
+  def __init__(self, taxis, mult=1):
+  # {{{
+    self._taxis = taxis
+    self._mult = mult
+    self.tkgen = DayOfMonthTickGen(taxis, [mult])
+  # }}}
+
+  def __call__(self):
+  # {{{
+    # Return tick locations
+    try:
+      vmin, vmax = self.axis.get_view_interval()
+    except AttributeError:
+      vmin, vmax = self.viewInterval.get_bounds()
+
+    tcks = [t for t in self.tkgen.ticks(vmin, vmax)]
+    return tcks
+  # }}}
+# }}}
