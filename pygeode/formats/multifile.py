@@ -281,10 +281,13 @@ def open_multi (files, format=None, opener=None, pattern=None, file2date=None, *
       assert dt > 0
       val1 = t1.values[0]
       val2 = reltime(t2, startdate=t1.startdate)[-1]
-      nt = (val2-val1)/dt + 1
-      assert round(nt) == nt
-      nt = int(round(nt))
-      assert nt > 0
+      ntf = (val2 - val1)/dt
+      nt = np.round(ntf)
+      if np.abs(ntf - nt) > 0.1 * dt:
+        raise ValueError('Cannot infer well-formed time axis out of provided files. Times and dates in first and last file are not aligned.')
+      nt = int(nt) + 1
+      if nt <= 0:
+        raise ValueError('Cannot infer well-formed time axis out of provided files. Times and dates in the last file are later than those in the first file.')
       taxis = t1.withnewvalues(np.arange(nt)*dt + val1)
 
     timedict[t1.name] = taxis
