@@ -364,6 +364,13 @@ class QuiverKey(PlotOp):
     pyl.quiverkey(self.cnt._cnt, *self.plot_args, **self.plot_kwargs)
 # }}}
 
+# imshow
+class ImShow(PlotOp):
+# {{{
+  def render (self, axes):
+    self._cnt = axes.imshow (*self.plot_args, **self.plot_kwargs)
+# }}}
+
 # Colorbar
 class Colorbar(PlotOp):
 # {{{
@@ -462,8 +469,9 @@ pcolor = make_plot_func(PColor)
 streamplot = make_plot_func(Streamplot)
 quiver = make_plot_func(Quiver)
 quiverkey = make_plot_func(QuiverKey)
+imshow = make_plot_func(ImShow)
 
-__all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'errorbar', 'bar', 'hist', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'pcolor', 'quiver', 'quiverkey', 'colorbar']
+__all__ = ['AxesWrapper', 'plot', 'fill_between', 'scatter', 'errorbar', 'bar', 'hist', 'axhline', 'axvline', 'legend', 'text', 'contour', 'contourf', 'pcolor', 'quiver', 'quiverkey', 'imshow', 'colorbar']
 
 AxesWrapper.plot = make_plot_member(plot)
 AxesWrapper.fill_between = make_plot_member(fill_between)
@@ -483,6 +491,7 @@ AxesWrapper.pcolor = make_plot_member(pcolor)
 AxesWrapper.streamplot = make_plot_member(streamplot)
 AxesWrapper.quiver = make_plot_member(quiver)
 AxesWrapper.quiverkey = make_plot_member(quiverkey)
+AxesWrapper.imshow = make_plot_member(imshow)
 
 # Routine for saving this plot to a file
 def save (fig, filename):
