@@ -199,7 +199,7 @@ class Dataset(object):
   # String representation
   def __str__ (self):
 # {{{
-    from textwrap import TextWrapper
+    import textwrap
     # Degenerate case - no variables??
     if len(self.vars) == 0:
       return '<empty Dataset>'
@@ -215,10 +215,11 @@ class Dataset(object):
 
     s = s + 'Axes:\n  ' + '  '.join([str(a)+'\n' for a in self.axes])
 
-    w = TextWrapper(width=80)
-    w.initial_indent = w.subsequent_indent = '  '
-    w.break_on_hyphens = False
-    s = s + 'Global Attributes:\n' + w.fill(str(self.atts))
+    s = s + 'Global Attributes:\n'
+
+    for k, v in self.atts.items():
+      s += '  ' + textwrap.shorten(str(k), 15).ljust(15) \
+         + ': ' + textwrap.shorten(str(v), 61).ljust(61) + '\n'
 
     return s
 # }}}

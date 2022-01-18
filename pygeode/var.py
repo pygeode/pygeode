@@ -619,10 +619,8 @@ class Var(object):
   # Pretty printing
   def __str__ (self):
   # {{{
-    from textwrap import TextWrapper
-#    axes_list = '(' + ', '.join(a.name if a.name != '' else repr(a) for a in self.axes) + ')'
-#    axes_details = ''.join(['  '+str(a) for a in self.axes])
-#    s = repr(self) + ':\n\n  axes: ' + axes_list + '\n  shape: ' + str(self.shape) + '\n\n' + axes_details
+    import textwrap
+
     s = repr(self) + ':\n'
     if self.units != '':
       s += '  Units: ' + self.units
@@ -633,10 +631,12 @@ class Var(object):
     for a in self.axes:
       s += '    '+str(a) + '\n'
 
-    w = TextWrapper(width=80)
-    w.initial_indent = w.subsequent_indent = '    '
-    w.break_on_hyphens = False
-    s += '  Attributes:\n' + w.fill(str(self.atts)) + '\n'
+    s += '  Attributes:\n'
+
+    for k, v in self.atts.items():
+      s += '    ' + textwrap.shorten(str(k), 15).ljust(15) \
+           + ': ' + textwrap.shorten(str(v), 59).ljust(59) + '\n'
+
     s += '  Type:  %s (dtype="%s")' % (self.__class__.__name__, self.dtype.name)
     return s
   # }}}
