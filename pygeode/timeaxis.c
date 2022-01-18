@@ -234,13 +234,13 @@ int ndays (int year1, int year2) {
   int out = (year2-year1)*365;
 
   // Now, count how many years that are divisible by 4
-  out += year2/4 - year1/4;
+  out += floor(year2/4.) - floor(year1/4.);
 
   // Exclude years that are divisible by 100
-  out -= year2/100 - year1/100;
+  out -= floor(year2/100.) - floor(year1/100.);
 
   // .. but include years that are divisible by 400  (whew!)
-  out += year2/400 - year1/400;
+  out += floor(year2/400.) - floor(year1/400.);
 
   return out;
 

@@ -338,7 +338,7 @@ class CalendarTime(Time):
   # Format of time axis used for str/repr functions
   formatstr = '$b $d, $Y $H:$M:$S'
   autofmts = [(365., '$Y',        ''),   # Range larger than 1 year
-          (30. , '$b $Y',     ''),   # Larger than 1 month
+          (30. , '$d $b $Y',     ''),   # Larger than 1 month
           (1., '$d $b',     '$Y'), # Larger than 1 day
           (1/24., '$H:$M',     '$d $b $Y'),  # Larger than 1 hour
           (0.  , '$H:$M:$S',  '$d $b $Y')] # Less than 1 hour
