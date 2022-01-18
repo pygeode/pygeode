@@ -8,7 +8,11 @@ import numpy as np
 def _getplotatts(var):
 # {{{
   ''' Builds plotatts dictionary, using variable attributes as suitable defaults. '''
-  plt = dict(plotname = var.name, plotunits = var.units, plotfmt = var.formatstr)
+  # Use var.units over var.atts['units'] if both exist
+  units = var.units
+  if (units == '' or units is None) and 'units' in var.atts:
+    units = var.atts['units']
+  plt = dict(plotname = var.name, plotunits = units, plotfmt = var.formatstr)
   plt.update([(k, v) for k, v in var.plotatts.items() if v is not None])
   return plt
 # }}}
