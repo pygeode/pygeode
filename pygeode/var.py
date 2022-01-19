@@ -629,9 +629,11 @@ class Var(object):
     s += '  (' + ','.join(str(len(a)) for a in self.axes) + ')\n'
     s += '  Axes:\n'
     for a in self.axes:
-      s += '    '+str(a) + '\n'
+      s += '    ' + str(a) + '\n'
 
     s += '  Attributes:\n'
+
+    if len(self.atts) == 0: s += '    {}\n'
 
     for k, v in self.atts.items():
       s += '    ' + textwrap.shorten(str(k), 15).ljust(15) \
