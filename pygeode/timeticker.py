@@ -633,73 +633,38 @@ class AutoCalendarLocator(Locator):
 # }}}
     
 #########################################
-## YearLocator - matplotlib locator object for the time axis
-class YearLocator(Locator):
+## Helper function to create new locator objects from the tick generators
+def make_locator(tkgen, name):
 # {{{
-  def __init__(self, taxis, mult=1):
-  # {{{
-    self._taxis = taxis
-    self._mult = mult
-    self.tkgen = YearTickGen(taxis, [mult])
-  # }}}
+  class C(Locator):
+    def __init__(self, taxis, mult=1):
+    # {{{
+      self._taxis = taxis
+      self._mult = mult
+      self.tkgen = tkgen(taxis, [mult])
+    # }}}
 
-  def __call__(self):
-  # {{{
-    # Return tick locations
-    try:
-      vmin, vmax = self.axis.get_view_interval()
-    except AttributeError:
-      vmin, vmax = self.viewInterval.get_bounds()
+    def __call__(self):
+    # {{{
+      # Return tick locations
+      try:
+        vmin, vmax = self.axis.get_view_interval()
+      except AttributeError:
+        vmin, vmax = self.viewInterval.get_bounds()
 
-    tcks = [t for t in self.tkgen.ticks(vmin, vmax)]
-    return tcks
-  # }}}
-# }}}
-    
-#########################################
-## MonthLocator - matplotlib locator object for the time axis
-class MonthLocator(Locator):
-# {{{
-  def __init__(self, taxis, mult=1):
-  # {{{
-    self._taxis = taxis
-    self._mult = mult
-    self.tkgen = MonthTickGen(taxis, [mult])
-  # }}}
+      tcks = [t for t in self.tkgen.ticks(vmin, vmax)]
+      return tcks
+    # }}}
 
-  def __call__(self):
-  # {{{
-    # Return tick locations
-    try:
-      vmin, vmax = self.axis.get_view_interval()
-    except AttributeError:
-      vmin, vmax = self.viewInterval.get_bounds()
-
-    tcks = [t for t in self.tkgen.ticks(vmin, vmax)]
-    return tcks
-  # }}}
+  C.__name__ = name
+  return C
 # }}}
 
-#########################################
-## DayOfMonthLocator - matplotlib locator object for the time axis
-class DayOfMonthLocator(Locator):
-# {{{
-  def __init__(self, taxis, mult=1):
-  # {{{
-    self._taxis = taxis
-    self._mult = mult
-    self.tkgen = DayOfMonthTickGen(taxis, [mult])
-  # }}}
-
-  def __call__(self):
-  # {{{
-    # Return tick locations
-    try:
-      vmin, vmax = self.axis.get_view_interval()
-    except AttributeError:
-      vmin, vmax = self.viewInterval.get_bounds()
-
-    tcks = [t for t in self.tkgen.ticks(vmin, vmax)]
-    return tcks
-  # }}}
-# }}}
+YearLocator       = make_locator(YearTickGen,       'YearLocator')
+MonthLocator      = make_locator(MonthTickGen,      'MonthLocator')
+DayOfYearLocator  = make_locator(DayOfYearTickGen,  'DayOfYearLocator')
+DayOfMonthLocator = make_locator(DayOfMonthTickGen, 'DayOfMonthLocator')
+DayLocator        = make_locator(DayTickGen,        'DayLocator')
+HourLocator       = make_locator(HourTickGen,       'HourLocator')
+MinuteLocator     = make_locator(MinuteTickGen,     'MinuteLocator')
+SecondLocator     = make_locator(SecondTickGen,     'SecondLocator')
