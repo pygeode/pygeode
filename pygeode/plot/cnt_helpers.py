@@ -2,7 +2,6 @@
 
 import numpy as np
 from numpy import ma
-import matplotlib.cbook as cbook
 from matplotlib.colors import Normalize
 from pylab import cm as pcm
 from . import cm
@@ -24,7 +23,7 @@ class LogNorm2Sided(Normalize):
     if clip is None:
       clip = self.clip
 
-    if cbook.iterable(value):
+    if np.iterable(value):
       vtype = 'array'
       val = ma.asarray(value).astype(np.float)
     else:
@@ -68,7 +67,7 @@ class LogNorm2Sided(Normalize):
     vmin, vmax = self.vmin, self.vmax
     vin, cin = self.vin, self.cin
 
-    if cbook.iterable(value):
+    if np.iterable(value):
       val = ma.asarray(value)
       ipos = (val > (0.5 + cin))
       ineg = (val < (0.5 - cin))
