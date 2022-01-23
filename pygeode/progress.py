@@ -26,6 +26,9 @@ try:
       self.message = kwargs.pop('message', '')
       if self.message != '': self.message = '{:<30}'.format(self.message)
       self.init_kwargs = kwargs
+      wdg_kwargs = dict(samples=250)
+      wdg_kwargs.update(kwargs.pop('widget_kwargs', {}))
+      kwargs['widget_kwargs'] = wdg_kwargs
       pb.bar.ProgressBarMixinBase.__init__(self)
 
     def default_widgets(self):

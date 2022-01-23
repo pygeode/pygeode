@@ -31,13 +31,13 @@ class IntegrateVar (Var):
     else:
       self.v0 = 0.
 
-    if dx is not None:  # Optionally one can specify a coordinate system
+    if dx is not None:
       if dx.naxes == 1:
         assert dx.shape[0] == var.shape[iaxis]
         self.dx = dx.replace_axes(newaxes=(var.axes[iaxis],))
-      else: # Must be mappable to integrand, with a matching integration axis
-        for a in var.axes:
-          assert dx.hasaxis(a)
+      else:
+        assert dx.hasaxis(var.axes[iaxis]), "dx must have axis being integrated."
+        assert all([var.hasaxis(a) for a in dx.axes]), "dx must not contain axes beyond those in the variable."
         self.dx = dx
     else:
       self.dx = var.axes[iaxis]

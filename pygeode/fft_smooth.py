@@ -79,8 +79,8 @@ def fft_smooth(var, saxis, maxharm):
   >>> np.std(v[:])
   0.7071067811865476
   >>> np.std(v.fft_smooth('time', 3)[:]) # This retains only the annual and semi-annual cycle
-  1.392158115250162e-16
+  1.0983314772510289e-16
   >>> np.std(v.fft_smooth('time', 4)[:]) # This retains up to the third harmonic
-  0.7071067811865472
+  0.7071067811865476
   '''
   return FFTSmoothVar(var, saxis=var.whichaxis(saxis), maxharm=maxharm)

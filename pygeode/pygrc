@@ -59,16 +59,19 @@ CalendarTime.formatstr = $b $d, $Y $H:$M:$S
 #                         (1.   , '$d $b',    '$Y'),       # Larger than 1 day
 #                         (1/24., '$H:$M',    '$d $b $Y'), # Larger than 1 hour
 #                         (0.   , '$H:$M:$S', '$d $b $Y')] # Less than 1 hour
-CalendarTime.parse_pattern = ((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)
+CalendarTime.parse_patterns =
+   ^((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)$
+   ^(?P<year>\d+)(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2}):(?P<minute>\d{2})(:(?P<second>\d{2}))?)?)?)?$
+   ^(?P<year>\d+)(-(?P<day>\d{3})(T(?P<hour>\d{2}):(?P<minute>\d{2})(:(?P<second>\d{2}))?)?)?$
 
 Yearless.plotfmt = $d
 Yearless.formatstr = day $d, $H:$M:$S
 #Yearless.autofmts = [(1.,    '$d',       ''),       # Larger than 1 day
 #                     (1/24., '$H:$M',    'day $d'), # Larger than 1 hour
 #                     (0.  ,  '$H:$M:$S', 'day $d')] # Less than 1 hour
-Yearless.parse_pattern = ((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2})
-
-
+Yearless.parse_patterns =
+   ^((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d+)$
+   ^(?P<day>\d+)(T(?P<hour>\d{2}):(?P<minute>\d{2})(:(?P<second>\d{2}))?)?$
 
 [Plotting]
 
@@ -78,3 +81,23 @@ unit_decoration = ()
 
 cmaps_path =
 
+# Specify default divergent and sequential colormaps. The string is parsed as a set of key : value pairs.
+# Keys can be either default, or can specify the number of divisions
+# Values can be the name of a registered matplotlib colormap
+# or a tuple of lists of hues, saturations, and values. You can experiment with
+# the settings below to explore how this works.
+cmaps_div = 
+ 4       : ([0.3, 0.43, 0.52, -0.64, -0.99, 0.05, 0.12, 0.18], [0.9, 0.3], [0.5, 0.98])
+ 3       : ([0.48, 0.38, -0.6, -1.0, 0.09, 0.15], [0.9, 0.3], [0.5, 0.98])
+ 2       : ([0.55, -0.6, -1.0, 0.9], [0.96, 0.4], [0.5, 0.98])
+ 1       : ([-0.6, -0.99], [0.9, 0.6], [0.5, 0.98])
+ default : RdBu_r
+
+cmaps_seq = 
+ 6       : ([0.5, 0.556, 1.0, 0.94, 0.87, 0.82], [0.96, 0.4], [0.4, 0.7])
+ 5       : ([0.6, 0.38, 0.18, 0.08, 0.01], [1., 0.3], [0.5, 0.95])
+ 4       : ([0.56, 0.72, 0.83, 0.0], [0.96, 0.3], [0.5, 0.99])
+ 3       : ([0.5, 0.556, 1.0], [0.96, 0.4], [0.4, 0.7])
+ 2       : ([0.5, 0.6], [0.96, 0.4], [0.4, 0.9])
+ 1       : ([0.6], [0.96, 0.2], [0.4, 0.9])
+ default : inferno

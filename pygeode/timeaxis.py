@@ -338,13 +338,13 @@ class CalendarTime(Time):
   # Format of time axis used for str/repr functions
   formatstr = '$b $d, $Y $H:$M:$S'
   autofmts = [(365., '$Y',        ''),   # Range larger than 1 year
-          (30. , '$b $Y',     ''),   # Larger than 1 month
+          (30. , '$d $b $Y',     ''),   # Larger than 1 month
           (1., '$d $b',     '$Y'), # Larger than 1 day
           (1/24., '$H:$M',     '$d $b $Y'),  # Larger than 1 hour
           (0.  , '$H:$M:$S',  '$d $b $Y')] # Less than 1 hour
 
   # Regular expression used to parse times
-  parse_pattern = '((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)'
+  parse_patterns = ['((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2}) (?P<month>[a-zA-Z]+) (?P<year>\d+)']
 
   allowed_fields = ('year', 'month', 'day', 'hour', 'minute', 'second')
 
@@ -414,8 +414,41 @@ class CalendarTime(Time):
       warn ("No units given, using default of 'days'", stacklevel=2)
       units = 'days'
 
+    if units not in self.unitfactor.keys():
+      raise ValueError('units ("%s") must be one of the following: %s' % (units, list(self.unitfactor.keys())))
+
     return Time.__init__(self, values=values, units=units, startdate=startdate, **kwargs)
 # }}}
+
+  @classmethod
+  def _readaxisconfig(cls, ax):
+  # {{{
+    from pygeode import _config, Axis
+
+    Time._readaxisconfig(ax)
+
+    def get_opt(p):
+      # Return option for nearest class in inheritance hierarchy
+      # for which it is defined
+      c = cls
+      nm = c.__name__
+      while c is not Time:
+        opt = nm + '.' + p
+        if _config.has_option('Axes',  opt):
+          return str(_config.get('Axes', opt))
+        else:
+          c = c.__bases__[0]
+          nm = c.__name__
+      return None
+
+    # Read in parse pattern for time strings
+    patt = get_opt('parse_patterns')
+
+    if patt is not None:
+      pts = patt.split()
+      pts = [p.strip() for p in patt.split('\n') if len(p) > 0]
+      setattr(ax, 'parse_patterns', pts)
+  # }}}
 
   # Day-of-year calculator
   # (for formatvalue)
@@ -570,11 +603,11 @@ class CalendarTime(Time):
 
         Notes
         =====
-        The string is parsed using the regular expression pattern defined in
-        :attr:`parse_pattern <CalendarTime.parse_pattern>`.  By default this assumes
-        a string in the form '12 Dec 2008' or '06:00:00 1 Jan 1979'.  A
-        ValueError is thrown if the regular expression does not match the
-        string.'''
+        The string is parsed using the regular expression pattern(s) defined in
+        :attr:`~timeaxis.CalendarTime.parse_patterns`.  By default this assumes
+        a string in an ISO 8601-like format, or in the form '12 Dec 2008' or '06:00:00 1
+        Jan 1979'.  A ValueError is thrown if the regular expression does not
+        match the string.'''
 
     return self.date_as_val(self.str_as_date(key, s))
 # }}}
@@ -599,13 +632,16 @@ class CalendarTime(Time):
 
         Notes
         =====
-        The string is parsed using the regular expression pattern defined in
-        :attr:`~timeaxis.CalendarTime.parse_pattern`.  By default this assumes
-        a string in the form '12 Dec 2008' or '06:00:00 1 Jan 1979'.  A
-        ValueError is thrown if the regular expression does not match the
-        string.'''
+        The string is parsed using the regular expression pattern(s) defined in
+        :attr:`~timeaxis.CalendarTime.parse_patterns`.  By default this assumes
+        a string in ISO8601 format, or in the form '12 Dec 2008' or '06:00:00 1
+        Jan 1979'.  A ValueError is thrown if the regular expression does not
+        match the string.'''
     import re
-    res = re.search(self.parse_pattern, s)
+    for patt in self.parse_patterns:
+      res = re.search(patt, s)
+      if res is not None: break
+
     if res is None:
       raise ValueError('String "%s" not recognized as a time')
 
@@ -613,9 +649,12 @@ class CalendarTime(Time):
     for k, v in res.groupdict().items():
       if k in ['hour', 'minute', 'second', 'day', 'year']:
         if v is not None: d[k] = int(v)
-      elif k == 'month':
+      elif k == 'month' and v is not None:
         lmonths = [m.lower() for m in months]
-        d[k] = lmonths.index(v.lower())
+        if v.lower() in lmonths:
+          d[k] = lmonths.index(v.lower())
+        else:
+          d[k] = int(v)
     return d
 # }}}
 
@@ -733,12 +772,9 @@ class CalendarTime(Time):
     if not hasattr(list(dates.values())[0], '__len__'): vals = vals[0]
     return vals / self.unitfactor[units]
   # }}}
-
 # }}}
 
-
-
-
+######################################################
 # Specific calendars follow:
 
 #NOTE: majority of calendar manipulation has been moved to a C interface (timeaxis.c)
@@ -988,7 +1024,7 @@ class Yearless(CalendarTime):
   allowed_fields = ('day', 'hour', 'minute', 'second')
 
   # Regular expression used to parse times
-  parse_pattern = '((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2})'
+  parse_patterns = ['((?P<hour>\d{1,2}):(?P<minute>\d{2})(\s|:(?P<second>\d{2}))|^)(?P<day>\d{1,2})']
 
   _date_as_val = lib.date_as_val_yearless
   _val_as_date = lib.val_as_date_yearless

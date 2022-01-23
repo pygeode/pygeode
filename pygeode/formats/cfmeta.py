@@ -472,9 +472,12 @@ def decode_cf (dataset, ignore=[]):
     fillvalue = fillvalue[0] if len(fillvalue) > 0 else None
     scale = atts.pop('scale_factor', None)
     offset = atts.pop('add_offset', None)
+    units = atts.get('units', None)
 
     varlist[i] = var_newaxes(oldvar, [axisdict[a.name] for a in oldvar.axes],
                     name=name, fillvalue=fillvalue, scale=scale, offset=offset, atts=atts, plotatts=plotatts)
+
+    if units is not None: varlist[i].units = units
 
   dataset = Dataset(varlist, atts=global_atts)
 

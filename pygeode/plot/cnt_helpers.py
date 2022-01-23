@@ -2,7 +2,6 @@
 
 import numpy as np
 from numpy import ma
-import matplotlib.cbook as cbook
 from matplotlib.colors import Normalize
 from pylab import cm as pcm
 from . import cm
@@ -24,7 +23,7 @@ class LogNorm2Sided(Normalize):
     if clip is None:
       clip = self.clip
 
-    if cbook.iterable(value):
+    if np.iterable(value):
       vtype = 'array'
       val = ma.asarray(value).astype(np.float)
     else:
@@ -68,7 +67,7 @@ class LogNorm2Sided(Normalize):
     vmin, vmax = self.vmin, self.vmax
     vin, cin = self.vin, self.cin
 
-    if cbook.iterable(value):
+    if np.iterable(value):
       val = ma.asarray(value)
       ipos = (val > (0.5 + cin))
       ineg = (val < (0.5 - cin))
@@ -249,7 +248,7 @@ def cldict(cdelt, range=None, min=None, mid=0, cidelt=0., nozero=False, **kwargs
   return kwa
 # }}}
 
-def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='div', clr=True, **kwargs):
+def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style=None, clr=True, **kwargs):
 # {{{
   ''' 
   Returns kwargs to :meth:`showvar` for a filled contour plot.
@@ -276,10 +275,16 @@ def clfdict(cdelt, min=None, mid=0., nf=6, nl=2, ndiv=3, nozero=False, style='di
   nozero : boolean (optional)
     If True, the contour line at mid is omitted. Defalt is False.
 
-  style : string (optional)
+  style : string (optional) 
     Either 'seq' or 'div'. Deterimines which style of colourmap to use; a
-    sequential or divergent. Default is 'div'.
+    sequential or divergent. Default is 'div', unless ''min'' is set to
+    something other than None.
   '''
+
+  if style is None: 
+    # No style has been explicitly specified; use 'div' unless 'min' is explicitly set
+    if min is not None: style = 'seq'
+    else: style = 'dev'
 
   if not style in ['div', 'seq']: raise ValueError("style must be one of 'div' or 'seq'")
 
