@@ -5,7 +5,7 @@ set -e -x
 yum install -y atlas-devel lapack-devel gsl-devel netcdf
 
 # Compile wheels
-for PYBIN in /opt/python/{cp27,cp3[56]}*/bin; do
+for PYBIN in /opt/python/cp3[56]*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
@@ -15,6 +15,10 @@ for PYBIN in /opt/python/cp37*/bin; do
 done
 for PYBIN in /opt/python/cp38*/bin; do
     "${PYBIN}/pip" install -r /io/dev-requirements-3.8.txt
+    "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
+done
+for PYBIN in /opt/python/cp39*/bin; do
+    "${PYBIN}/pip" install -r /io/dev-requirements-3.9.txt
     "${PYBIN}/pip" wheel --no-deps /io/ -w wheelhouse/
 done
 
@@ -29,9 +33,9 @@ done
 # libtk8.5.so.
 echo "backend : Agg" > matplotlibrc
 export MATPLOTLIBRC=$PWD
-for PYBIN in /opt/python/{cp27-cp27mu,cp3[5-8]}*/bin; do
+for PYBIN in /opt/python/cp3[5-9]*/bin; do
     # Install the dependencies needed for running the tests.
-    "${PYBIN}/pip" install --upgrade -r /io/test-requirements.txt
+    "${PYBIN}/pip" install --upgrade -r /io/test-requirements.txt --prefer-binary
     # Install the PyGeode wheel that was created in an earlier stage above.
     "${PYBIN}/pip" install pygeode --no-index -f /io/wheelhouse
     # Run the unit tests and regression tests.
