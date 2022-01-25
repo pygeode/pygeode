@@ -1,3 +1,14 @@
+1.4.1 - 2022/01/25
+  - Added new regex for recognizing ISO8601 format time and date strings when
+    specifying times; one can also customize this in the pygrc config file.
+  - Improved some of the default choices for cartopy maps; it's a bit easier
+    to customize gridlines and labeling now.
+  - Some further imporvements to error reporting in openmulti()
+  - Units are handled a bit more consistently when plotting and interpreting cf metadata
+  - Add a full set of time locator objects
+  - Corrected a bug in the StandardTime axis logic to recognize year 0 as a leap-year
+  - Prettified printing of dataset and variable attributes
+
 1.4.0 - 2020/06/23
   - Cartopy (version > 0.17.0) is now supported in addition to Basemap for map
     projections. 
