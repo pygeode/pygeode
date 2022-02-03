@@ -91,7 +91,9 @@ def tidy_axes(dataset, unlimited=None):
   if unlimited is not None:
     assert unlimited in [a.name for a in axes]
 
-  return asdataset(vars)
+  ds = asdataset(vars)
+  ds.atts = dataset.atts
+  return ds
 # }}}
 
 def write_var (ncfile, dataset, unlimited=None, compress=False):
@@ -297,5 +299,4 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
       dataset = finalize_save(in_dataset, cfmeta, pack)
       dataset = tidy_axes(dataset, unlimited=unlimited)
       write_var(f, dataset, unlimited=unlimited, compress=compress)
-  
 # }}}
