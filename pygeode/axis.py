@@ -205,63 +205,8 @@ class Axis(Var):
   #TODO: fix inconsistency between Axis and Var, for == and !=
   #      Vars produce a boolean mask under those operations, Axes return scalar True/False
   # I.e., "lat == 30" and "(lat*1) == 30" give very different results!
-  def __ne__ (self, other): return not self.__eq__(other)
-  def __eq__ (self, other):
-  # {{{
-    '''override Var's ufunc stuff here
-       this is a weak comparison, in that we only require the other
-       axis to be a *subclass* of this one.
-       this allows things like "lat in [time,gausslat,lev]" to evaluate to True
-       If you want a more strict comparison, then check the classes explicitly yourself.'''
-
-    #TODO: do some testing to see just how many times this is called, if it will be a bottleneck for large axes
-
-#    print '<< Axis.__eq__ on', repr(self), 'and', repr(other), '>>'
-
-    # exact same object?
-    if self is other: return True
-    # incomparable?
-    if not isinstance(other,Axis):
-#      print 'not an axis?'
-      return False
-    if not self.isparentof(other) and not other.isparentof(self):
-#      print 'parent issues'
-      return False
-
-    # If they are generic Axis objects, an additional requirement is that they have the same name
-    if self.__class__ is Axis and other.__class__ is Axis:
-      if self.name != other.name: return False
-
-    # Check if they have the same lengths
-    if len(self.values) != len(other.values):
-#      print 'false by length'
-      return False
-
-    # Check the values
-    from numpy import allclose
-    if not allclose(self.values, other.values):
-#      print 'values mismatch'
-      return False
-
-    # Check auxiliary attributes
-    if set(self.auxatts.keys()) != set(other.auxatts.keys()): return False
-    for fname in self.auxatts.keys():
-      if self.auxatts[fname] != other.auxatts[fname]: return False
-
-    # Check any associated arrays
-    if set(self.auxarrays.keys()) != set(other.auxarrays.keys()):
-#      print 'false by mismatched set of auxarrays'
-      return False
-
-    # Check values of associated arrays
-    for fname in self.auxarrays.keys():
-      if not allclose(self.auxarrays[fname], other.auxarrays[fname]):
-#        print 'false by mismatched auxarray "%s":'%fname
-        return False
-
-    return True
-
-  # }}}
+  def __ne__ (self, other): return not is_equivalent(self, other)
+  def __eq__ (self, other): return is_equivalent(self, other)
 
   def alleq (self, *others):
   # {{{
@@ -704,6 +649,102 @@ class Axis(Var):
   # }}}
 # }}}
 
+def is_equivalent(ax1, ax2, check_class = False, check_aux = True, check_name = False, rtol = 'max'):
+# {{{
+  ''' Checks whether two :class:`Axis' instances are equivalent.
+      Parameters
+      ==========
+      ax1, ax2 : :class:`Axis'
+        The Axis instances to compare.
+
+      check_class : boolean (optional)
+        If True, axes must have the same class. Otherwise one can be a subclass of another. Defaults to False.
+
+      check_aux : boolean (optional)
+        If True, the auxatts and auxarrays of the two instances must match. If not these can differ. Defaults to True. 
+
+      check_name : boolean (optional)
+        If True, checks whether names match. Defaults to False, unless both classes are instances of the generic :class:`Axis'.
+
+      rtol : float, 'max', or 'min' (optional)
+        Relative tolerance to compare values using :func:`np.allclose'. If
+        'max' or 'min' is specified, the larger (or smaller, respectively)
+        tolerance from ax1 or ax2 is used. Defaults to 'max'.
+
+      Returns
+      =======
+      boolean
+        True if the two axes are equivalent. False, otherwise.
+
+      Notes
+      =====
+      To evaluate as True, ax1 and ax2 must be of a comparable type (either a
+      parent/child class or the same class, depending on check_class), have
+      values are are all close to within tolerance, and have matching auxiliary
+      attributes and arrays (if check_aux is True). If one of these conditions
+      is not met, returns False. The built in ``ax1 == ax2`` is evaluated using
+      the default options.
+  '''
+  # exact same object?
+  if ax1 is ax2: return True
+
+  # incomparable?
+  if not isinstance(ax1, Axis) or not isinstance(ax2, Axis):
+#   print 'not an axis?'
+    return False
+  if check_class:
+    if not isinstance(ax2, ax1.__class__):
+  #   print 'mismatched classes'
+      return False
+  else:
+    if not ax1.isparentof(ax2) and not ax2.isparentof(ax1):
+  #   print 'parent issues'
+      return False
+
+  # If they are generic Axis objects, an additional requirement is that they have the same name
+  if check_name or (ax1.__class__ is Axis and ax2.__class__ is Axis):
+    if ax1.name != ax2.name: return False
+
+  # Check if they have the same lengths
+  if len(ax1.values) != len(ax2.values):
+#   print 'false by length'
+    return False
+
+  # Check the values
+  from numpy import allclose
+  if rtol == 'max':
+    rtol = max(ax1.auxatts.get('rtol', 1e-5), ax2.auxatts.get('rtol', 1e-5))
+  elif rtol == 'min':
+    rtol = min(ax1.auxatts.get('rtol', 1e-5), ax2.auxatts.get('rtol', 1e-5))
+
+  if not allclose(ax1.values, ax2.values, rtol = rtol):
+#   print 'values mismatch'
+    return False
+
+  if check_aux:
+    # Check auxiliary attributes
+    if set(ax1.auxatts.keys()) != set(ax2.auxatts.keys()): return False
+    for fname in ax1.auxatts.keys():
+      if ax1.auxatts[fname] != ax2.auxatts[fname]: return False
+
+    # Check any associated arrays
+    if set(ax1.auxarrays.keys()) != set(ax2.auxarrays.keys()):
+  #   print 'false by mismatched set of auxarrays'
+      return False
+
+    # Check values of associated arrays
+    for fname in ax1.auxarrays.keys():
+      try:
+        if not allclose(ax1.auxarrays[fname], ax2.auxarrays[fname]):
+    #     print('false by mismatched auxarray "%s":'%fname)
+          return False
+      except TypeError:
+        # For non-numeric types, the above allclose will fail. Check for exact equality.
+        if not all(ax1.auxarrays[fname] == ax2.auxarrays[fname]):
+          return False
+
+  return True
+# }}}
 
 # Useful axis subclasses
 
