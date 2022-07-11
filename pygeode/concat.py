@@ -84,22 +84,19 @@ class ConcatVar(Var):
       # Construct maps to concatenated variables
       out_ax = view.subaxis(self.iaxis)
       subaxes = [v.axes[self.iaxis] for v in self.vars]
-      sls = [ax.map_to(out_ax) for ax in subaxes]
-      N = np.sum([len(sl) for sl in sls])
+      slices = [ax.map_to(out_ax) for ax in subaxes]
+      slice_lengths = [len(sl) for sl in slices]
+      N = float(np.sum(slice_lengths))
+      i = 0
 
-      for vr, ax, sl in zip(self.vars, subaxes, sls):
-        n = len(sl)
+      for vr, ax, sl, n in zip(self.vars, subaxes, slices, slice_lengths):
         if n > 0:
           # Get data from variables as needed
           subview = view.replace_axis(self.iaxis, ax, sl)
-          chunks.append(subview.get(vr, strict = True, conform = False, pbar = pbar.part(n,N)))
+          chunks.append(subview.get(vr, strict = True, conform = False, pbar = pbar.subset(100.*i/N,100.*(i+n)/N)))
+          i += n
 
       return np.concatenate(chunks, axis=self.iaxis)
-
-      #TODO: fix this, once there's a common_map
-      #chunks = [view.get(v,strict=True,conform=False) for v in self.vars]
-      #pbar.update(100)  # can't really use this here, since we don't know which var segments are actually used
-      #return np.concatenate(chunks, axis=self.iaxis)
 
 def concat (*vars, **kwargs):
   from pygeode.var import Var
