@@ -25,6 +25,37 @@ cmaps_seq = {6: ([0.5, 0.556, 1.0, 0.94, 0.87, 0.82], [0.96, 0.4], [0.4, 0.7]), 
 
 def cmap_from_hues(hues=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], sat=[0.2, 0.9], rval=[0.3, 0.6]):
 # {{{
+  """
+  Build a matplotlib Colormap based on a set of HSV (hue, saturation, brightness) values.
+
+  The number of hues corresponds to the number of "divisions" in a Colormap.
+  In each division, the saturation and brightness level changes from
+  (h, sat[0], rval[0]) to (h, sat[1], rval[1]) while the hue remains constant.
+  See Notes for an example.
+
+  Parameters
+  ----------
+  hues : array_like of floats
+    Defines the number of "divisions" in a Colormap. 
+
+  sat : array_like of floats (length 2)
+    Defines how the saturation level changes within a division. 
+
+  rval : array_like of floats (length 2)
+    Defines how the brightness level changes within a division.
+
+  Returns
+  -------
+  matplotlib.colors.LinearSegmentedColormap
+
+  Notes
+  -----
+  An example call to the function is cmap_from_hues([0.1, 0.4, 0.6], [0.2, 0.9], [0.3, 0.6]),
+  which would return a 3-division Colormap. In the HSV scheme, the color changes from
+  [0.1, 0.2, 0.3] to [0.1, 0.9, 0.6] in the first division, from [0.4, 0.2, 0.3]
+  to [0.4, 0.9, 0.6] in the second division, and so on. Note that the HSV value would
+  "jump" between divisions. 
+  """
   stops = build_stops(hues, sat, rval)
   return build_cmap(stops)
 # }}}
@@ -180,3 +211,5 @@ def read_config():
 
 # Read in configuration file on import
 read_config()
+
+__all__ = ['cmap_from_hues']
