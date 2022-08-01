@@ -68,6 +68,8 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
   Each `value` can be either a single color, or two colors as an array-like object so that
   matplotlib can apply a non-linear transition of color at each key.
 
+  It's also possible to specify the "over" and "under" colors in cdict for the colormap.
+
   See Examples.
 
   Parameters
@@ -101,10 +103,26 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
   ...   1: [1, 1, 1]
   ... }
   >>> cmap = cmap_from_cdict(cdict)
+
+  If desired, we can also specify under and over for the colormap.
+
+  >>> from pygeode.plot.cm import cmap_from_cdict
+  >>> cdict = {
+  ...   'over': [0, 0, 0],
+  ...   'under': [0, 0, 0],
+  ...   -1: [1, 1, 1],
+  ...   -0.1: ([0, 0, 0], [1, 1, 1]),
+  ...   0.1: ([1, 1, 1], [0, 0, 0]),
+  ...   1: [1, 1, 1]
+  ... }
+  >>> cmap = cmap_from_cdict(cdict)
   """
   import matplotlib.colors as mcolors
   import math
   import numpy as np
+
+  over = cdict.pop('over', None)
+  under = cdict.pop('under', None)
 
   lastk = -math.inf
   mpl_cdict = dict(red=[], green=[], blue=[], alpha=[])
@@ -137,6 +155,12 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
     lastk = k
 
   cmap = mcolors.LinearSegmentedColormap('cmap', mpl_cdict)
+
+  if over is not None:
+    cmap.set_over(over)
+  if under is not None:
+    cmap.set_under(under)
+
   return cmap
 
 def build_cmap(stops): 
