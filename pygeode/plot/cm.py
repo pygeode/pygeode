@@ -79,10 +79,11 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
 
   colorspace : str
     Defines the colorspace of the values in `cdict` such that the values can be transformed
-    into the RGBA format. Valid options are "rgb", "rgba", "hsv", and "hex".
+    into the RGBA format. Valid options are "rgb" or "hex".
 
-    Note that for "rgb", "rgba" and "hsv", each value in the dictionary should be a list of
-    floats within [0, 1] (or a tuple of such lists).
+    Note that "rgb" supports a variety of equivalent formats. For example,
+    [0, 0, 0] (black in "rgb"), [0, 0, 0, 0.5] (black, with the alpha value set to 0.5),
+    and "#000000" (black as a hex string) are all valid values for ``cdict``. See Examples.
 
     Defaults to "rgb".
 
@@ -98,8 +99,8 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
   >>> from pygeode.plot.cm import cmap_from_cdict
   >>> cdict = {
   ...   -1: [1, 1, 1],
-  ...   -0.1: ([0, 0, 0], [1, 1, 1]),
-  ...   0.1: ([1, 1, 1], [0, 0, 0]),
+  ...   -0.1: ([0, 0, 0, 1], [1, 1, 1]),
+  ...   0.1: ([1, 1, 1], "#000000"),
   ...   1: [1, 1, 1]
   ... }
   >>> cmap = cmap_from_cdict(cdict)
@@ -129,13 +130,13 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
   keys = list(cdict.keys())
   norm = mcolors.Normalize(vmin=keys[0], vmax=keys[-1])
 
-  if colorspace in ['rgb', 'rgba', 'hex']:
+  if colorspace == 'rgb':
     convert_color = lambda v: mcolors.to_rgba(v)
   elif colorspace == 'hsv':
     convert_color = lambda v: mcolors.to_rgba(mcolors.hsv_to_rgb(v))
   else:
     raise ValueError(
-      f'Colorspace "{colorspace}" must be one of "rgb", "rgba", "hsv", or "hex".')
+      f'Colorspace "{colorspace}" must be "rgb" or "hsv".')
 
   for k, v in cdict.items():
     if k < lastk:
