@@ -17,6 +17,6 @@ from pygeode.plot.cnt_helpers import *
 from pygeode.plot.cnt_helpers import __all__ as chelp_all
 __all__.extend(chelp_all)
 
-from pygeode.plot.cm import cmap_from_hues
+from pygeode.plot.cm import cmap_from_hues, cmap_from_cdict
 from pygeode.plot.cm import __all__ as cm_all
 __all__.extend(cm_all)
