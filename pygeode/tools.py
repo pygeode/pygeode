@@ -660,3 +660,49 @@ def need_full_axes (*iaxes):
 
     return getview
   return wrap
+
+
+def repr_var(var, post_prefix='', child_depth=0):
+  """
+  Returns a tree-like representation of ``var``.
+  
+  Parameters
+  ----------
+  var : pygeode.Var, int, or float (scalars)
+    The `Var` object to return the tree representation for.
+  post_prefix : str
+    The number of spaces and vertical bars to be attached to the
+    representation of this node.
+  child_depth : int
+    A tracker for all the vertical bar positions. When a node has two children,
+    child_depth will increase by 1. At the next call stack when child_depth=1,
+    we would add '| ' to `post_prefix` to pass it down to the next layer and
+    decrease child depth by 1.
+      
+  Returns
+  -------
+  this_repr : str
+    A string representation of ``var``.
+  """
+  import numpy as np
+  repr_var = type(var).__name__ + str(var.shape) if not isinstance(var, (int, float)) else type(var).__name__ + '[' + repr(var) + ']' 
+  prefix = post_prefix
+
+  if child_depth > 0:
+    next_prefix = prefix + '| '
+    child_depth -= 1
+  else:
+    next_prefix = prefix + '  '
+
+  this_repr = prefix + repr_var + '\n'
+
+  if hasattr(var, 'args'):
+    if len(var.args) == 1:
+      child_repr = ''.join([repr_var(arg, next_prefix) for arg in var.args])
+    else:
+      child_repr = ''.join([repr_var(arg, next_prefix, child_depth+1) for arg in var.args])
+    return this_repr + child_repr
+  if hasattr(var, 'var'):
+    return this_repr + repr_var(var.var, next_prefix)
+  if isinstance(var, (int, float, pyg.Var)):
+    return this_repr
