@@ -662,7 +662,7 @@ def need_full_axes (*iaxes):
   return wrap
 
 
-def repr_var(var, post_prefix='', child_depth=0):
+def repr_var(var, prefix='', child_depth=0):
   """
   Returns a tree-like representation of ``var``.
   
@@ -685,8 +685,7 @@ def repr_var(var, post_prefix='', child_depth=0):
     A string representation of ``var``.
   """
   import numpy as np
-  repr_var = type(var).__name__ + str(var.shape) if not isinstance(var, (int, float)) else type(var).__name__ + '[' + repr(var) + ']' 
-  prefix = post_prefix
+  this_repr = type(var).__name__ + str(var.shape) if not isinstance(var, (int, float)) else type(var).__name__ + '[' + repr(var) + ']' 
 
   if child_depth > 0:
     next_prefix = prefix + '| '
@@ -694,7 +693,7 @@ def repr_var(var, post_prefix='', child_depth=0):
   else:
     next_prefix = prefix + '  '
 
-  this_repr = prefix + repr_var + '\n'
+  this_repr = prefix + this_repr + '\n'
 
   if hasattr(var, 'args'):
     if len(var.args) == 1:
