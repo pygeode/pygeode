@@ -987,7 +987,7 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   axs = []
   row = []
   for i in range(nV):
-    lblx = (i / ncol == nrow - 1)
+    lblx = (i // ncol == nrow - 1)
     lbly = (i % ncol == 0)
     ax = None
     if nVf > 0:
