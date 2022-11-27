@@ -33,6 +33,6 @@ jobs:
        run: |
          conda install nose
          cd tests
-         nosetest
+         nosetests
          cd issues
-         nosetest
+         nosetests
