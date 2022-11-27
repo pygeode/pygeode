@@ -40,7 +40,10 @@ jobs:
      - name: Build pygeode
        run: |
          python setup.py build_ext -i
-         python -c 'import pygeode as pyg'
+
+     - name: Test import of pygeode
+       run: |
+         python -c 'import pygeode as pyg; print(pyg.__version__)'
 
      - name: Run tests with nose
        run: |
