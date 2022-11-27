@@ -47,7 +47,7 @@ jobs:
 
      - name: Run tests with nose
        run: |
-         conda install nose
+         pip install nose
          cd tests
          nosetests
          cd issues
