@@ -167,7 +167,7 @@ class _Varlist (object):
   def __iter__ (self):  return iter(self.values)
   def __len__ (self): return len(self.values)
   def __repr__ (self): return "<%s>"%self.__class__.__name__
-  def __cmp__ (self, other): return cmp(self.values, other.values)
+  def __eq__ (self, other): return self.values == other.values
   _memoized = dict()
   @classmethod
   def singlevar (cls, varname):
@@ -353,10 +353,10 @@ class _Domain (object):
     self.axis_names = tuple([a.name for a in axis_samples])
     # Store the axis values as sets, to make unions/intersections faster.
     self.axis_values = tuple(axis_values)
-  def __cmp__ (self, other):
-    key1 = (self.axis_names, self.axis_values)
-    key2 = (other.axis_names, other.axis_values)
-    return cmp(key1, key2)
+  def __eq__(self, other):
+    if self.axis_names != other.axis_names:
+      return False
+    return self.axis_values == other.axis_values 
   def __hash__ (self):
     return hash(self.axis_values)
   def __repr__ (self):

@@ -149,8 +149,8 @@ for _plugin_path in plugins.__path__:
   for _plugin in _plugins:
     _plugin = _plugin.split(sep)[-2]
     # Trigger the __init__ for the plugin
-    exec("from pygeode.plugins import %s as _x"%_plugin)
-    del _x, _plugin
+    exec("from pygeode.plugins import %s as _x; del _x"%_plugin)
+    del _plugin
 
 del glob, join, sep, _plugin_path, _plugins, sys, A
 
