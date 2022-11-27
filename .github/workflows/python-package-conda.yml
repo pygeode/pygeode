@@ -21,7 +21,7 @@ jobs:
          echo $CONDA/bin >> $GITHUB_PATH
      - name: Install dependencies
        run: |
-         conda env update --file .github/workflows/pygeode_environment.yml --name base
+         conda env update --file pygeode_environment.yml --name base
      - name: Lint with flake8
        run: |
          conda install flake8
