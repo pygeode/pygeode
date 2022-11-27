@@ -1,10 +1,10 @@
 name: pygeode
 dependencies:
-    - python
     - netcdf4
     - numpy
     - scipy
     - matplotlib
-    - progressbar2
     - cartopy
     - gsl
+    - xarray
+    - progressbar2>=3.40
