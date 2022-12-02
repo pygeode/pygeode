@@ -9,4 +9,5 @@ dependencies:
   - cartopy
   - gsl
   - xarray
-  - progressbar2>=3.40
+  - pip:
+      - progressbar2>=3.40
