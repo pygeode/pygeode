@@ -24,6 +24,8 @@ jobs:
          show-channel-urls: true
          use-only-tar-bz2: true
          environment-file: pygeode_environment.yml
+
+     - name: Check conda installation
        run: |
          conda info
          conda list
