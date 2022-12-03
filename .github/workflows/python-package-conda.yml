@@ -51,9 +51,14 @@ jobs:
 
      - name: Test import of pygeode
        run: |
+         which python
          python -c 'import pygeode as pyg; print(pyg.__version__)'
 
      - name: Run tests with pytest
        run: |
          conda install pytest
+         conda list
+         pwd
+         echo $PATH
+         which python
          pytest

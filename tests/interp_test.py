@@ -5,7 +5,6 @@ import numpy as np
 from pygeode.var import Var
 from pygeode.axis import XAxis, YAxis
 from pygeode.interp import interpolate
-from nose.tools import raises
 
 # Helper function - array comparison with nan support
 def alleq (x1, x2):
@@ -109,10 +108,14 @@ class TestInterp(unittest.TestCase):
         self.assertTrue(np.all(output[-1,:] == input[-1,:] + 0.5*slope), output)
 
   # Test out non-monotonic interpolation
-  @raises(ValueError)
   def test_nm_interp (self):
     # Interpolation with non-monotonic source data - should fail with ValueError
-    output = interpolate(self.var, inaxis=self.y, outaxis=self.y2, inx=self.y_nm, interp_type='linear').transpose(YAxis,XAxis).get()
+    try:
+       output = interpolate(self.var, inaxis=self.y, outaxis=self.y2, inx=self.y_nm, interp_type='linear').transpose(YAxis,XAxis).get()
+    except ValueError:
+       return
+
+    assert False, "interpolate did not raise a ValueError exception"
 
   # Test interpolation via 2D coordinate field
   def test_2d_interp(self):
