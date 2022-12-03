@@ -6,8 +6,9 @@ dependencies:
   - numpy
   - scipy
   - matplotlib
-  - cartopy
   - gsl
   - xarray
+  - cartopy
+  - pip
   - pip:
       - progressbar2>=3.40
