@@ -58,7 +58,7 @@ jobs:
      - name: Run tests with pytest
        run: |
          conda install pytest pytest-cov
-         python -m pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=src | tee pytest-coverage.txt
+         python -m pytest --junitxml=pytest.xml --cov-report=term --cov=pygeode | tee pytest-coverage.txt
 
      - name: Pytest coverage
        uses: MishaKav/pytest-coverage-comment@main
