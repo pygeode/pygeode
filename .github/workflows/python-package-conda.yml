@@ -57,8 +57,4 @@ jobs:
      - name: Run tests with pytest
        run: |
          conda install pytest
-         conda list
-         pwd
-         echo $PATH
-         which python
-         pytest
+         python -m pytest
