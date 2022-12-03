@@ -2,13 +2,13 @@ name: pygeode
 channels:
   - conda-forge
 dependencies:
-  - netcdf4
   - numpy
   - scipy
-  - matplotlib
   - gsl
-  - xarray
   - cartopy
   - pip
   - pip:
-      - progressbar2>=3.40
+    - netcdf4
+    - matplotlib
+    - xarray
+    - progressbar2>=3.40
