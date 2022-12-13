@@ -17,6 +17,7 @@ dependencies:
         - mypy
         - flake8
         - flake8-docstrings
+        - ipympl
         - jupyterlab
         - pooch
         - dask
