@@ -662,46 +662,117 @@ def need_full_axes (*iaxes):
   return wrap
 
 
-def repr_var(var, prefix='', child_depth=0):
-  """
-  Returns a tree-like representation of ``var``.
+def repr_var_iter(var, axis_name=False):
+    """
+    Returns a tree-like representation of ``var``.
   
-  Parameters
-  ----------
-  var : pygeode.Var, int, or float (scalars)
-    The `Var` object to return the tree representation for.
-  post_prefix : str
-    The number of spaces and vertical bars to be attached to the
-    representation of this node.
-  child_depth : int
-    A tracker for all the vertical bar positions. When a node has two children,
-    child_depth will increase by 1. At the next call stack when child_depth=1,
-    we would add '| ' to `post_prefix` to pass it down to the next layer and
-    decrease child depth by 1.
-      
-  Returns
-  -------
-  this_repr : str
-    A string representation of ``var``.
-  """
-  import numpy as np
-  this_repr = type(var).__name__ + str(var.shape) if not isinstance(var, (int, float)) else type(var).__name__ + '[' + repr(var) + ']' 
+    Parameters
+    ----------
+    var : pygeode.Var, int, or float (scalars)
+        The `Var` object to return the tree representation for.
+        
+    axis_name : boolean
+        If true, print out the name of the axes in a variable. Defaults to false.
+        
+    Returns
+    -------
+    final_string : str
+        A string representation of ``var``.
+    """
+    from collections import deque
+    import string
+    
+    # We use a stack data structure to store the elements, so that each
+    # element is popped from the top
+    stack = deque()
+    
+    # the first element is the prefix, the second element is the PyGeode variable,
+    # and the third element is the child_depth
+    stack.append(('', var, 0))
+    
+    acc = []  # Our accumulator for the final output string
+    var_list = []  # A list that stores the string representation of variables we've seen
+    edges = deque()  # A stack that connects one common node to the other
+    
+    # Essentially an iterative depth-first search here
+    while stack:
+        prefix, var, child_depth = stack.pop()
+        if var == '[]':
+            this_repr = var
+        else:
+            this_repr = type(var).__name__
+            if isinstance(var, pyg.Var):
+                if axis_name:
+                    this_repr += '('
+                    axis_list = []
+                    for axis in var.axes:
+                        axis_list.append(axis.name + '[' + str(axis.size) + ']')
+                    this_repr = this_repr + ', '.join(axis_list) + ')'
+                else:
+                    this_repr += str(var.shape)
+            # This should include int, float, and numpy data types
+            else:
+                this_repr = this_repr + '[' + repr(var) + ']'
+        this_repr = prefix + this_repr
+        
+        acc.append(this_repr)
+        
+        if child_depth > 0:
+            child_depth -= 1
+            next_prefix = prefix + '| '
+        else:
+            next_prefix = prefix + '  '
+            
+        # Note that here we have to convert to a string representation of var
+        # because the python "in" operator doesn't work on PyGeode objects
+        # for some reason. Ugly, but works.
+        str_var = str(var)
+        
+        # Need to have the second condition, otherwise we will be in an infinite loop
+        if (str_var in var_list) and var != '[]':
+            ind = var_list.index(str_var)
+            
+            # In *edges*, we have edges that connect one common element to the other
+            # For instance, (4, 10) means that elements at those two indices are equivalent
+            # In the future, if we need to more efficiently evaluate the AST, we 
+            # could append the actual variable to a list in this if-branch.
+            edges.append((ind, len(var_list)))
+            stack.append((next_prefix, '[]', child_depth))
+        elif hasattr(var, 'args'):
+            if len(var.args) == 1:
+                stack.append((next_prefix, var.args[0], child_depth))
+            else:
+                for arg in var.args:
+                    stack.append((next_prefix, arg, child_depth+1))
+        elif hasattr(var, 'var'):
+            stack.append((next_prefix, var.var, child_depth))
+        elif hasattr(var, 'invar'):
+            stack.append((next_prefix, var.invar, child_depth))
+            
+        # append the string representation of var to the variable list at the very end
+        var_list.append(str_var)
 
-  if child_depth > 0:
-    next_prefix = prefix + '| '
-    child_depth -= 1
-  else:
-    next_prefix = prefix + '  '
+    # How we choose to represent elements
+    alphabet = list(string.ascii_uppercase)
+    
+    repeated_vars = []
+    
+    # This is just to turn a list of edges into a list of clusters of nodes
+    # For example, if we have [(4, 10), (10, 16), (2, 5)] => [[4, 10, 16], [2, 5]]
+    # Need this when we have more than 3 common nodes in a tree.
+    while edges:
+        edge = list(edges.popleft())
+        for e in edges:
+            if edge[1] in e:
+                edge.append(e[1])
+        repeated_vars.append(edge)
+        
+    # We modify the strings to identify common elements after we have performed
+    # the depth-first search.
+    for k, indices in enumerate(repeated_vars):
+        for ind in indices:
+            acc[ind] = acc[ind] + ' - ' + alphabet[k]
+    
+    final_string = '\n'.join(acc)
 
-  this_repr = prefix + this_repr + '\n'
-
-  if hasattr(var, 'args'):
-    if len(var.args) == 1:
-      child_repr = ''.join([repr_var(arg, next_prefix) for arg in var.args])
-    else:
-      child_repr = ''.join([repr_var(arg, next_prefix, child_depth+1) for arg in var.args])
-    return this_repr + child_repr
-  if hasattr(var, 'var'):
-    return this_repr + repr_var(var.var, next_prefix)
-  if isinstance(var, (int, float, pyg.Var)):
-    return this_repr
+    return final_string
