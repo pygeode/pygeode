@@ -681,6 +681,8 @@ def repr_var_iter(var, axis_name=False):
     """
     from collections import deque
     import string
+
+    import pygeode as pyg
     
     # We use a stack data structure to store the elements, so that each
     # element is popped from the top
