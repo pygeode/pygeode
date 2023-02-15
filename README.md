@@ -5,6 +5,4 @@ PyGeode
 
 [Documentation](http://pygeode.github.io/)
 
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://hub.gke2.mybinder.org/user/admg26-pygeode-docs-o72up0dj/lab/workspaces/auto-4/tree/jupyter_notebooks)
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pygeode/pygeode/master?labpath=jupyter_notebooks)
