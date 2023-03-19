@@ -252,6 +252,10 @@ class WeightedNANSumVar(ReducedVar):
   # }}}
 # }}}
 
+def mean_aux(func, indices, item):
+  outsl, (indata, ) = item
+  return outsl, func(indata, indices)
+
 class MeanVar(ReducedVar):
 # {{{
   '''MeanVar(ReducedVar) - computes unweighted mean.'''
@@ -259,8 +263,17 @@ class MeanVar(ReducedVar):
     import numpy as np
     from pygeode.tools import loopover, npsum
     out = np.zeros(view.shape, self.dtype)
-    for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
-      out[outsl] += npsum(indata, self.indices)  
+
+    from multiprocessing import Pool
+    from functools import partial
+    p = Pool(4)
+
+    mean_partial = partial(mean_aux, npsum, self.indices)
+
+    for outsl, result in p.imap(mean_partial, loopover(self.var, view, pbar=pbar)):
+      out[outsl] += result
+    # for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
+    #   out[outsl] += npsum(indata, self.indices)  
 
     return out / self.N
  # }}}
