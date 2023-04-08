@@ -1,4 +1,4 @@
-name: Verify Installation and Run Tests
+name: Build and Test
 
 on: [push]
 
