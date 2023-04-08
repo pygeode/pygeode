@@ -517,8 +517,8 @@ def partial_nan_sum (arr, sl, bigout, bigcount, iaxis, outmap):
   func = getattr(libmisc,'partial_nan_sum_'+arr.dtype.name)
   func (nx, nin, nout, ny, arr, out, count, outmap)
 
-  bigout[sl] += out
-  bigcount[sl] += count
+  bigout[tuple(sl)] += out
+  bigcount[tuple(sl)] += count
 # }}}
 
 #TODO: remove these, once Var I/O can efficiently handle concurrent reading & caching

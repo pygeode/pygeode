@@ -832,8 +832,9 @@ def combine_meta (invars, outvar):
 
 # Numeric operations
 from numpy import ndarray as nd
-from pygeode.ufunc import wrap_unary, wrap_binary
+from pygeode.ufunc import wrap_unary, wrap_binary, map
 from functools import reduce
+Var.map = map
 Var.__add__  = wrap_binary(nd.__add__,  symbol='+')
 Var.__radd__ = wrap_binary(nd.__radd__, symbol='+')
 Var.__sub__  = wrap_binary(nd.__sub__,  symbol='-')

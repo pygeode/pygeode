@@ -356,7 +356,12 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   if axes is None:
     axes = wr.AxesWrapper()
 
-  axes.plot(x, y, fmt, **kwargs)
+  if fmt == '':
+    args = ()
+  else:
+    args = (fmt,)
+
+  axes.plot(x, y, *args, **kwargs)
 
   # Apply the custom axes args
   if not hold:
@@ -449,14 +454,14 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 
   clevs : integer or collection of numbers, optional
     Levels at which to construct filled contours through an underlying call to
-    :func:`matplotlib.contourf`. If None is specified, no filled contours will
+    :func:`matplotlib.pyplot.contourf`. If None is specified, no filled contours will
     be produced, unless clines is also None. If a number is specified, that
     number of equally spaced contours are chosen. Otherwise the explicit
     values are used.
 
   clines : integer or collection of numbers, optional
     Levels at which to construct contour lines through an underlying call to
-    :func:`matplotlib.contour`. If None is specified, no contour lines are
+    :func:`matplotlib.pyplot.contour`. If None is specified, no contour lines are
     produced.  If a number is specified, that number of equally spaced contours
     are chosen. Otherwise the explicit values are used.
 
@@ -542,8 +547,9 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes) and mapd is not False:
-      decorate_projection(axes, X, Y, **mapd)
+    if wr.ismapaxis(axes):
+      if mapd is not False:
+        decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -692,8 +698,9 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes) and mapd is not False:
-      decorate_projection(axes, X, Y, **mapd)
+    if wr.ismapaxis(axes):
+      if mapd is not False:
+        decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -757,8 +764,9 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes) and mapd is not False:
-      decorate_projection(axes, X, Y, **mapd)
+    if wr.ismapaxis(axes):
+      if mapd is not False:
+        decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
