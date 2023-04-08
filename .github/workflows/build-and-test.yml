@@ -74,7 +74,7 @@ jobs:
 
   publish-test-results:
     name: "Publish Tests Results"
-    needs: linux-and-test
+    needs: build-linux-and-test
     runs-on: ubuntu-latest
     permissions:
       checks: write
