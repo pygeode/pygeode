@@ -3,7 +3,7 @@ name: Build and Test
 on: [push]
 
 jobs:
-  build-linux:
+  build-linux-and-test:
     name: Build and test in linux, python (${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
@@ -29,18 +29,17 @@ jobs:
          use-only-tar-bz2: true
          environment-file: pygeode_environment.yml
          activate-environment: pygeode
+       run: |
+         # install additional packages required for testing
+         conda install flake8 pytest pytest-cov
 
      - name: Check conda installation
        run: |
          conda info
          conda list
 
-     # run: |
-     #    conda env update --file pygeode_environment.yml --name base
-
      - name: Check for syntax errors/undefined variables with flake8
        run: |
-         conda install flake8
          # stop the build if there are Python syntax errors or undefined names
          flake8 . --count --select=E9,F63,F7,F82 --show-source --max-line-length=127 --statistics
          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
@@ -50,16 +49,22 @@ jobs:
        run: |
          python setup.py build_ext -i
 
-     - name: Report Python version
+     - name: Report Python and PyGeode version
        run: |
          which python
-         python -c 'import pygeode as pyg; print(pyg.__version__)'
+         python -c 'import sys, pygeode as pyg; print(sys.version); print(pyg.__version__)'
 
      - name: Run tests with pytest
        run: |
-         conda install pytest pytest-cov
-         python -m pytest --junitxml=pytest.xml
+         python -m pytest --junitxml=pytest.xml --cov-report=term --cov=pygeode | tee pytest-coverage.txt
          #python -m pytest --junitxml=pytest.xml --cov-report=term --cov=pygeode | tee pytest-coverage.txt
+
+     - name: Upload Test Results
+       if: always()
+       uses: actions/upload-artifact@v2
+       with:
+         name: Test Results (Python ${{ matrix.python-version }})
+         path: pytest.xml
 
 #     - name: Pytest coverage
 #       uses: MishaKav/pytest-coverage-comment@main
@@ -68,3 +73,31 @@ jobs:
 #         unique-id-for-comment: python${{ matrix.python-version }}
 #         pytest-coverage-path: ./pytest-coverage.txt
 #         junitxml-path: ./pytest.xml
+
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: linux-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+
+      # only needed unless run with comment_mode: off
+      #pull-requests: write
+
+      # only needed for private repository
+      #contents: read
+
+      # only needed for private repository
+      #issues: read
+    if: always()
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "artifacts/**/*.xml"
