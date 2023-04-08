@@ -58,13 +58,13 @@ jobs:
      - name: Run tests with pytest
        run: |
          conda install pytest pytest-cov
-         python -m pytest --github-report 
+         python -m pytest --junitxml=pytest.xml
          #python -m pytest --junitxml=pytest.xml --cov-report=term --cov=pygeode | tee pytest-coverage.txt
 
-     - name: Pytest coverage
-       uses: MishaKav/pytest-coverage-comment@main
-       with:
-         hide-badge: false
-         unique-id-for-comment: python${{ matrix.python-version }}
-         pytest-coverage-path: ./pytest-coverage.txt
-         junitxml-path: ./pytest.xml
+#     - name: Pytest coverage
+#       uses: MishaKav/pytest-coverage-comment@main
+#       with:
+#         hide-badge: false
+#         unique-id-for-comment: python${{ matrix.python-version }}
+#         pytest-coverage-path: ./pytest-coverage.txt
+#         junitxml-path: ./pytest.xml
