@@ -29,12 +29,10 @@ jobs:
          use-only-tar-bz2: true
          environment-file: pygeode_environment.yml
          activate-environment: pygeode
-       run: |
-         # install additional packages required for testing
-         conda install flake8 pytest pytest-cov
 
      - name: Check conda installation
        run: |
+         conda install flake8 pytest pytest-cov
          conda info
          conda list
 
