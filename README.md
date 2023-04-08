@@ -1,7 +1,7 @@
 PyGeode
 =======
 
-[![Build Status](https://travis-ci.org/pygeode/pygeode.svg?branch=master)](https://travis-ci.org/pygeode/pygeode)
+![Build tests](https://github.com/github/docs/actions/workflows/build-and-test.yml/badge.svg)
 
 [Documentation](http://pygeode.github.io/)
 
