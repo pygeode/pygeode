@@ -1,7 +1,7 @@
 PyGeode
 =======
 
-![Build tests](https://github.com/github/docs/actions/workflows/build-and-test.yml/badge.svg)
+[![Build and Test](https://github.com/aph42/pygeode/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/aph42/pygeode/actions/workflows/build-and-test.yml)
 
 [Documentation](http://pygeode.github.io/)
 
