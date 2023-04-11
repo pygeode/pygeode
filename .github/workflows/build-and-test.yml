@@ -1,6 +1,11 @@
 name: Build and Test
 
-on: [push]
+on: 
+  workflow_dispatch:
+  push:
+    paths: # Run if a python or a c file has been modified
+      - '*.py'
+      - '*.c'
 
 jobs:
   build-linux-and-test:

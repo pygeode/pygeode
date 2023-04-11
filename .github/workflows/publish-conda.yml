@@ -1,6 +1,8 @@
 name: Publish Linux Conda Package
 
-on: [release]
+on: 
+  workflow_dispatch:
+  release:
 
 jobs:
   build-conda-packages:
