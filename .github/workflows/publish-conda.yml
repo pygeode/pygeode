@@ -35,5 +35,6 @@ jobs:
          mkdir conda-recipe/pygeode
          cp conda-recipe/build.sh pygeode/
          cp conda-recipe/meta.yaml.1.4 pygeode/meta.yaml
-         conda build conda-recipe/pygeode
+         cd conda-recipe
+         conda build pygeode
 
