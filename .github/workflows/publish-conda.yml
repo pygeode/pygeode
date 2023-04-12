@@ -28,12 +28,11 @@ jobs:
          conda install conda-build anaconda-client
          conda info
          conda list
-         which conda-build
-         pwd
 
      - name: Build and publish conda
        run: |
          # Move bld.build.sh and meta.yaml.latest to a directory called pygeode
+         conda build
          cd conda-recipe
          mkdir pygeode
          cp build.sh pygeode/
