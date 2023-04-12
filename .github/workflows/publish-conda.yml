@@ -32,10 +32,8 @@ jobs:
      - name: Build and publish conda
        run: |
          # Move bld.build.sh and meta.yaml.latest to a directory called pygeode
-         conda build
-         cd conda-recipe
-         mkdir pygeode
-         cp build.sh pygeode/
-         cp meta.yaml.1.4 pygeode/meta.yaml
-         conda-build pygeode
+         mkdir conda-recipe/pygeode
+         cp conda-recipe/build.sh pygeode/
+         cp conda-recipe/meta.yaml.1.4 pygeode/meta.yaml
+         conda build conda-recipe/pygeode
 
