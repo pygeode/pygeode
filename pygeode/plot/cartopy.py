@@ -125,6 +125,12 @@ class CRTSetExtent(PlotOp):
     axes.set_extent(*self.plot_args, **self.plot_kwargs)
 # }}}
 
+class CRTSetBoundary(PlotOp):
+# {{{
+  def render (self, axes):
+    axes.set_boundary(*self.plot_args, transform = self.axes.transform, **self.plot_kwargs)
+# }}}
+
 contour        = make_plot_func(CRTContour)
 contourf       = make_plot_func(CRTContourf)
 coastlines     = make_plot_func(CRTCoastlines)
@@ -136,6 +142,7 @@ quiver         = make_plot_func(CRTQuiver)
 add_feature    = make_plot_func(CRTAddFeature)
 add_geometries = make_plot_func(CRTAddGeometries)
 set_extent     = make_plot_func(CRTSetExtent)
+set_boundary   = make_plot_func(CRTSetBoundary)
 
 CartopyAxes.contour        = make_plot_member(contour)
 CartopyAxes.contourf       = make_plot_member(contourf)
@@ -148,5 +155,6 @@ CartopyAxes.quiver         = make_plot_member(quiver)
 CartopyAxes.add_feature    = make_plot_member(add_feature)
 CartopyAxes.add_geometries = make_plot_member(add_geometries)
 CartopyAxes.set_extent     = make_plot_member(set_extent)
+CartopyAxes.set_boundary   = make_plot_member(set_boundary)
 
-__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'modifygridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries', 'set_extent']
+__all__ = ['CartopyAxes', 'contour', 'contourf', 'coastlines', 'gridlines', 'modifygridlines', 'pcolor', 'streamplot', 'quiver', 'add_feature', 'add_geometries', 'set_extent', 'set_boundary']

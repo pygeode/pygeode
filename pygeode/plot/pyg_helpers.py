@@ -68,6 +68,7 @@ def axes_parm(axis):
 
 def set_xaxis(axes, axis, lbl, xscale=True):
 # {{{
+  import pylab as pyl
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
 
@@ -78,12 +79,13 @@ def set_xaxis(axes, axis, lbl, xscale=True):
     prm['xlim']   = lim
 
   if lbl:
-    import pylab as pyl
     prm['xlabel'] = label
     axprm['major_formatter'] = form
     axprm['minor_formatter'] = pyl.NullFormatter()
   else:
-    prm['xticklabels'] = []
+    #prm['xticklabels'] = []
+    axprm['major_formatter'] = pyl.NullFormatter()
+    axprm['minor_formatter'] = pyl.NullFormatter()
 
   axes.setp(**prm)
   axes.setp_xaxis(**axprm)
@@ -96,6 +98,7 @@ def set_xaxis(axes, axis, lbl, xscale=True):
 
 def set_yaxis(axes, axis, lbl, yscale=True):
 # {{{
+  import pylab as pyl
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
 
@@ -106,12 +109,13 @@ def set_yaxis(axes, axis, lbl, yscale=True):
     prm['ylim']   = lim
 
   if lbl:
-    import pylab as pyl
     prm['ylabel'] = label
     axprm['major_formatter'] = form
     axprm['minor_formatter'] = pyl.NullFormatter()
   else:
-    prm['yticklabels'] = []
+    #prm['yticklabels'] = []
+    axprm['major_formatter'] = pyl.NullFormatter()
+    axprm['minor_formatter'] = pyl.NullFormatter()
 
   axes.setp(**prm)
   axes.setp_yaxis(**axprm)
