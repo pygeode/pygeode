@@ -267,15 +267,21 @@ class MeanVar(ReducedVar):
     # Manually set the factor of how we map from array size to memory usage
     factor = 4 if str(self.dtype) == 'float32' else 8  
 
+    view = view.clip()
+    inview = view.map_to(self.var.axes, strict=False)
+
+    invar = self.var._getitem_asvar(inview.slices)
+
     inner_size = prod(self.var.shape[1:])
-    if self.var.shape[0] * inner_size * factor < maxsize:
-      chunksize = self.var.shape  # Or, we just use numpy to perform the operation
+    
+    if invar.shape[0] * inner_size * factor < maxsize:
+      chunksize = invar.shape  # Or, we just use numpy to perform the operation
 
     else:
-      first_dim = maxsize // (self.var.shape[0] * factor)
-      chunksize = tuple([first_dim] + list(self.var.shape[1:]))
+      first_dim = maxsize // (invar.shape[0] * factor)
+      chunksize = tuple([first_dim] + list(invar.shape[1:]))
       
-    da_array = da.from_array(self.var, chunks=chunksize, lock=True)
+    da_array = da.from_array(invar, chunks=chunksize, lock=True)
 
     da_mean = da_array.mean(axis=self.indices).compute()
 
