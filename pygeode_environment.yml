@@ -1,0 +1,16 @@
+name: pygeode
+channels:
+  - conda-forge
+  - default
+dependencies:
+  - numpy
+  - scipy
+  - gsl
+  - cartopy
+  - netcdf4
+  - pip
+  - pip:
+    - matplotlib
+    - xarray
+    - dask
+    - progressbar2

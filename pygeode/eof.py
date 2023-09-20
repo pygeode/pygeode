@@ -223,7 +223,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
 
   for iter_num in range(1,max_iter+1):
 
-    print('iter_num: %d'%iter_num)
+     #print('iter_num: %d'%iter_num)
 
     neweofs, oldeofs = oldeofs, neweofs
 
@@ -258,7 +258,7 @@ def EOF_iter (x, num=1, iaxis=None, subspace = -1, max_iter=1000, weight=True, o
     # Sort by eigenvalue
     S = np.argsort(w)[::-1]
     w = w[S]
-    print(w)
+    #print(w)
 #    assert P.dtype.name == 'float64', P.dtype.name
     P = np.ascontiguousarray(P[:,S], dtype='d')
 

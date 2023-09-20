@@ -13,7 +13,7 @@ def assertSameVar(v1, v2):
 def varTest(testname='', var=None, name = None, serialize = False,\
          shape = None, axes = None, dtype = None, values = None):
    # Validate inputs; all tests must have a name and a variable
-   assert testname is not ''
+   assert testname != ''
    assert var is not None
    formats = {'nc':nc}
 

@@ -421,7 +421,7 @@ class Axis(Var):
         elif len(v) == 3:         # Treat as slice with stride
           kp[v[0]:v[1]:v[2]] = True
         else:
-          raise ValueException("'%s' is not associated with this %s axis" % (ax, self.name))
+          raise ValueError("'%s' is not associated with this %s axis" % (ax, self.name))
       else:
         ################### Select by value
         if self.has_alias(ax):     # Does key match this axis?

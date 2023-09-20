@@ -260,7 +260,7 @@ void merge_eof (Workspace *work) {
   double *new_pc2 = malloc(sizeof(double)*N2*nt2);
   double *new_pc = malloc(sizeof(double)*N*nt);
 
-  printf ("  merging stacklevels %d and %d\n", stacksize-1, stacksize-2);
+  //printf ("  merging stacklevels %d and %d\n", stacksize-1, stacksize-2);
 
   // Merge the two sets of EOFs together
   double *E = malloc(sizeof(double)*N2*nx);
@@ -323,23 +323,23 @@ void merge_eof (Workspace *work) {
       for (int j = 0; j < N; j++) rank[i] += v[j]*v[j];
     }
 
-    print_vector (N2, rank);
+    //print_vector (N2, rank);
 
     // Copy the best-ranked EOFs
     // TODO: more efficient routine
-    printf ("'optimal' order: ");
+    //printf ("'optimal' order: ");
     for (int i = 0; i < N; i++) {
       int bestind = i;
       for (int j = 0; j < N2; j++) {
         if ((float)(rank[j]) > (float)(rank[bestind])) bestind = j;
       }
-      printf ("%d ", bestind);
+      //printf ("%d ", bestind);
       memcpy (new_eof+i*nx, E_eof+bestind*nx, sizeof(double)*nx);
       new_eig[i] = E_eig[bestind];
       memcpy (new_pc+i*nt, E_pc+bestind*nt, sizeof(double)*nt);
       rank[bestind] = -1;  // disqualify this one from further inclusion (we already have it)
     }
-    printf ("\n");
+    //printf ("\n");
 
     // TODO
 //    // keep the best N of the 2*N
@@ -399,7 +399,7 @@ void add_to_stack (Workspace *work, double *eofs, double *eig, int nt, double *p
 
   int c = work->count;  // for iterating of the bits, from least to greatest
 
-  printf ("adding to stack... (count=%d, stacksize=%d)\n", c, work->stacksize);
+  //printf ("adding to stack... (count=%d, stacksize=%d)\n", c, work->stacksize);
 
   // Store on the stack
   int stacksize = work->stacksize;
@@ -420,7 +420,7 @@ void add_to_stack (Workspace *work, double *eofs, double *eig, int nt, double *p
   // Update the count
   work->count++;
 
-  printf ("done adding to stack... new count = %d, new stacksize = %d\n", work->count, work->stacksize);
+  //printf ("done adding to stack... new count = %d, new stacksize = %d\n", work->count, work->stacksize);
   return;
 }
 
@@ -435,11 +435,11 @@ int process (Workspace *work, int NREC, double *data) {
   // Loop over N-sized chunks of data
   for (int offset = 0; offset < NREC; offset+= N) {
     int n = (offset+N <= NREC) ? N : NREC-offset;
-    printf ("handling %d records\n", n);
+    //printf ("handling %d records\n", n);
     _data = data + offset*nx;
     // To simplify the code below, always make sure we have N timesteps
     if (n < N) {
-      printf ("padding the last set of records\n");
+      //printf ("padding the last set of records\n");
       _data = malloc(sizeof(double)*nx*N);
       memcpy (_data, data + offset*nx, sizeof(double)*nx*n);
       memset (_data+n*nx, 0, sizeof(double)*nx*(N-n));
@@ -476,7 +476,7 @@ int process (Workspace *work, int NREC, double *data) {
 
     // Cleanup?
     if (n < N) {
-      printf ("freeing the padded space\n");
+      //printf ("freeing the padded space\n");
       free (_data);
     }
 
@@ -492,8 +492,8 @@ int endloop (Workspace *work, double *EOFs, double *EIGs, double *PCs) {
   const int N = work->num_eofs;
   const int nx = work->nx;
 
-  printf ("freeing workspace\n");
-  printf ("nx was %d, num_eofs was %d\n", nx, N);
+  //printf ("freeing workspace\n");
+  //printf ("nx was %d, num_eofs was %d\n", nx, N);
 //  printf ("leftover stacksize is %d\n", stacksize);
 
   //Finish off anything left on the stack (up to 0th stacklevel)
