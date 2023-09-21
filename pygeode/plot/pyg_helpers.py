@@ -68,6 +68,7 @@ def axes_parm(axis):
 
 def set_xaxis(axes, axis, lbl, xscale=True):
 # {{{
+  import pylab as pyl
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
 
@@ -78,12 +79,13 @@ def set_xaxis(axes, axis, lbl, xscale=True):
     prm['xlim']   = lim
 
   if lbl:
-    import pylab as pyl
     prm['xlabel'] = label
     axprm['major_formatter'] = form
     axprm['minor_formatter'] = pyl.NullFormatter()
   else:
-    prm['xticklabels'] = []
+    #prm['xticklabels'] = []
+    axprm['major_formatter'] = pyl.NullFormatter()
+    axprm['minor_formatter'] = pyl.NullFormatter()
 
   axes.setp(**prm)
   axes.setp_xaxis(**axprm)
@@ -96,6 +98,7 @@ def set_xaxis(axes, axis, lbl, xscale=True):
 
 def set_yaxis(axes, axis, lbl, yscale=True):
 # {{{
+  import pylab as pyl
   scale, label, lim, form, loc = axes_parm(axis)
   pl, pb, pr, pt = axes.pad
 
@@ -106,12 +109,13 @@ def set_yaxis(axes, axis, lbl, yscale=True):
     prm['ylim']   = lim
 
   if lbl:
-    import pylab as pyl
     prm['ylabel'] = label
     axprm['major_formatter'] = form
     axprm['minor_formatter'] = pyl.NullFormatter()
   else:
-    prm['yticklabels'] = []
+    #prm['yticklabels'] = []
+    axprm['major_formatter'] = pyl.NullFormatter()
+    axprm['minor_formatter'] = pyl.NullFormatter()
 
   axes.setp(**prm)
   axes.setp_yaxis(**axprm)
@@ -356,7 +360,12 @@ def vplot(var, fmt='', axes=None, transpose=False, lblx=True, lbly=True, **kwarg
   if axes is None:
     axes = wr.AxesWrapper()
 
-  axes.plot(x, y, fmt, **kwargs)
+  if fmt == '':
+    args = ()
+  else:
+    args = (fmt,)
+
+  axes.plot(x, y, *args, **kwargs)
 
   # Apply the custom axes args
   if not hold:
@@ -449,14 +458,14 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
 
   clevs : integer or collection of numbers, optional
     Levels at which to construct filled contours through an underlying call to
-    :func:`matplotlib.contourf`. If None is specified, no filled contours will
+    :func:`matplotlib.pyplot.contourf`. If None is specified, no filled contours will
     be produced, unless clines is also None. If a number is specified, that
     number of equally spaced contours are chosen. Otherwise the explicit
     values are used.
 
   clines : integer or collection of numbers, optional
     Levels at which to construct contour lines through an underlying call to
-    :func:`matplotlib.contour`. If None is specified, no contour lines are
+    :func:`matplotlib.pyplot.contour`. If None is specified, no contour lines are
     produced.  If a number is specified, that number of equally spaced contours
     are chosen. Otherwise the explicit values are used.
 
@@ -542,8 +551,9 @@ def vcontour(var, clevs=None, clines=None, axes=None, lblx=True, lbly=True, labe
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes) and mapd is not False:
-      decorate_projection(axes, X, Y, **mapd)
+    if wr.ismapaxis(axes):
+      if mapd is not False:
+        decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -692,8 +702,9 @@ def vstreamplot(varu, varv, axes=None, lblx=True, lbly=True, label=True, transpo
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes) and mapd is not False:
-      decorate_projection(axes, X, Y, **mapd)
+    if wr.ismapaxis(axes):
+      if mapd is not False:
+        decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -757,8 +768,9 @@ def vquiver(varu, varv, varc=None, axes=None, lblx=True, lbly=True, label=True, 
   # Apply the custom axes args
   if label:
     axes.pad = (0.1, 0.1, 0.1, 0.1)
-    if wr.ismapaxis(axes) and mapd is not False:
-      decorate_projection(axes, X, Y, **mapd)
+    if wr.ismapaxis(axes):
+      if mapd is not False:
+        decorate_projection(axes, X, Y, **mapd)
     else:
       set_xaxis(axes, X, lblx)
       set_yaxis(axes, Y, lbly)
@@ -987,7 +999,7 @@ def showgrid(vf, vl=[], ncol=1, size=(3.5,1.5), lbl=True, **kwargs):
   axs = []
   row = []
   for i in range(nV):
-    lblx = (i / ncol == nrow - 1)
+    lblx = (i // ncol == nrow - 1)
     lbly = (i % ncol == 0)
     ax = None
     if nVf > 0:

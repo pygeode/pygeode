@@ -25,9 +25,144 @@ cmaps_seq = {6: ([0.5, 0.556, 1.0, 0.94, 0.87, 0.82], [0.96, 0.4], [0.4, 0.7]), 
 
 def cmap_from_hues(hues=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], sat=[0.2, 0.9], rval=[0.3, 0.6]):
 # {{{
+  """
+  Build a matplotlib Colormap based on a set of HSV (hue, saturation, brightness) values.
+
+  The number of hues corresponds to the number of "divisions" in a Colormap.
+  In each division, the saturation and brightness level changes from
+  (h, sat[0], rval[0]) to (h, sat[1], rval[1]) while the hue remains constant.
+  See Notes for an example.
+
+  Parameters
+  ----------
+  hues : array_like of floats
+    Defines the number of "divisions" in a Colormap. 
+
+  sat : array_like of floats (length 2)
+    Defines how the saturation level changes within a division. 
+
+  rval : array_like of floats (length 2)
+    Defines how the brightness level changes within a division.
+
+  Returns
+  -------
+  matplotlib.colors.LinearSegmentedColormap
+
+  Notes
+  -----
+  An example call to the function is cmap_from_hues([0.1, 0.4, 0.6], [0.2, 0.9], [0.3, 0.6]),
+  which would return a 3-division Colormap. In the HSV scheme, the color changes from
+  [0.1, 0.2, 0.3] to [0.1, 0.9, 0.6] in the first division, from [0.4, 0.2, 0.3]
+  to [0.4, 0.9, 0.6] in the second division, and so on. Note that the HSV value would
+  "jump" between divisions. 
+  """
   stops = build_stops(hues, sat, rval)
   return build_cmap(stops)
 # }}}
+
+def cmap_from_cdict(cdict, colorspace='rgb'):
+  """
+  Constructs a colormap based on ``cdict``.
+
+  ``cdict`` is a python dictionary where each `value` specifies the color code for each `key`.
+  Each `value` can be either a single color, or two colors as an array-like object so that
+  matplotlib can apply a non-linear transition of color at each key.
+
+  It's also possible to specify the "over" and "under" colors in cdict for the colormap.
+
+  See Examples.
+
+  Parameters
+  ----------
+  cdict : dict
+    The color dictionary.
+
+  colorspace : str
+    Defines the colorspace of the values in `cdict` such that the values can be transformed
+    into the RGBA format. Valid options are "rgb" or "hex".
+
+    Note that "rgb" supports a variety of equivalent formats. For example,
+    [0, 0, 0] (black in "rgb"), [0, 0, 0, 0.5] (black, with the alpha value set to 0.5),
+    and "#000000" (black as a hex string) are all valid values for ``cdict``. See Examples.
+
+    Defaults to "rgb".
+
+  Returns
+  -------
+  matplotlib.colors.LinearSegmentedColormap
+
+  Examples
+  --------
+  The `cdict` below defines a colormap that changes from white to black in [-1, -0.1],
+  stays white in [-0.1, 0.1], and transitions from white to black in [0.1, 1].
+
+  >>> from pygeode.plot.cm import cmap_from_cdict
+  >>> cdict = {
+  ...   -1: [1, 1, 1],
+  ...   -0.1: ([0, 0, 0, 1], [1, 1, 1]),
+  ...   0.1: ([1, 1, 1], "#000000"),
+  ...   1: [1, 1, 1]
+  ... }
+  >>> cmap = cmap_from_cdict(cdict)
+
+  If desired, we can also specify under and over for the colormap.
+
+  >>> from pygeode.plot.cm import cmap_from_cdict
+  >>> cdict = {
+  ...   'over': [0, 0, 0],
+  ...   'under': [0, 0, 0],
+  ...   -1: [1, 1, 1],
+  ...   -0.1: ([0, 0, 0], [1, 1, 1]),
+  ...   0.1: ([1, 1, 1], [0, 0, 0]),
+  ...   1: [1, 1, 1]
+  ... }
+  >>> cmap = cmap_from_cdict(cdict)
+  """
+  import matplotlib.colors as mcolors
+  import math
+  import numpy as np
+
+  over = cdict.pop('over', None)
+  under = cdict.pop('under', None)
+
+  lastk = -math.inf
+  mpl_cdict = dict(red=[], green=[], blue=[], alpha=[])
+  keys = list(cdict.keys())
+  norm = mcolors.Normalize(vmin=keys[0], vmax=keys[-1])
+
+  if colorspace == 'rgb':
+    convert_color = lambda v: mcolors.to_rgba(v)
+  elif colorspace == 'hsv':
+    convert_color = lambda v: mcolors.to_rgba(mcolors.hsv_to_rgb(v))
+  else:
+    raise ValueError(
+      f'Colorspace "{colorspace}" must be "rgb" or "hsv".')
+
+  for k, v in cdict.items():
+    if k < lastk:
+      raise ValueError('The keys for "cdict" should increase monotonously.')
+
+    if hasattr(v, '__len__') and len(v) == 2:
+      r1, g1, b1, a1 = convert_color(v[0])
+      r2, g2, b2, a2 = convert_color(v[1])
+    else:
+      r1, g1, b1, a1 = r2, g2, b2, a2 = convert_color(v)
+
+    mpl_cdict['red'].append([norm(k), r1, r2])
+    mpl_cdict['green'].append([norm(k), g1, g2])
+    mpl_cdict['blue'].append([norm(k), b1, b2])
+    mpl_cdict['alpha'].append([norm(k), a1, a2])
+
+    lastk = k
+
+  cmap = mcolors.LinearSegmentedColormap('cmap', mpl_cdict)
+
+  if over is not None:
+    cmap.set_over(over)
+  if under is not None:
+    cmap.set_under(under)
+
+  return cmap
 
 def build_cmap(stops): 
 # {{{ 
@@ -180,3 +315,5 @@ def read_config():
 
 # Read in configuration file on import
 read_config()
+
+__all__ = ['cmap_from_hues', 'cmap_from_cdict']

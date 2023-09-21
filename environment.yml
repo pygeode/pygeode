@@ -1,0 +1,28 @@
+name: tropd #name of your env
+channels:
+        - conda-forge
+        - defaults
+        - aph42
+dependencies:
+        - python==3.8.*
+        - numpy >= 1.19
+        - matplotlib
+        - scipy >= 1.5
+        - netCDF4
+        - xarray
+        - black
+        - pytest
+        - ipython
+        - pygeode
+        - mypy
+        - flake8
+        - flake8-docstrings
+        - ipympl
+        - jupyterlab
+        - pooch
+        - dask
+        - cartopy
+        - pip
+        - pip:
+            - -e .
+

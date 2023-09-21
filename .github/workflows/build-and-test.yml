@@ -1,0 +1,106 @@
+name: Build and Test
+
+on: 
+  workflow_dispatch:
+  push:
+    paths: # Run if a python or a c file has been modified
+      - '*.py'
+      - '*.c'
+
+jobs:
+  build-linux-and-test:
+    name: Build and test in linux, python (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+          #python-version: ["3.10"]
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+     - name: Checkout
+       uses: actions/checkout@v3
+
+     - name: Set up conda environment
+       uses: conda-incubator/setup-miniconda@v2
+       with:
+         auto-update-conda: true
+         python-version: ${{ matrix.python-version }}
+         show-channel-urls: true
+         use-only-tar-bz2: true
+         environment-file: pygeode_environment.yml
+         activate-environment: pygeode
+
+     - name: Check conda installation
+       run: |
+         conda install flake8 pytest pytest-cov
+         conda info
+         conda list
+
+     - name: Check for syntax errors/undefined variables with flake8
+       run: |
+         # stop the build if there are Python syntax errors or undefined names
+         flake8 . --count --select=E9,F63,F7,F82 --show-source --max-line-length=127 --statistics
+         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+         # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+     - name: Build pygeode
+       run: |
+         python setup.py build_ext -i
+
+     - name: Report Python and PyGeode version
+       run: |
+         which python
+         python -c 'import sys, pygeode as pyg; print(sys.version); print(pyg.__version__)'
+
+     - name: Run tests with pytest
+       run: |
+         python -m pytest --junitxml=pytest.xml --cov-report=term --cov=pygeode | tee pytest-coverage.txt
+         #python -m pytest --junitxml=pytest.xml --cov-report=term --cov=pygeode | tee pytest-coverage.txt
+
+     - name: Upload Test Results
+       if: always()
+       uses: actions/upload-artifact@v3
+       with:
+         name: Test Results (Python ${{ matrix.python-version }})
+         path: pytest.xml
+
+#     - name: Pytest coverage
+#       uses: MishaKav/pytest-coverage-comment@main
+#       with:
+#         hide-badge: false
+#         unique-id-for-comment: python${{ matrix.python-version }}
+#         pytest-coverage-path: ./pytest-coverage.txt
+#         junitxml-path: ./pytest.xml
+
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: build-linux-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+
+      # only needed unless run with comment_mode: off
+      #pull-requests: write
+
+      # only needed for private repository
+      #contents: read
+
+      # only needed for private repository
+      #issues: read
+    if: always()
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "artifacts/**/*.xml"

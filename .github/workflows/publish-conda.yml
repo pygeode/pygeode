@@ -1,0 +1,40 @@
+name: Publish Linux Conda Package
+
+on: 
+  workflow_dispatch:
+  release:
+
+jobs:
+  build-conda-packages:
+    name: Build and publish conda packages
+    runs-on: ubuntu-latest
+
+    steps:
+     - name: Checkout
+       uses: actions/checkout@v3
+
+     - name: Set up conda environment
+       uses: conda-incubator/setup-miniconda@v2
+       with:
+         auto-update-conda: true
+         python-version: '3.11'
+         show-channel-urls: true
+         use-only-tar-bz2: true
+         environment-file: pygeode_environment.yml
+         activate-environment: pygeode
+
+     - name: Check conda installation
+       run: |
+         conda install conda-build anaconda-client
+         conda info
+         conda list
+
+     - name: Build and publish conda
+       run: |
+         # Move bld.build.sh and meta.yaml.latest to a directory called pygeode
+         cd conda-recipe
+         mkdir pygeode
+         cp build.sh pygeode/
+         cp meta.yaml.1.4 pygeode/meta.yaml
+         conda build pygeode
+

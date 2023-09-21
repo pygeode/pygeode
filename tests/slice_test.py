@@ -101,7 +101,7 @@ for naxes in (1,2):
       expected = values
       for dim in range(naxes):
         current_sl = [slice(None)]*dim + [sl[dim]] + [slice(None)]*(naxes-1-dim)
-        expected = expected[current_sl]
+        expected = expected[tuple(current_sl)]
 
       # Things are just about to start getting crazy-go-nuts.
       # Pass the var and expected values to 'varTest', which in turn

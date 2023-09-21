@@ -1,17 +1,17 @@
 package:
   name: pygeode
-  version: "1.4.1"
+  version: "1.4.2rc1"
 
 source:
-  git_rev: 1.4.1-rc2
+  git_rev: "1.4.1-rc1"
   git_url: https://github.com/pygeode/pygeode.git
 
 requirements:
   build:
-    - python
+    - python>=3.7
     - setuptools
     - netcdf4
-    - numpy
+    - numpy>=1.22
     - scipy
     - matplotlib
     - progressbar2

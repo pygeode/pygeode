@@ -832,8 +832,9 @@ def combine_meta (invars, outvar):
 
 # Numeric operations
 from numpy import ndarray as nd
-from pygeode.ufunc import wrap_unary, wrap_binary
+from pygeode.ufunc import wrap_unary, wrap_binary, map
 from functools import reduce
+Var.map = map
 Var.__add__  = wrap_binary(nd.__add__,  symbol='+')
 Var.__radd__ = wrap_binary(nd.__radd__, symbol='+')
 Var.__sub__  = wrap_binary(nd.__sub__,  symbol='-')
@@ -917,12 +918,12 @@ del smooth, deriv, diff, integrate, cumsum, composite, flatten, fft_smooth, lag,
 from pygeode import climat
 for n in climat.__all__:
   c = getattr(climat,n)
-  def do_wrapper (c=c):
+  def do_wrapper (op, name):
     def f (*args, **kwargs):
-      return c(*args, **kwargs)
-    f.__name__ = n
+      return op(*args, **kwargs)
+    f.__name__ = name
     return f
-  class_hooks.append(do_wrapper())
+  class_hooks.append(do_wrapper(c, n))
 del climat, n, c
 
 

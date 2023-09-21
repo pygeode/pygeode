@@ -2,6 +2,8 @@
 # This is essentially a wrapper to apply numpy universal functions (ufunc)
 # to PyGeode variables.
 
+import functools
+
 from .var import Var
 class UfuncVar (Var):
 # {{{
@@ -106,9 +108,38 @@ class UfuncVar (Var):
   # }}}
 # }}}
 
+def map (var, func, *args, **kwargs): 
+# {{{
+  '''Applies an arbitrary function that acts element-wise on a numpy array to
+  this variable. The returned variable will have the same shape as this variable.
 
+  Parameters
+  ----------
+  func : any callable
+    The element-wise function to apply
 
+  *args, **kwargs: 
+    Positional and keyword arguments to be passed to the function.
 
+  Returns
+  -------
+  out : :class:`Var`
+    The variable with the function applied.
+
+  Examples
+  --------
+  >>> import pygeode as pyg
+  >>> from pygeode.tutorial import t1
+  >>> def my_function(v, q): return v - np.remainder(v, q)
+  >>> print(t1.Temp.map(my_function, 4)) # Compute simple derivative
+  '''
+
+  class MapVar(UfuncVar):
+    op = staticmethod(func)
+    symbol = None
+
+  return MapVar(var, *args, **kwargs)
+# }}}
 
 # Take a function that operates on numpy arrays, create a
 # function that operates on PyGeode arrays.
@@ -124,13 +155,16 @@ def wrap_npfunc (nterms, npfunc, doc='', symbol=None):
   C.__name__ = npfunc.__name__.strip('_').capitalize() + "_Var"
   # Create a function for creating the class
   assert isinstance(nterms, int)
-  if nterms == 1:
-    def f(x): return C(x)
-  elif nterms == 2:
-    def f(x,y): return C(x,y)
-  elif nterms == -1:
-    def f(*args): return C(*args)
-  else: raise Exception
+  @functools.wraps(npfunc)
+  def f(*args, **kwargs):
+    return C(*args, **kwargs)
+  #if nterms == 1:
+    #def f(x): return C(x)
+  #elif nterms == 2:
+    #def f(x,y): return C(x,y)
+  #elif nterms == -1:
+    #def f(*args): return C(*args)
+  #else: raise Exception
   f.__name__ = npfunc.__name__
   f.__doc__ = doc
 
@@ -241,22 +275,21 @@ vsum = wrap_npfunc(-1, vsum, "Adds an arbitrary number of variables together")
 
 clip = wrap_npfunc(-1, np.clip, "Clips values to given interval.")
 
-
-
 del np
 
 unary_flist = (abs, sign, exp, log, log10, cos, sin, tan, cosd, sind, tand,
     cosh, sinh, tanh, arccos, arcsin, arctan,
     arccosd, arcsind, arctand, arccosh, arcsinh, arctanh,
-    sqrt, nan_to_num, real, imag, conj, angle,
-    clip
+    sqrt, nan_to_num, real, imag, conj, angle
 )
 
 binary_flist = (arctan2, arctand2, minimum, maximum)
 
 vararg_flist = (vprod, vsum)
 
-all_flist = unary_flist + binary_flist + vararg_flist
+other_flist = (clip,)
+
+all_flist = unary_flist + binary_flist + vararg_flist + other_flist
 
 __all__ = tuple(sorted(f.__name__ for f in all_flist))
 

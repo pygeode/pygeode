@@ -21,7 +21,7 @@ def make_atts (v):
     if sys.version_info[0] < 3:
       # netcdf4-python module in Python 2 uses unicode instead of strings.
       # Need to force this back to string type.
-      if isinstance(att, unicode): 
+      if isinstance(att, type(u'')): 
         att = att.encode('utf-8')
       #att = att.encode('ascii', 'replace').decode('ascii')
 
@@ -91,7 +91,9 @@ def tidy_axes(dataset, unlimited=None):
   if unlimited is not None:
     assert unlimited in [a.name for a in axes]
 
-  return asdataset(vars)
+  ds = asdataset(vars)
+  ds.atts = dataset.atts
+  return ds
 # }}}
 
 def write_var (ncfile, dataset, unlimited=None, compress=False):
@@ -297,5 +299,4 @@ def save (filename, in_dataset, version=4, pack=None, compress=False, cfmeta = T
       dataset = finalize_save(in_dataset, cfmeta, pack)
       dataset = tidy_axes(dataset, unlimited=unlimited)
       write_var(f, dataset, unlimited=unlimited, compress=compress)
-  
 # }}}

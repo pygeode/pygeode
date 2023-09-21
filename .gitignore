@@ -1,6 +1,7 @@
 *.pyc
 *.so
 *.dll
+*.ipynb_checkpoints/
 tests/*.nc
 tests/issues/*.nc
 tests/issues/*.data
