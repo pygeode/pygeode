@@ -29,7 +29,7 @@ jobs:
          conda info
          conda list
 
-     - name: Build and publish conda
+     - name: Build conda wheel
        run: |
          # Move bld.build.sh and meta.yaml.latest to a directory called pygeode
          cd conda-recipe
@@ -37,4 +37,10 @@ jobs:
          cp build.sh pygeode/
          cp meta.yaml.1.4 pygeode/meta.yaml
          conda build pygeode
+
+     - name: Publish to aph42 channel
+       with: 
+       run: |
+         export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
+         anaconda upload --label=test
 
