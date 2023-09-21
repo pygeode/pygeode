@@ -128,10 +128,16 @@ def map (var, func, *args, **kwargs):
 
   Examples
   --------
-  >>> import pygeode as pyg
+  >>> import pygeode as pyg; import numpy as np
   >>> from pygeode.tutorial import t1
   >>> def my_function(v, q): return v - np.remainder(v, q)
-  >>> print(t1.Temp.map(my_function, 4)) # Compute simple derivative
+  >>> t1.Temp[:8, 0]
+  array([260.73262556, 261.22683172, 261.98265134, 263.09218962,
+         264.65419211, 266.76053262, 269.47711035, 272.82122084])
+  >>> t1.Temp.map(my_function, 4)[:8, 0]
+  array([260., 260., 260., 260., 264., 264., 268., 272.])
+  >>> t1.Temp.map(my_function, 10)[:8, 0]
+  array([260., 260., 260., 260., 260., 260., 260., 270.])
   '''
 
   class MapVar(UfuncVar):
