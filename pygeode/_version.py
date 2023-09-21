@@ -1,1 +1,1 @@
-__version__ = '1.4.1post1'
+__version__ = '1.4.2'
