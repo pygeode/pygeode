@@ -39,7 +39,6 @@ jobs:
          conda build pygeode
 
      - name: Publish to aph42 channel
-       with: 
        run: |
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
          anaconda upload --label=test
