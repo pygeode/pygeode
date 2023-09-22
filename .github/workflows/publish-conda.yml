@@ -25,7 +25,7 @@ jobs:
 
      - name: Check conda installation
        run: |
-         conda install conda-build anaconda-client
+         conda install conda-build anaconda-client conda-verify
          conda info
          conda list
 
