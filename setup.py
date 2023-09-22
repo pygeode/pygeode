@@ -53,7 +53,7 @@ the underlying computations and to create plots.
         # Note: When building Windows version, pre-compile the libraries
         # in the 'pygeode' subdirectory.
 	package_data={'pygeode': ['*.dll','pygrc'], 'pygeode.formats': ['*.dll']},
-	packages=["pygeode", "pygeode.formats", "pygeode.server", "pygeode.plugins", "pygeode.plot", "pygeode.options"],
+	packages=["pygeode", "pygeode.formats", "pygeode.plugins", "pygeode.plot", "pygeode.options"],
 	include_dirs = [sys.prefix + '/include', sys.prefix + '/Library/include', np.get_include()],
 	ext_modules=[interpcore, timeaxiscore, quadrulepy, toolscore, svdcore, eofcore, opendapcore, gribcore]
 )
