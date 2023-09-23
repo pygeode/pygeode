@@ -21,8 +21,8 @@ jobs:
 
      - name: Complete and check conda installation
        run: |
-         mamba install boa anaconda-client
-         mamba list
+         micromamba install boa anaconda-client
+         micromamba list
 
      - name: Build conda package
        run: |
