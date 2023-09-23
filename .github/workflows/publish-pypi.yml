@@ -26,7 +26,8 @@ jobs:
        with:
          output-dir: wheelhouse
 
-     - name: actions/upload-artifact@v3
+     - name: Upload Wheels
+       uses: actions/upload-artifact@v3
        with:
          path: ./wheelhouse/*.whl
 
