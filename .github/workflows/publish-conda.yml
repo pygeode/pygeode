@@ -37,6 +37,6 @@ jobs:
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
          pwd
          ls
-         anaconda upload --label=test pygeode/conda-recipe/linux-64/*.tar.bz2
+         anaconda upload --label=test conda-recipe/linux-64/*.tar.bz2
        shell: bash -el {0}
 
