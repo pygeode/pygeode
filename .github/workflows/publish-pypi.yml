@@ -1,0 +1,32 @@
+name: Build and Publish PyPI wheel
+
+on: 
+  workflow_dispatch:
+  release:
+
+jobs:
+  build-wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+     - name: Checkout Repository
+       uses: actions/checkout@v4
+
+     - name: Build wheels
+       uses: pypa/cibuildwheel@v2.16.0
+       env:
+         CIBW_BEFORE_ALL: "yum install -y atlas-devel lapack-devel gsl-devel netcdf"
+       with:
+         output-dir: wheelhouse
+
+     - name: actions/upload-artifact@v3
+       with:
+         path: ./wheelhouse/*.whl
+

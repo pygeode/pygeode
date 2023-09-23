@@ -8,6 +8,9 @@ jobs:
   build-conda-packages:
     name: Build and publish conda packages
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
 
     steps:
      - name: Checkout
@@ -30,13 +33,9 @@ jobs:
          cp build.sh pygeode/
          cp meta.yaml.1.4 pygeode/meta.yaml
          conda mambabuild pygeode --output-folder .
-       shell: bash -el {0}
 
      - name: Publish to aph42 channel
        run: |
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
-         pwd
-         ls
          anaconda upload --label=test conda-recipe/linux-64/*.tar.bz2
-       shell: bash -el {0}
 
