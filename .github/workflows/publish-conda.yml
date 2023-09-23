@@ -17,12 +17,14 @@ jobs:
        uses: mamba-org/setup-micromamba@v1
        with:
          environment-file: pygeode_environment.yml
-         create-args: python=3.11
+         create-args: "python=3.11"
+         shell: bash
 
      - name: Complete and check conda installation
        run: |
          micromamba install boa anaconda-client
          micromamba list
+       shell: bash -el {0}
 
      - name: Build conda package
        run: |
@@ -32,10 +34,12 @@ jobs:
          cp build.sh pygeode/
          cp meta.yaml.1.4 pygeode/meta.yaml
          conda mambabuild pygeode
+       shell: bash -el {0}
 
      - name: Publish to aph42 channel
        run: |
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
          mamba list
          anaconda upload --label=test
+       shell: bash -el {0}
 
