@@ -29,12 +29,12 @@ jobs:
          mkdir pygeode
          cp build.sh pygeode/
          cp meta.yaml.1.4 pygeode/meta.yaml
-         conda mambabuild pygeode
+         conda mambabuild pygeode --output-folder .
        shell: bash -el {0}
 
      - name: Publish to aph42 channel
        run: |
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
-         anaconda upload --label=test linux-64/*.tar.bz2
+         anaconda upload --label=test conda-recipe/pygeode/linux-64/*.tar.bz2
        shell: bash -el {0}
 
