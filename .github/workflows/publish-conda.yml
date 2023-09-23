@@ -20,7 +20,7 @@ jobs:
          create-args: >-
            python=3.11
            boa
-           anaconda-installation
+           anaconda-client
 
      - name: Build conda package
        run: |
