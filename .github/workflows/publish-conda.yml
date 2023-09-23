@@ -35,6 +35,8 @@ jobs:
      - name: Publish to aph42 channel
        run: |
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
-         anaconda upload --label=test conda-recipe/pygeode/linux-64/*.tar.bz2
+         pwd
+         ls
+         anaconda upload --label=test pygeode/conda-recipe/linux-64/*.tar.bz2
        shell: bash -el {0}
 
