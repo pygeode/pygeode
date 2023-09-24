@@ -22,7 +22,10 @@ jobs:
      - name: Build wheels
        uses: pypa/cibuildwheel@v2.16.0
        env:
-         CIBW_BEFORE_ALL: "yum install -y atlas-devel lapack-devel gsl-devel netcdf"
+         CIBW_BEFORE_ALL: >-
+           yum install -y atlas-devel lapack-devel gsl-devel netcdf
+         CIBW_BEFORE_BUILD: >-
+           pip install numpy scipy matplotlib netcdf4 progressbar2 &&
        with:
          output-dir: wheelhouse
 
