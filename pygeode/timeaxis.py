@@ -557,8 +557,8 @@ class CalendarTime(Time):
       h = dt['hour']
       subs['H'] = '%02d' % h
       subs['I'] = '%02d' % ((h - 1) % 12 + 1)
-      subs['p'] = ['am', 'pm'][h // 12]
-      subs['P'] = ['AM', 'PM'][h // 12]
+      subs['p'] = ['am', 'pm'][int(h // 12)]
+      subs['P'] = ['AM', 'PM'][int(h // 12)]
     else:
       subs['H'], subs['I'], subs['p'], subs['P'] = '', '', '', ''
 
