@@ -61,6 +61,7 @@ def cmap_from_hues(hues=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], sat=[0.2, 0.9], rval=[0.
 # }}}
 
 def cmap_from_cdict(cdict, colorspace='rgb'):
+# {{{
   """
   Constructs a colormap based on ``cdict``.
 
@@ -163,6 +164,7 @@ def cmap_from_cdict(cdict, colorspace='rgb'):
     cmap.set_under(under)
 
   return cmap
+# }}}
 
 def build_cmap(stops): 
 # {{{ 
@@ -273,6 +275,7 @@ def get_cm(style, ndiv):
 def read_config():
 # {{{
   from warnings import warn
+  global cmaps_div, cmaps_seq
 
   cmpdir = pyg._config.get('Plotting', 'cmaps_path')
 
@@ -285,7 +288,7 @@ def read_config():
   def parse_cmaps(param):
     dct = {}
 
-    cstrs = [d.strip() for d in divstr.split('\n') if len(d) > 0]
+    cstrs = [d.strip() for d in param.split('\n') if len(d) > 0]
     for cstr in cstrs:
       key, val = [c.strip() for c in cstr.split(':')]
 
@@ -296,12 +299,12 @@ def read_config():
         val = eval(val)
 
       dct[key] = val
+    return dct
 
   # Read in divergent colormaps
   divstr = pyg._config.get('Plotting', 'cmaps_div')
-  cmaps_div = parse_cmaps(divstr)
   try:
-    pass
+    cmaps_div = parse_cmaps(divstr)
   except:
     warn('Parsing of default divergent colormaps in config files failed. See pyg._configfiles for list of configuration files in current use.')
 
