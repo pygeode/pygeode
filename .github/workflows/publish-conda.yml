@@ -37,7 +37,6 @@ jobs:
          cd conda-recipe
          mkdir pygeode
          cp build.sh pygeode/
-         cp conda_build_config.yaml pygeode/
          cp meta.yaml.1.4 pygeode/meta.yaml
          conda mambabuild pygeode --python=${{ matrix.python-version }} --output-folder .
 
