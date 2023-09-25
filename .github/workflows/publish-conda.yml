@@ -8,6 +8,12 @@ jobs:
   build-conda-packages:
     name: Build and publish conda packages
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+          #python-version: ["3.10"]
     defaults:
       run:
         shell: bash -el {0}
@@ -33,10 +39,10 @@ jobs:
          cp build.sh pygeode/
          cp conda_build_config.yaml pygeode/
          cp meta.yaml.1.4 pygeode/meta.yaml
-         conda mambabuild pygeode --output-folder .
+         conda mambabuild pygeode --python=${{ matrix.python-version }} --output-folder .
 
      - name: Publish to aph42 channel
        run: |
          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
-         anaconda upload --label=test conda-recipe/linux-64/*.tar.bz2
+         anaconda upload --label=test conda-recipe/linux-64/*.tar.bz2 --force
 
