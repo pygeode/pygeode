@@ -29,7 +29,9 @@ jobs:
          CIBW_SKIP: >-
            cp312-*
            pp*
+           *_i686
            # Dependencies aren't yet working for CPython 3.12 or for the PyPy wheels (HDF5?)
+           # The i686 builds fail on the yum install as they can't find netcdf
        with:
          output-dir: wheelhouse
 
