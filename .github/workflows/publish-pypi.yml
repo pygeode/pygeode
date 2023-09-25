@@ -26,12 +26,14 @@ jobs:
            yum install -y atlas-devel lapack-devel gsl-devel netcdf hdf5
          CIBW_BEFORE_BUILD: >-
            pip install numpy scipy matplotlib netcdf4 progressbar2
-         CIBW_SKIP: >-
-           cp312-*
-           pp*
-           *_i686
+         CIBW_BUILD: >-
+           cp3{8,9,10,11}-manylinux_x86_64
+         #CIBW_SKIP: >-
+           #cp312-*
+           #pp*
+           #*_i686
            # Dependencies aren't yet working for CPython 3.12 or for the PyPy wheels (HDF5?)
-           # The i686 builds fail on the yum install as they can't find netcdf
+           # The i686 builds fail on the yum install as they can't find netcdf; the 
        with:
          output-dir: wheelhouse
 
