@@ -26,8 +26,10 @@ jobs:
            yum install -y atlas-devel lapack-devel gsl-devel netcdf hdf5
          CIBW_BEFORE_BUILD: >-
            pip install numpy scipy matplotlib netcdf4 progressbar2
-         CIBW_SKIP: cp312-*
-           # Dependencies aren't yet working for python 3.12
+         CIBW_SKIP: >-
+           cp312-*
+           pp*
+           # Dependencies aren't yet working for CPython 3.12 or for the PyPy wheels (HDF5?)
        with:
          output-dir: wheelhouse
 
