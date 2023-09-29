@@ -11,7 +11,7 @@ requirements:
     - python
     - setuptools
     - netcdf4
-    - numpy>=1.22
+    - numpy
     - scipy
     - matplotlib
     - progressbar2
@@ -20,7 +20,7 @@ requirements:
   run:
     - python
     - netcdf4
-    - numpy
+    - {{ pin_compatible('numpy') }}
     - scipy
     - matplotlib
     - progressbar2
