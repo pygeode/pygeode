@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   release:
 
+env:
+  VERSION: 1.4.2a2
+
 jobs:
   build-conda-packages:
     name: Build and publish conda packages
@@ -12,7 +15,10 @@ jobs:
       max-parallel: 5
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        include:
+          -python-version: "3.7"
+           numpy-version: "<=1.22"
           #python-version: ["3.10"]
       fail-fast: false
     defaults:
@@ -29,6 +35,7 @@ jobs:
          environment-file: pygeode_environment.yml
          create-args: >-
            python=${{ matrix.python-version }}
+           numpy=${{ matrix.numpy-version }}
            boa
            anaconda-client
 

@@ -1,10 +1,11 @@
 package:
   name: pygeode
-  version: "1.4.2a2"
+  version: "{{ environ['VERSION'] }}"
 
 source:
-  git_rev: "1.4.2-alpha2"
-  git_url: https://github.com/pygeode/pygeode.git
+  #git_rev: "1.4.2-alpha2"
+  #git_url: https://github.com/pygeode/pygeode.git
+  source: ../../
 
 requirements:
   build:
