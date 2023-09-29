@@ -3,9 +3,8 @@ package:
   version: "{{ environ['VERSION'] }}"
 
 source:
-  #git_rev: "1.4.2-alpha2"
-  #git_url: https://github.com/pygeode/pygeode.git
-  source: ../../
+  git_rev: "{{ environ['VERSION_TAG'] }}"
+  git_url: https://github.com/pygeode/pygeode.git
 
 requirements:
   build:

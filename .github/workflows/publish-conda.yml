@@ -5,22 +5,13 @@ on:
   release:
 
 env:
-  VERSION: 1.4.2a2
+  VERSION: 1.4.2a3
+  VERSION_TAG: 1.4.2-alpha3
 
 jobs:
   build-conda-packages:
     name: Build and publish conda packages
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
-      matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        include:
-          - python-version: "3.7"
-            numpy-version: "<=1.22"
-          #python-version: ["3.10"]
-      fail-fast: false
     defaults:
       run:
         shell: bash -el {0}
@@ -34,8 +25,6 @@ jobs:
        with:
          environment-file: pygeode_environment.yml
          create-args: >-
-           python=${{ matrix.python-version }}
-           numpy=${{ matrix.numpy-version }}
            boa
            anaconda-client
 
@@ -45,8 +34,9 @@ jobs:
          cd conda-recipe
          mkdir pygeode
          cp build.sh pygeode/
-         cp meta.yaml.1.4 pygeode/meta.yaml
-         conda mambabuild pygeode --python=${{ matrix.python-version }} --output-folder .
+         cp meta.yaml pygeode/meta.yaml
+         cp conda_build_config.yaml pygeode/meta.yaml
+         conda mambabuild pygeode --output-folder .
 
      - name: Publish to aph42 channel
        run: |
