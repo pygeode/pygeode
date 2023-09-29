@@ -34,8 +34,8 @@ jobs:
          cd conda-recipe
          mkdir pygeode
          cp build.sh pygeode/
-         cp meta.yaml pygeode/meta.yaml
-         cp conda_build_config.yaml pygeode/meta.yaml
+         cp meta.yaml pygeode/
+         cp conda_build_config.yaml pygeode/
          conda mambabuild pygeode --output-folder .
 
      - name: Publish to aph42 channel
