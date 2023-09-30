@@ -252,17 +252,51 @@ class WeightedNANSumVar(ReducedVar):
   # }}}
 # }}}
 
+
 class MeanVar(ReducedVar):
 # {{{
   '''MeanVar(ReducedVar) - computes unweighted mean.'''
   def getview (self, view, pbar):
+    # from pygeode.tools import loopover, npsum
     import numpy as np
-    from pygeode.tools import loopover, npsum
-    out = np.zeros(view.shape, self.dtype)
-    for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
-      out[outsl] += npsum(indata, self.indices)  
+    import dask.array as da
+    from math import prod
 
-    return out / self.N
+    maxsize = 134217728  # The max size is about 134 mb per chunk
+
+    # Manually set the factor of how we map from array size to memory usage
+    factor = 4 if str(self.dtype) == 'float32' else 8  
+
+    view = view.clip()
+    inview = view.map_to(self.var.axes, strict=False)
+
+    invar = self.var._getitem_asvar(inview.slices)
+
+    inner_size = prod(self.var.shape[1:])
+    
+    if invar.shape[0] * inner_size * factor < maxsize:
+      chunksize = invar.shape  # Or, we just use numpy to perform the operation
+
+    else:
+      first_dim = maxsize // (invar.shape[0] * factor)
+      chunksize = tuple([first_dim] + list(invar.shape[1:]))
+      
+    da_array = da.from_array(invar, chunks=chunksize, lock=True)
+
+    da_mean = da_array.mean(axis=self.indices).compute()
+
+    if da_mean.shape != view.shape:
+      print('Warning: shape does not agree.')
+
+    return da_mean
+
+    # out = np.zeros(view.shape, self.dtype)
+
+    # for outsl, (indata,) in loopover(self.var, view, pbar=pbar):
+    #   out[outsl] += npsum(indata, self.indices)
+
+    # return out / self.N
+
  # }}}
 class WeightedMeanVar(ReducedVar):
 # {{{
