@@ -124,6 +124,8 @@ class Var(object):
     self.axes = tuple(axes)
     self.naxes = len(axes)
 
+    self.ndim = self.naxes
+
     # If we're given a Var as the input data, then we need to grab the data.
     if isinstance(values,Var): values = values.get()
 
